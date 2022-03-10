@@ -1,0 +1,44 @@
+* Numerical differentiation using iterators
+
+** A first stab at the problem
+
+For function =f()=, the first-order approximation of =f'(x)= is the slope at =x=, calculated with a small displacement =x+h=.
+
+=differentiate_()=: To create a lazy list (i.e., iterator) of smaller and smaller =h=, we apply the =half()= function repeatedly using =repeat()=, defined in =newton.org=. Then, apply the slope function =easydiff()= using =map()=.
+
+We iterate over this lazy list, until the change is very small. This is done in =differentiate()= with the =within()= function defined in =newton.org=.
+
+#+begin_src python :noweb yes :tangle src/diff.py
+  from typing import Callable, Iterator
+  from lazy_utils import *
+
+  def easydiff(f: Callable[[float], float], x: float) -> float:
+      def easydiff_(h: float):
+          return (f(x + h) - f(x)) / h
+      
+      return easydiff_
+
+  def half(x: float) -> float:
+      return x / 2.0
+
+  def differentiate_(h0: float, f: Callable[[float], float], x: float) -> Iterator:
+      return map(easydiff(f, x), repeat(half, h0))
+
+  def differentiate(h0: float, f: Callable[[float], float], x: float) -> Iterator:
+      d = differentiate_(h0, f, x)
+      return next(within(0.000000001, d))
+#+end_src
+
+A simple test: differentiate =x^2= at 1.0.
+
+#+begin_src python :noweb yes :tangle src/test_diff.py
+  import pytest
+  from diff import *
+
+  def f(x):
+      return x * x
+
+  def test_differentiate():
+      a = differentiate(5.0, f, 1.0)
+      assert a == pytest.approx(2.0)
+#+end_src
