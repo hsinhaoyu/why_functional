@@ -1,0 +1,99 @@
+* Higher-order functions
+
+Higher-order functions should be familiar to most Python programmers. It should be obvious to most people that =foldr()= corresponds to =functools.reduce()=.
+
+Here we go a little further, and extend it for trees.
+
+** Representing trees
+
+I'll represent a tree this way: =(label, [subtrees...])=.
+
+#+begin_src python :noweb yes :tangle src/test_foldtree.py
+  import pytest
+  from foldtree import *
+  
+  my_tree = (1, [
+                 (2, []),
+                 (3, [
+                      (4, [])
+                     ]
+                  )
+                 ])
+#+end_src
+
+** =foldtree()=: generalizing =reduce()= to trees
+
+=foldtree()= takes 4 parameters:
+=f=: a function of two parameters; combine a label with the subtrees
+=g=: a function of two parameters; combine subtrees
+=a=: the value for an empty tree
+
+#+begin_src python :noweb yes :tangle src/foldtree.py
+  import operator
+
+
+  def foldtree(f, g, a, tree_comp):
+      if tree_comp == []:
+          return a
+      elif isinstance(tree_comp, list):
+          # fold multiple subtrees
+          subtree = tree_comp[0]
+          rest = tree_comp[1:]
+          return g(
+                   foldtree(f, g, a, subtree),
+                   foldtree(f, g, a, rest))
+      else:
+          assert isinstance(tree_comp, tuple)
+          # fold a label with the subtrees
+          (label, subtrees) = tree_comp
+          return f(label,
+                   foldtree(f, g, a, subtrees))
+#+end_src
+
+** Example #1: sum all leaves
+
+#+begin_src python :noweb yes :tangle src/foldtree.py
+  def sumtree(tree):
+      add = operator.add
+      return foldtree(add, add, 0, tree)
+#+end_src
+
+
+#+begin_src python :noweb yes :tangle src/test_foldtree.py
+  def test_sumtree():
+      assert sumtree(my_tree) == 10
+#+end_src
+
+** Example #2: tree flattening
+#+begin_src python :noweb yes :tangle src/foldtree.py
+  def tree_labels(tree):
+      def cons(label, lst):
+          return [label] + lst
+      def append(lst1, lst2):
+          return lst1 + lst2
+      return foldtree(cons, append, [], tree)
+#+end_src
+
+#+begin_src python :noweb yes :tangle src/test_foldtree.py
+  def test_tree_labels():
+      assert tree_labels(my_tree) == [1, 2, 3, 4]
+#+end_src
+
+** Example #3: =map()= for trees
+#+begin_src python :noweb yes :tangle src/foldtree.py
+  def maptree(f, tree):
+      def cons(leaf, lst):
+          return [leaf] + lst
+
+      def mk_leaf(leaf, lst):
+          return (f(leaf), lst)
+    
+      return foldtree(mk_leaf, cons, [], tree)
+#+end_src
+
+#+begin_src python :noweb yes :tangle src/test_foldtree.py
+  def test_maptree():
+      res = maptree(lambda x: -1 * x, my_tree)
+      res = tree_labels(res)
+      assert res == [-1, -2, -3, -4]
+#+end_src
