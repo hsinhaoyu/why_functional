@@ -1,12 +1,12 @@
 * Higher-order functions
 
-Higher-order functions should be familiar to most Python programmers. It should be obvious to most people that =foldr()= in the paper corresponds to =functools.reduce()=.
+Higher-order functions should be familiar to most Python programmers. It should be obvious to most people that =foldr= in the paper corresponds to =functools.reduce= in Python.
 
-Here we go a little further, and extend it for trees.
+Here we go a little further by extend =reduce= to trees.
 
 ** Representing trees
 
-I'll represent a tree this way: =(label, [subtrees...])=.
+I'll represent a tree this way: =(label, [subtrees...])=: it's a tuple with a label (i.e., a leaf node) and a list of subtrees.
 
 #+begin_src python :noweb yes :tangle src/test_foldtree.py
   import pytest
@@ -23,9 +23,9 @@ I'll represent a tree this way: =(label, [subtrees...])=.
 
 ** =foldtree()=: generalizing =reduce()= to trees
 
-To generalize =reduce()= to trees, we have to specify two reduction functions (rather than one in =reduce()=). The two reduction functions are =f()= (for reducing a label and subtrees), and =g()= (for reducing subtrees). Both are functions of two arguments.
+To generalize =reduce()= to trees, we have to specify two reduction functions (rather than one, as in =reduce=). The two functions are =f= for reducing a label and subtrees, and =g= for reducing subtrees. Both are functions of two arguments.
 
-=a= is the initializing constant. 
+=a= is an initializing constant. 
 
 #+begin_src python :noweb yes :tangle src/foldtree.py
   import operator
@@ -49,7 +49,7 @@ To generalize =reduce()= to trees, we have to specify two reduction functions (r
                    foldtree(f, g, a, subtrees))
 #+end_src
 
-** Example #1: sum all leaves
+** Example #1: sum all labels (i.e., leaf nodes)
 
 #+begin_src python :noweb yes :tangle src/foldtree.py
   def sumtree(tree):
@@ -64,7 +64,7 @@ To generalize =reduce()= to trees, we have to specify two reduction functions (r
 
 ** Example #2: tree flattening
 
-Collect all labels (i.e., leafs) in a tree into a list.
+Collect all labels (i.e., leaf nodes) in a tree into a list.
 
 #+begin_src python :noweb yes :tangle src/foldtree.py
   def tree_labels(tree):
@@ -82,7 +82,7 @@ Collect all labels (i.e., leafs) in a tree into a list.
 
 ** Example #3: =map()= for trees
 
-Map a function to all leaves in a tree.
+Map a function to all labels in a tree.
 
 #+begin_src python :noweb yes :tangle src/foldtree.py
   def maptree(f, tree):
