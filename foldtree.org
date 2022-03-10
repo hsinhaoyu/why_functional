@@ -1,6 +1,6 @@
 * Higher-order functions
 
-Higher-order functions should be familiar to most Python programmers. It should be obvious to most people that =foldr()= corresponds to =functools.reduce()=.
+Higher-order functions should be familiar to most Python programmers. It should be obvious to most people that =foldr()= in the paper corresponds to =functools.reduce()=.
 
 Here we go a little further, and extend it for trees.
 
@@ -23,10 +23,9 @@ I'll represent a tree this way: =(label, [subtrees...])=.
 
 ** =foldtree()=: generalizing =reduce()= to trees
 
-=foldtree()= takes 4 parameters:
-=f=: a function of two parameters; combine a label with the subtrees
-=g=: a function of two parameters; combine subtrees
-=a=: the value for an empty tree
+To generalize =reduce()= to trees, we have to specify two reduction functions (rather than one in =reduce()=). The two reduction functions are =f()= (for reducing a label and subtrees), and =g()= (for reducing subtrees). Both are functions of two arguments.
+
+=a= is the initializing constant. 
 
 #+begin_src python :noweb yes :tangle src/foldtree.py
   import operator
@@ -58,13 +57,15 @@ I'll represent a tree this way: =(label, [subtrees...])=.
       return foldtree(add, add, 0, tree)
 #+end_src
 
-
 #+begin_src python :noweb yes :tangle src/test_foldtree.py
   def test_sumtree():
       assert sumtree(my_tree) == 10
 #+end_src
 
 ** Example #2: tree flattening
+
+Collect all labels (i.e., leafs) in a tree into a list.
+
 #+begin_src python :noweb yes :tangle src/foldtree.py
   def tree_labels(tree):
       def cons(label, lst):
@@ -80,6 +81,9 @@ I'll represent a tree this way: =(label, [subtrees...])=.
 #+end_src
 
 ** Example #3: =map()= for trees
+
+Map a function to all leaves in a tree.
+
 #+begin_src python :noweb yes :tangle src/foldtree.py
   def maptree(f, tree):
       def cons(leaf, lst):
