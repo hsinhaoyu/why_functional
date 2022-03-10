@@ -9,6 +9,7 @@ def repeat(f: Callable[[float], float], a: float) -> Iterator[float]:
         yield acc
         acc = f(acc)
 
+
 def within(esp: float, itr: Iterator) -> Iterator:
     """Stop if the next two iterations have a small delta"""
     while True:

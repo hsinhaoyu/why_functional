@@ -1,5 +1,6 @@
 tangle: *.org
 	./tangle.sh *.org
+	yapf --in-place --recursive src/
 
 lint: tangle
 	flake8 --ignore F405,F403,E302 src/
