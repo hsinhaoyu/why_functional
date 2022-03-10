@@ -1,7 +1,6 @@
 * Calculating square roots with lazy evaluation (i.e., Python generators)
 
 ** The math bit
-
 To approximate =sqrt(n)=, we start with an initial value =x=, and apply =(x + n/x) / 2.0= repeatedly.
 
 =next_sqrt_approx(n)= returns a closure that brings its input closer to =sqrt(n)=.
@@ -29,7 +28,6 @@ Approximating =sqrt(10.0)= from =2.0=. The first iteration is going to the right
 #+end_src
 
 ** Define a generic lazy iterator
-
 =repeat(f, a)= applies the function =f= repeatedly to =a=.
 
 #+begin_src python :noweb yes :tangle src/newton.py :padlines no
@@ -40,8 +38,6 @@ Approximating =sqrt(10.0)= from =2.0=. The first iteration is going to the right
       while True:
           yield acc
           acc = f(acc)
-  
-          
 #+end_src
 
 A simple test: an iterator that yields 0, 1, 2, 3...
@@ -53,20 +49,15 @@ A simple test: an iterator that yields 0, 1, 2, 3...
       assert v1 == 0
       assert v2 == 1
       assert v3 == 2
-  
-  
 #+end_src
 
 ** Define a lazy iterator that approximates =sqrt(n)=
-
 At this stage, we can create an iterator that takes us closer and closer to =sqrt(n)= with each iteration. All we have to do is to chain =next_sqrt_approx= and =repeat= together:
 
 #+begin_src python :noweb yes :tangle src/newton.py :padlines no
   def newton_sqrt_(n: float, a: float) -> Iterator[float]:
       """An infinite iterator approximating sqrt(n) starting from a"""
       return repeat(next_sqrt_approx(n), a)
-  
-  
 #+end_src
 
 Again, approximating =sqrt(10.0)= from =2.0=:
@@ -78,11 +69,11 @@ Again, approximating =sqrt(10.0)= from =2.0=:
       assert v1 == pytest.approx(2.0)
       assert v2 == pytest.approx(3.5)
       assert v3 == pytest.approx(3.178571428571429)
-  
-      
 #+end_src
 
 ** Add a stopping condition
+We add a =within()= function to stop the iteration until the difference between two iterations is smaller than =esp=.
+
 #+begin_src python :noweb yes :tangle src/newton.py :padlines no
   def within(esp: float, itr: Iterator) -> Iterator:
       """Stop if the next two iterations have a small delta"""
@@ -90,10 +81,10 @@ Again, approximating =sqrt(10.0)= from =2.0=:
           a = next(itr)
           b = next(itr)
           if abs(a - b) < esp:
-              yield b
-  
-              
+              yield b              
 #+end_src
+
+Now we can define the function that approximates =sqrt(n)= with the initial value =a=.
 
 #+begin_src python :noweb yes :tangle src/newton.py :padlines no
   def newton_sqrt(n, a):
