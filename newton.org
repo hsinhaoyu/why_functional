@@ -91,3 +91,11 @@ Now we can define the function that approximates =sqrt(n)= with the initial valu
       r = within(0.00001, repeat(next_sqrt_approx(n), a))
       return next(r)
 #+end_src
+
+A simple test:
+
+#+begin_src python :noweb yes :tangle src/test_newton.py
+  def test_newton_sqrt():
+      res = newton_sqrt(10.0, 2.0)
+      assert res == pytest.approx(3.162277660168379)
+#+end_src

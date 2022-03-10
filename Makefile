@@ -8,6 +8,6 @@ typing: tangle
 	mypy --pretty src/*.py
 
 test: tangle
-	pytest src/
+	pytest -s src/
 
 all: tangle lint typing test

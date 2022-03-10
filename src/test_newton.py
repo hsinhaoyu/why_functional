@@ -18,3 +18,7 @@ def test_newton_sqrt_():
     assert v1 == pytest.approx(2.0)
     assert v2 == pytest.approx(3.5)
     assert v3 == pytest.approx(3.178571428571429)
+
+def test_newton_sqrt():
+    res = newton_sqrt(10.0, 2.0)
+    assert res == pytest.approx(3.162277660168379)
