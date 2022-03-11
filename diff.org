@@ -92,7 +92,7 @@ The appropriate =n= can be estimated by =order=, using the first three values in
   def order(itr: Iterator) -> int:
       a, b, c = next(itr), next(itr), next(itr)
       return round(log2((a - c) / (b - c) - 1.0))
-
+  
   def improve(itr: Iterator) -> Iterator:
       (itr1, itr2) = tee(itr)
       n: int = order(itr1)
@@ -137,3 +137,23 @@ A simple test:
     assert d == pytest.approx(0.6)
 #+end_src
 
+** Super improvements
+
+Do we actually need any improvements? Not for the simple differentiation problem that we've been doing, but this is where the code gets really interesting!
+
+The =super_= function below applies =improve= repeatedly to iterator =itr= (=repeat= is defined in =newton.org=), so the returned object is an infinite iterator of infinite iterators! It's =[itr, improve(itr), improve(improve(itr))...]= and so on.
+
+#+begin_src python :noweb yes :tangle src/diff.py
+  def super__(itr):
+      return repeat(improve, itr)
+
+  def second(itr):
+      next(itr)
+      return next(itr)
+
+  def super_(itr):
+      return map(second, super__(itr))
+
+  def super_differentiate(h0, f, x):
+      return super_(differentiate(h0, f, x))
+#+end_src

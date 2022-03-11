@@ -7,7 +7,6 @@ esp = 0.000000001  # a small number that's used to call within()
 
 
 def easydiff(f: Callable[[float], float], x: float) -> float:
-
     def easydiff_(h: float):
         return (f(x + h) - f(x)) / h
 
@@ -51,3 +50,20 @@ def improve(itr: Iterator) -> Iterator:
 def diff2(h0: float, f: Callable[[float], float], x: float) -> float:
     d = within(esp, improve(differentiate(h0, f, x)))
     return next(d)
+
+
+def super__(itr):
+    return repeat(improve, itr)
+
+
+def second(itr):
+    next(itr)
+    return next(itr)
+
+
+def super_(itr):
+    return map(second, super__(itr))
+
+
+def super_differentiate(h0, f, x):
+    return super_(differentiate(h0, f, x))

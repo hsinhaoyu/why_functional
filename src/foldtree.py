@@ -22,7 +22,6 @@ def sumtree(tree):
 
 
 def tree_labels(tree):
-
     def cons(label, lst):
         return [label] + lst
 
@@ -33,7 +32,6 @@ def tree_labels(tree):
 
 
 def maptree(f, tree):
-
     def cons(leaf, lst):
         return [leaf] + lst
 

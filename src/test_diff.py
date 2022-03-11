@@ -44,9 +44,15 @@ def test_improve():
 
 
 def test_diff2():
-
     def f(x):
         return x * x
 
     d = diff2(5.0, f, 0.3)
     assert d == pytest.approx(0.6)
+
+
+def test_super():
+    def f(x):
+        return x * x
+
+    d1 = differentiate(5.0, f, 0.3)
