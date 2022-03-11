@@ -1,6 +1,6 @@
 * Numerical differentiation using iterators
 
-From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to readers of  [[http://numerical.recipes][Numerical Recipes]]. But do read on. It has some very elegant code.
+From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of [[http://numerical.recipes][Numerical Recipes]]. But do read on. This is where lazy evaluation starts to look cool.
 
 ** A first stab at the problem
 
@@ -65,7 +65,7 @@ To accomplish this, we need to add something to the beginning of an iterator. In
           yield x
 #+end_src
 
-We don't know how to set =n= yet, but let's try the code with an arbitrary number (=n=2.0).
+We don't know how to set =n= yet, but let's try the code with an arbitrary number (=n=2.0=).
 #+begin_src python :noweb yes :tangle src/test_diff.py
   def test_elimerror():
       print("\n## test_elimerror\n")
