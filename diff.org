@@ -3,36 +3,39 @@
 From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of [[http://numerical.recipes][Numerical Recipes]]. But do read on. This is where lazy evaluation starts to look cool.
 
 ** A first stab at the problem
-
-For function =f=, the first-order approximation of =f'(x)= is the slope at =x=, calculated with a small displacement =h=.
-
-=differentiate_()=: To create a lazy list (i.e., iterator) of smaller and smaller =h=, we apply the =half= function repeatedly using =repeat=, defined in =newton.org=. Then, apply =easydiff= using =map=.
-
-We iterate over this lazy list, until the change becomes very small. This is done in =differentiate=, using the =within= function defined in =newton.org=.
+For a real function =f=, the first-order approximation of =f'= at =x= can be obtained by displacing =x= by =h=, and then calculate the slope:
 
 #+begin_src python :noweb yes :tangle src/diff.py
+  from math import log2
   from typing import Callable, Iterator
-  from itertools import chain 
-  from lazy_utils import *
+  from itertools import chain, tee 
+  from lazy_utils import repeat, within
+
+  esp = 0.000000001 # a small number that's used to call within()
+
 
   def easydiff(f: Callable[[float], float], x: float) -> float:
       def easydiff_(h: float):
           return (f(x + h) - f(x)) / h
 
       return easydiff_
+#+end_src
 
+Now we generate a lazy list (i.e., iterator) of smaller and smaller =h=, by applying =half= repeatedly with =repeat= (defined in =newton.org=). Mapping the slope function to this iterator, =differentiate_= returns another iterator that approximates the derivative closer and closer.
+
+#+begin_src python :noweb yes :tangle src/diff.py
   def half(x: float) -> float:
       return x / 2.0
 
-  def differentiate_(h0: float, f: Callable[[float], float], x: float) -> Iterator:
+  def differentiate(h0: float, f: Callable[[float], float], x: float) -> Iterator:
       return map(easydiff(f, x), repeat(half, h0))
 
-  def differentiate(h0: float, f: Callable[[float], float], x: float) -> Iterator:
-      d = differentiate_(h0, f, x)
-      return next(within(0.000000001, d))
+  def diff1(h0: float, f: Callable[[float], float], x: float) -> float:
+      d = within(esp, differentiate(h0, f, x))
+      return next(d)
 #+end_src
 
-A simple test: differentiate x^2 at 1.0.
+A simple test: differentiate x^2 at 1.0, starting with a very large gap (=h0=5.0=). We know that the right answer is 2.0.
 
 #+begin_src python :noweb yes :tangle src/test_diff.py
   import pytest
@@ -43,41 +46,94 @@ A simple test: differentiate x^2 at 1.0.
   def f(x):
       return x * x
 
-  def test_differentiate():
-      a = differentiate(5.0, f, 1.0)
-      assert a == pytest.approx(2.0)
+  def test_diff1():
+      d = diff1(5.0, f, 1.0)
+      assert d == pytest.approx(2.0)
 #+end_src
 
-** Improving the efficiency with more higher order functions
-A problem with =differentiate_= above is that the sequence converges very slowly. This sections uses numerical tricks to improve the convergence. The math is not our concern here. We will focus just on the iteration.
+** Improving convergence with lazy recursive functions
+A problem with =differentiate= above is that the sequence converges very slowly. This sections uses numerical tricks to improve the convergence. The math is not our concern here. We will focus just on code structure. 
 
-With some math, it can be shown that with an appropriately chosen integer =n=, convergence can be accelerated with the =elimerror= function defined below. What it does is that it slides a two-item window over the original sequence, and applies a correction (=c= below). 
+With some math, it can be shown that with an appropriately chosen integer =n=, convergence can improved with the =elimerror= function defined below. What it does is that it slides a two-item window over the original sequence, and applies a correction (=c= below). 
 
-To accomplish this, we need to add something to the beginning of an iterator. In Python, we can use =itertools.chain=. The following Python code is still short and sweet, but the original Miranda code is much nicer. This is because Miranda evaluates everything lazily.
+To accomplish this, we need to add something to the beginning of an iterator, which is done with =itertools.chain= in Python. The following Python code is still short and sweet, but the original Miranda code is much nicer. This is because Miranda evaluates lazily by default, so there is no need for =yield=:
 
 #+begin_src python :noweb yes :tangle src/diff.py
-  def elimerror(n: float, itr: Iterator) -> Iterator:
+  def elimerror(n: int, itr: Iterator) -> Iterator:
       a, b = next(itr), next(itr)
       p: float = 2.0 ** n
-      c: float = (b * p - a) / (p - 1)
+      c: float = (b * p - a) / (p - 1.0)
 
       for x in chain([c], elimerror(n, chain([b], itr))):
           yield x
 #+end_src
 
-We don't know how to set =n= yet, but let's try the code with an arbitrary number (=n=2.0=).
-#+begin_src python :noweb yes :tangle src/test_diff.py
+We don't know how to set =n= yet, but let's try the code with an arbitrary number (=n=2.0=). 
+
+#+begin_src python :noweb yes :tangle src/test_diff.py :results output
   def test_elimerror():
-      print("\n## test_elimerror\n")
+      print("\n## test_elimerror:")
 
       def f(x):
           return x * x
 
-      seq1 = differentiate_(5.0, f, 1.0)
+      seq1 = differentiate(5.0, f, 1.0)
       print("seq1:", list(islice(seq1, 5)))      
 
-      seq1 = differentiate_(5.0, f, 1.0)      
+      seq1 = differentiate(5.0, f, 1.0)      
       seq2 = elimerror(2.0, seq1)
 
       print("seq2:", list(islice(seq2, 5)))
 #+end_src
+
+The appropriate =n= can be estimated by =order=, using the first three values in the sequence. Taking a slow converging iterator as input, =improve= returns a new iterator that converges much faster. It does it by estimating the order and calling =elimerror=.
+
+#+begin_src python :noweb yes :tangle src/diff.py
+  def order(itr: Iterator) -> int:
+      a, b, c = next(itr), next(itr), next(itr)
+      return round(log2((a - c) / (b - c) - 1.0))
+
+  def improve(itr: Iterator) -> Iterator:
+      (itr1, itr2) = tee(itr)
+      n: int = order(itr1)
+      return elimerror(n, itr2)
+#+end_src
+
+If you run =make test=, you can see that =improve(seq1)= converges to the correct answer 0.6  much faster.
+
+#+begin_src python :noweb yes :tangle src/test_diff.py
+  def test_improve():
+      print("\n## test_improve")
+
+      def f(x):
+          return x * x
+
+      seq1 = differentiate(5.0, f, 0.3)
+      print("seq1:", list(islice(seq1, 5)))
+
+      seq1 = differentiate(5.0, f, 0.3)
+      seq2 = improve(seq1)
+
+      print("seq2:", list(islice(seq2, 5)))
+#+end_src
+
+This is the improved differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met. 
+
+#+begin_src python :noweb yes :tangle src/diff.py
+  def diff2(h0: float, f: Callable[[float], float], x: float) -> float:
+      d = within(esp, improve(differentiate(h0, f, x)))
+      return next(d)
+#+end_src
+
+A simple test:
+
+#+begin_src python :noweb yes :tangle src/test_diff.py
+  def test_diff2():
+
+    def f(x):
+        return x * x
+
+    d = diff2(5.0, f, 0.3)
+    assert d == pytest.approx(0.6)
+#+end_src
+

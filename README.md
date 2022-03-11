@@ -1,10 +1,10 @@
 ## Introduction
 
-[Why Functional Programming Matters](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf) is a classic programming paper by John Hughes in 1990. It's a highly readable and fun introduction to some of the most useful techniques in functional programming. It's one of the few programming articles that I read with great joy. In 1990, the concepts that Hughes talked about were very advanced. He had to use a high-level functional language [Miranda](https://en.wikipedia.org/wiki/Miranda_(programming_language)) to make his point. It's interesting that after a couple of decades, a mainstream language like Python can do everything discussed in the paper. Not as elegantly, perhaps, but I suspect that the author didn't anticipate that an entire generation of future programmers would take lazy evaluation and higher-order functions for granted. I decided to implement his examples as an exercise.
+[Why Functional Programming Matters](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf) is a classic programming paper by John Hughes. It's a highly readable and fun introduction to some of the most useful techniques in functional programming. When the paper was published in 1990, the concepts covered were very advanced. Hughes had to use a high-level functional language [Miranda](https://en.wikipedia.org/wiki/Miranda_(programming_language)) to make his points. I suspect that he didn't anticipate that in a couple of decades, an entire generation of future programmers would take lazy evaluation and higher-order functions for granted. I decided to implement his examples in Python as an exercise, because I enjoyed reading it so much. It's interesting that the Python conversions are not nearly as elegant as his original code.
 
 ## The examples
 
-Hughes' paper argues that functional languages provide elegant mechanisms for decomposing complex programming logic into reusable components 
+Hughes argued that functional languages provide elegant mechanisms for decomposing complex programming logic into reusable components, in a way that is very difficult or impossible with imperative languages. The two most important "glues" are high-order functions and lazy evaluation.
 
 - [Higher-order functions for trees](foldtree.org): The paper 
 
