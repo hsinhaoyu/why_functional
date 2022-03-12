@@ -1,3 +1,5 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+#+EXPORT_FILE_NAME: ../html/foldtree.org
 * Higher-order functions for trees
 
 Higher-order functions that operate on iterators should be familiar to most Python programmers. Hughes' paper has a section on =foldr= (which is just =functools.reduce= in Python). I'll skip it, and jump directly to an extension of =reduce= that operates on trees.
@@ -6,7 +8,7 @@ Higher-order functions that operate on iterators should be familiar to most Pyth
 
 I'll represent a tree this way: =(label, [subtrees...])=: it's a tuple with a label (i.e., a leaf node) and a list of subtrees. Note that it's not a binary tree. It's set up this way, because later in his paper, it's used to build game trees.
 
-#+begin_src python :noweb yes :tangle src/test_foldtree.py
+#+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   import pytest
   from foldtree import *
   
@@ -25,7 +27,7 @@ To generalize =reduce= to trees, we have to specify two reduction functions (rat
 
 =a= is an initializing constant. 
 
-#+begin_src python :noweb yes :tangle src/foldtree.py
+#+begin_src python :noweb yes :tangle ../src/foldtree.py
   import operator
 
 
@@ -49,13 +51,13 @@ To generalize =reduce= to trees, we have to specify two reduction functions (rat
 
 ** Example #1: sum all labels (i.e., leaf nodes) in a tree
 
-#+begin_src python :noweb yes :tangle src/foldtree.py
+#+begin_src python :noweb yes :tangle ../src/foldtree.py
   def sumtree(tree):
       add = operator.add
       return foldtree(add, add, 0, tree)
 #+end_src
 
-#+begin_src python :noweb yes :tangle src/test_foldtree.py
+#+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_sumtree():
       assert sumtree(my_tree) == 10
 #+end_src
@@ -64,7 +66,7 @@ To generalize =reduce= to trees, we have to specify two reduction functions (rat
 
 Collect all labels (i.e., leaf nodes) in a tree into a list.
 
-#+begin_src python :noweb yes :tangle src/foldtree.py
+#+begin_src python :noweb yes :tangle ../src/foldtree.py
   def tree_labels(tree):
       def cons(label, lst):
           return [label] + lst
@@ -73,7 +75,7 @@ Collect all labels (i.e., leaf nodes) in a tree into a list.
       return foldtree(cons, append, [], tree)
 #+end_src
 
-#+begin_src python :noweb yes :tangle src/test_foldtree.py
+#+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_tree_labels():
       assert tree_labels(my_tree) == [1, 2, 3, 4]
 #+end_src
@@ -82,7 +84,7 @@ Collect all labels (i.e., leaf nodes) in a tree into a list.
 
 Map a function to all labels in a tree.
 
-#+begin_src python :noweb yes :tangle src/foldtree.py
+#+begin_src python :noweb yes :tangle ../src/foldtree.py
   def maptree(f, tree):
       def cons(leaf, lst):
           return [leaf] + lst
@@ -93,7 +95,7 @@ Map a function to all labels in a tree.
       return foldtree(mk_leaf, cons, [], tree)
 #+end_src
 
-#+begin_src python :noweb yes :tangle src/test_foldtree.py
+#+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_maptree():
       res = maptree(lambda x: -1 * x, my_tree)
       res = tree_labels(res)

@@ -1,5 +1,7 @@
-tangle: *.org
-	./tangle.sh *.org
+tangle: org/*.org
+	./tangle.sh org/foldtree.org
+	./tangle.sh org/newton.org
+	./tangle.sh org/diff.org
 	yapf --in-place --recursive src/
 
 lint: tangle
@@ -11,4 +13,7 @@ typing: tangle
 test: tangle
 	pytest -s src/
 
-all: tangle lint typing test
+html: tangle
+	./org2html.sh org/*.org
+
+all: tangle lint typing test html

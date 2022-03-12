@@ -1,7 +1,8 @@
-from math import log2
+import copy
+from math import log2, sin
 from typing import Callable, Iterator
 from itertools import chain, tee
-from lazy_utils import repeat, within
+from lazy_utils import repeat_f, within
 
 esp = 0.000000001  # a small number that's used to call within()
 
@@ -19,7 +20,7 @@ def half(x: float) -> float:
 
 def differentiate(h0: float, f: Callable[[float], float],
                   x: float) -> Iterator:
-    return map(easydiff(f, x), repeat(half, h0))
+    return map(easydiff(f, x), repeat_f(half, h0))
 
 
 def diff1(h0: float, f: Callable[[float], float], x: float) -> float:
@@ -27,13 +28,23 @@ def diff1(h0: float, f: Callable[[float], float], x: float) -> float:
     return next(d)
 
 
-def elimerror(n: int, itr: Iterator) -> Iterator:
+def elimerror__(n: int, itr: Iterator) -> Iterator:
     a, b = next(itr), next(itr)
     p: float = 2.0**n
     c: float = (b * p - a) / (p - 1.0)
 
     for x in chain([c], elimerror(n, chain([b], itr))):
         yield x
+
+
+def elimerror(n, itr):
+    a = next(itr)
+    while True:
+        b = next(itr)
+        p = 2.0**n
+        c = (b * p - a) / (p - 1.0)
+        yield c
+        a = b
 
 
 def order(itr: Iterator) -> int:
@@ -53,7 +64,7 @@ def diff2(h0: float, f: Callable[[float], float], x: float) -> float:
 
 
 def super__(itr):
-    return repeat(improve, itr)
+    return repeat_itr(improve, itr)
 
 
 def second(itr):

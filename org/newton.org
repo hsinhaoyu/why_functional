@@ -1,3 +1,6 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+#+EXPORT_FILE_NAME: ../html/newton.html
+
 * Calculating square roots with lazy evaluation (i.e., Python generators)
 
 ** The math bit
@@ -5,7 +8,7 @@ To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) 
 
 =next_sqrt_approx(n)= returns a closure that brings its input closer to sqrt(n).
 
-#+begin_src python :noweb yes :tangle src/newton.py
+#+begin_src python :noweb yes :tangle ../src/newton.py
   from typing import Callable, Iterator
   from lazy_utils import *
 
@@ -18,23 +21,25 @@ To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) 
 
 Approximating sqrt(10.0) from 2.0 for just one iteration:
 
-#+begin_src python :noweb yes :tangle src/test_newton.py
+#+begin_src python :noweb yes :tangle ../src/test_newton.py
+  import math
   import pytest
   from newton import *
-  
+
   def test_next_sqrt_approx():
       f = next_sqrt_approx(10.0)
       assert f(2.0) == pytest.approx(3.5)
 #+end_src
 
 ** Define a generic nesting iterator
-=repeat(f, a)= applies the function f repeatedly to a.
+=repeat_f(f, a)= applies the function f repeatedly to a.
 
-#+begin_src python :noweb yes :tangle src/lazy_utils.py
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   from typing import Callable, Iterator
+  from itertools import tee
 
 
-  def repeat(f: Callable[[float], float], a: float) -> Iterator[float]:
+  def repeat_f(f: Callable[[float], float], a: float) -> Iterator[float]:
       """Infinite iterator: [a, f(a), f(f(a)), f(f(f(a))) ...]"""
       acc: float = a
 
@@ -43,14 +48,24 @@ Approximating sqrt(10.0) from 2.0 for just one iteration:
           acc = f(acc)
 #+end_src
 
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def repeat_itr(f, i):
+      acc = i
+
+      while True:
+          (i0, i1) = tee(acc)
+          yield i0
+          acc = f(i1)
+#+end_src
+
 A simple test: an iterator that yields 0, 1, 2, 3...
 
-#+begin_src python :noweb yes :tangle src/test_lazy_utils.py
+#+begin_src python :noweb yes :tangle ../src/test_lazy_utils.py
   import pytest
   from lazy_utils import *
 
-  def test_repeat():
-      r = repeat(lambda n: n + 1, 0)
+  def test_repeat_f():
+      r = repeat_f(lambda n: n + 1, 0)
       v1, v2, v3 = next(r), next(r), next(r)
       assert v1 == 0
       assert v2 == 1
@@ -58,17 +73,17 @@ A simple test: an iterator that yields 0, 1, 2, 3...
 #+end_src
 
 ** Define a lazy iterator that approximates =sqrt(n)=
-At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain =next_sqrt_approx= and =repeat= together:
+At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain =next_sqrt_approx= and =repeat_f= together:
 
-#+begin_src python :noweb yes :tangle src/newton.py
+#+begin_src python :noweb yes :tangle ../src/newton.py
   def newton_sqrt_(n: float, a: float) -> Iterator[float]:
       """An infinite iterator approximating sqrt(n) starting from a"""
-      return repeat(next_sqrt_approx(n), a)
+      return repeat_f(next_sqrt_approx(n), a)
 #+end_src
 
 Again, approximating sqrt(10.0) from 2.0:
 
-#+begin_src python :noweb yes :tangle src/test_newton.py :padlines no
+#+begin_src python :noweb yes :tangle ../src/test_newton.py :padlines no
   def test_newton_sqrt_():
       r = newton_sqrt_(10.0, 2.0)
       v1, v2, v3 = next(r), next(r), next(r)
@@ -80,7 +95,7 @@ Again, approximating sqrt(10.0) from 2.0:
 ** Add a stopping condition
 We add a =within= function to stop the iteration until the difference between two successive iterations is smaller than =esp=.
 
-#+begin_src python :noweb yes :tangle src/lazy_utils.py
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def within(esp: float, itr: Iterator) -> Iterator:
       """Stop if the next two iterations have a small delta"""
       while True:
@@ -92,16 +107,16 @@ We add a =within= function to stop the iteration until the difference between tw
 
 Now we can define the function that approximates sqrt(n) with the initial value =a=.
 
-#+begin_src python :noweb yes :tangle src/newton.py
+#+begin_src python :noweb yes :tangle ../src/newton.py
   def newton_sqrt(n, a):
-      r = within(0.00001, repeat(next_sqrt_approx(n), a))
+      r = within(0.00001, repeat_f(next_sqrt_approx(n), a))
       return next(r)
 #+end_src
 
 A simple test:
 
-#+begin_src python :noweb yes :tangle src/test_newton.py
+#+begin_src python :noweb yes :tangle ../src/test_newton.py
   def test_newton_sqrt():
       res = newton_sqrt(10.0, 2.0)
-      assert res == pytest.approx(3.162277660168379)
+      assert res == pytest.approx(math.sqrt(10.0))
 #+end_src

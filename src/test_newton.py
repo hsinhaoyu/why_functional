@@ -1,3 +1,4 @@
+import math
 import pytest
 from newton import *
 
@@ -17,4 +18,4 @@ def test_newton_sqrt_():
 
 def test_newton_sqrt():
     res = newton_sqrt(10.0, 2.0)
-    assert res == pytest.approx(3.162277660168379)
+    assert res == pytest.approx(math.sqrt(10.0))

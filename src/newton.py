@@ -12,9 +12,9 @@ def next_sqrt_approx(n: float) -> Callable[[float], float]:
 
 def newton_sqrt_(n: float, a: float) -> Iterator[float]:
     """An infinite iterator approximating sqrt(n) starting from a"""
-    return repeat(next_sqrt_approx(n), a)
+    return repeat_f(next_sqrt_approx(n), a)
 
 
 def newton_sqrt(n, a):
-    r = within(0.00001, repeat(next_sqrt_approx(n), a))
+    r = within(0.00001, repeat_f(next_sqrt_approx(n), a))
     return next(r)

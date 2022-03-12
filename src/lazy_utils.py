@@ -1,13 +1,23 @@
 from typing import Callable, Iterator
+from itertools import tee
 
 
-def repeat(f: Callable[[float], float], a: float) -> Iterator[float]:
+def repeat_f(f: Callable[[float], float], a: float) -> Iterator[float]:
     """Infinite iterator: [a, f(a), f(f(a)), f(f(f(a))) ...]"""
     acc: float = a
 
     while True:
         yield acc
         acc = f(acc)
+
+
+def repeat_itr(f, i):
+    acc = i
+
+    while True:
+        (i0, i1) = tee(acc)
+        yield i0
+        acc = f(i1)
 
 
 def within(esp: float, itr: Iterator) -> Iterator:

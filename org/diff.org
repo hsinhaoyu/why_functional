@@ -1,3 +1,6 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+#+EXPORT_FILE_NAME: ../html/diff.html
+
 * Numerical differentiation using iterators
 
 From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of [[http://numerical.recipes][Numerical Recipes]]. But do read on. This is where lazy evaluation starts to look cool.
@@ -5,14 +8,15 @@ From a glance, this section of Hughes' paper appears to be all about numerical m
 ** A first stab at the problem
 For a real function =f=, the first-order approximation of =f'= at =x= can be obtained by displacing =x= by =h=, and then calculate the slope:
 
-#+begin_src python :noweb yes :tangle src/diff.py
-  from math import log2
+#+begin_src python :noweb yes :tangle ../src/diff.py
+  import copy
+  from math import log2, sin
   from typing import Callable, Iterator
   from itertools import chain, tee 
-  from lazy_utils import repeat, within
+  from lazy_utils import repeat_f, within
+
 
   esp = 0.000000001 # a small number that's used to call within()
-
 
   def easydiff(f: Callable[[float], float], x: float) -> float:
       def easydiff_(h: float):
@@ -21,34 +25,41 @@ For a real function =f=, the first-order approximation of =f'= at =x= can be obt
       return easydiff_
 #+end_src
 
-Now we generate a lazy list (i.e., iterator) of smaller and smaller =h=, by applying =half= repeatedly with =repeat= (defined in =newton.org=). Mapping the slope function to this iterator, =differentiate_= returns another iterator that approximates the derivative closer and closer.
+Now we generate a lazy list (i.e., iterator) of smaller and smaller =h=, by applying =half= repeatedly with =repeat_f= (defined in =newton.org=). Mapping the slope function to this iterator, =differentiate_= returns another iterator that approximates the derivative closer and closer.
 
-#+begin_src python :noweb yes :tangle src/diff.py
+#+begin_src python :noweb yes :tangle ../src/diff.py
   def half(x: float) -> float:
       return x / 2.0
 
   def differentiate(h0: float, f: Callable[[float], float], x: float) -> Iterator:
-      return map(easydiff(f, x), repeat(half, h0))
+      return map(easydiff(f, x), repeat_f(half, h0))
+#+end_src
 
+This is our first version of the numerical differentiation function:
+
+#+begin_src python :noweb yes :tangle ../src/diff.py
   def diff1(h0: float, f: Callable[[float], float], x: float) -> float:
       d = within(esp, differentiate(h0, f, x))
       return next(d)
 #+end_src
 
-A simple test: differentiate x^2 at 1.0, starting with a very large gap (=h0=5.0=). We know that the right answer is 2.0.
+A simple test: differentiate sin(x) at 1.0, starting with a very large gap (=h0=5.0=). We know that the right answer is cos(1.0).
 
-#+begin_src python :noweb yes :tangle src/test_diff.py
+#+begin_src python :noweb yes :tangle ../src/test_diff.py
   import pytest
   from itertools import *
+  from math import cos
 
   from diff import *
 
   def f(x):
-      return x * x
+      return sin(x)
 
   def test_diff1():
-      d = diff1(5.0, f, 1.0)
-      assert d == pytest.approx(2.0)
+      x = 1.0
+      h0 = 5.0
+      d = diff1(h0, f, x)
+      assert d == pytest.approx(cos(x))
 #+end_src
 
 ** Improving convergence with lazy recursive functions
@@ -58,8 +69,8 @@ With some math, it can be shown that with an appropriately chosen integer =n=, c
 
 To accomplish this, we need to add something to the beginning of an iterator, which is done with =itertools.chain= in Python. The following Python code is still short and sweet, but the original Miranda code is much nicer. This is because Miranda evaluates lazily by default, so there is no need for =yield=:
 
-#+begin_src python :noweb yes :tangle src/diff.py
-  def elimerror(n: int, itr: Iterator) -> Iterator:
+#+begin_src python :noweb yes :tangle ../src/diff.py
+  def elimerror__(n: int, itr: Iterator) -> Iterator:
       a, b = next(itr), next(itr)
       p: float = 2.0 ** n
       c: float = (b * p - a) / (p - 1.0)
@@ -68,31 +79,42 @@ To accomplish this, we need to add something to the beginning of an iterator, wh
           yield x
 #+end_src
 
+#+begin_src python :noweb yes :tangle ../src/diff.py
+  def elimerror(n, itr):
+      a = next(itr)
+      while True:
+          b = next(itr)
+          p = 2.0 ** n
+          c = (b * p - a) / (p - 1.0)
+          yield c
+          a = b
+#+end_src
+
 We don't know how to set =n= yet, but let's try the code with an arbitrary number (=n=2.0=). 
 
-#+begin_src python :noweb yes :tangle src/test_diff.py :results output
+#+begin_src python :noweb yes :tangle ../src/test_diff.py :results output
   def test_elimerror():
       print("\n## test_elimerror:")
 
       def f(x):
-          return x * x
+          return sin(x)
 
       seq1 = differentiate(5.0, f, 1.0)
-      print("seq1:", list(islice(seq1, 5)))      
+      print("seq1:", list(islice(seq1, 20)))
 
-      seq1 = differentiate(5.0, f, 1.0)      
+      seq1 = differentiate(5.0, f, 1.0)     
       seq2 = elimerror(2.0, seq1)
 
-      print("seq2:", list(islice(seq2, 5)))
+      print("seq2:", list(islice(seq2, 20)))
 #+end_src
 
 The appropriate =n= can be estimated by =order=, using the first three values in the sequence. Taking a slow converging iterator as input, =improve= returns a new iterator that converges much faster. It does it by estimating the order and calling =elimerror=.
 
-#+begin_src python :noweb yes :tangle src/diff.py
+#+begin_src python :noweb yes :tangle ../src/diff.py
   def order(itr: Iterator) -> int:
       a, b, c = next(itr), next(itr), next(itr)
       return round(log2((a - c) / (b - c) - 1.0))
-  
+
   def improve(itr: Iterator) -> Iterator:
       (itr1, itr2) = tee(itr)
       n: int = order(itr1)
@@ -101,25 +123,25 @@ The appropriate =n= can be estimated by =order=, using the first three values in
 
 If you run =make test=, you can see that =improve(seq1)= converges to the correct answer 0.6  much faster.
 
-#+begin_src python :noweb yes :tangle src/test_diff.py
+#+begin_src python :noweb yes :tangle ../src/test_diff.py
   def test_improve():
       print("\n## test_improve")
 
       def f(x):
-          return x * x
+          return sin(x)
 
-      seq1 = differentiate(5.0, f, 0.3)
-      print("seq1:", list(islice(seq1, 5)))
+      seq1 = differentiate(2.0, f, 0.3)
+      print("seq1:", list(islice(seq1, 20)))
 
-      seq1 = differentiate(5.0, f, 0.3)
+      seq1 = differentiate(2.0, f, 0.3)
       seq2 = improve(seq1)
 
-      print("seq2:", list(islice(seq2, 5)))
+      print("seq2:", list(islice(seq2, 20)))
 #+end_src
 
 This is the improved differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met. 
 
-#+begin_src python :noweb yes :tangle src/diff.py
+#+begin_src python :noweb yes :tangle ../src/diff.py
   def diff2(h0: float, f: Callable[[float], float], x: float) -> float:
       d = within(esp, improve(differentiate(h0, f, x)))
       return next(d)
@@ -127,25 +149,26 @@ This is the improved differentiation function. The logic is very clear: generate
 
 A simple test:
 
-#+begin_src python :noweb yes :tangle src/test_diff.py
+#+begin_src python :noweb yes :tangle ../src/test_diff.py
   def test_diff2():
-
-    def f(x):
-        return x * x
-
-    d = diff2(5.0, f, 0.3)
-    assert d == pytest.approx(0.6)
+      def f(x):
+          return sin(x)
+      
+      h0 = 1.0
+      x = 0.3
+      d = diff2(h0, f, x)
+      assert d == pytest.approx(cos(x))
 #+end_src
 
 ** Super improvements
 
 Do we actually need any improvements? Not for the simple differentiation problem that we've been doing, but this is where the code gets really interesting!
 
-The =super_= function below applies =improve= repeatedly to iterator =itr= (=repeat= is defined in =newton.org=), so the returned object is an infinite iterator of infinite iterators! It's =[itr, improve(itr), improve(improve(itr))...]= and so on.
+The =super_= function below applies =improve= repeatedly to iterator =itr= (=repeat_f= is defined in =newton.org=), so the returned object is an infinite iterator of infinite iterators! It's =[itr, improve(itr), improve(improve(itr))...]= and so on.
 
-#+begin_src python :noweb yes :tangle src/diff.py
+#+begin_src python :noweb yes :tangle ../src/diff.py
   def super__(itr):
-      return repeat(improve, itr)
+      return repeat_itr(improve, itr)
 
   def second(itr):
       next(itr)
