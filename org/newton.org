@@ -1,4 +1,5 @@
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+
++HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/newton.html
 
 * Calculating square roots with lazy evaluation (i.e., Python generators)
@@ -46,16 +47,6 @@ Approximating sqrt(10.0) from 2.0 for just one iteration:
       while True:
           yield acc
           acc = f(acc)
-#+end_src
-
-#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def repeat_itr(f, i):
-      acc = i
-
-      while True:
-          (i0, i1) = tee(acc)
-          yield i0
-          acc = f(i1)
 #+end_src
 
 A simple test: an iterator that yields 0, 1, 2, 3...

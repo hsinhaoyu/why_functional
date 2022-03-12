@@ -166,6 +166,19 @@ Do we actually need any improvements? Not for the simple differentiation problem
 
 The =super_= function below applies =improve= repeatedly to iterator =itr= (=repeat_f= is defined in =newton.org=), so the returned object is an infinite iterator of infinite iterators! It's =[itr, improve(itr), improve(improve(itr))...]= and so on.
 
+
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def repeat_itr(f, i):
+      acc = i
+
+      while True:
+          (i0, i1) = tee(acc)
+          yield i0
+          acc = f(i1)
+#+end_src
+
+
+
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def super__(itr):
       return repeat_itr(improve, itr)
