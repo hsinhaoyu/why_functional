@@ -1,4 +1,5 @@
 tangle: org/*.org
+	rm src/*.py
 	./tangle.sh org/foldtree.org
 	./tangle.sh org/newton.org
 	./tangle.sh org/diff.org

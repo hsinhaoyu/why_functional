@@ -13,10 +13,10 @@ For a real function =f=, the first-order approximation of =f'= at =x= can be obt
   from math import log2, sin
   from typing import Callable, Iterator
   from itertools import chain, tee 
-  from lazy_utils import repeat_f, within
+  from lazy_utils import repeat_f, within, repeat_itr
 
 
-  esp = 0.000000001 # a small number that's used to call within()
+  esp = 0.0000000001 # a small number that's used to call within()
 
   def easydiff(f: Callable[[float], float], x: float) -> float:
       def easydiff_(h: float):
@@ -50,6 +50,7 @@ A simple test: differentiate sin(x) at 1.0, starting with a very large gap (=h0=
   from itertools import *
   from math import cos
 
+  from lazy_utils import *
   from diff import *
 
   def f(x):
@@ -96,9 +97,6 @@ We don't know how to set =n= yet, but let's try the code with an arbitrary numbe
   def test_elimerror():
       print("\n## test_elimerror:")
 
-      def f(x):
-          return sin(x)
-
       seq1 = differentiate(5.0, f, 1.0)
       print("seq1:", list(islice(seq1, 20)))
 
@@ -127,9 +125,6 @@ If you run =make test=, you can see that =improve(seq1)= converges to the correc
   def test_improve():
       print("\n## test_improve")
 
-      def f(x):
-          return sin(x)
-
       seq1 = differentiate(2.0, f, 0.3)
       print("seq1:", list(islice(seq1, 20)))
 
@@ -151,9 +146,6 @@ A simple test:
 
 #+begin_src python :noweb yes :tangle ../src/test_diff.py
   def test_diff2():
-      def f(x):
-          return sin(x)
-      
       h0 = 1.0
       x = 0.3
       d = diff2(h0, f, x)
@@ -164,8 +156,9 @@ A simple test:
 
 Do we actually need any improvements? Not for the simple differentiation problem that we've been doing, but this is where the code gets really interesting!
 
-The =super_= function below applies =improve= repeatedly to iterator =itr= (=repeat_f= is defined in =newton.org=), so the returned object is an infinite iterator of infinite iterators! It's =[itr, improve(itr), improve(improve(itr))...]= and so on.
+In Hughes' paper, he applied the =improve= function again and again on a list to get better and better convergence. Let =s= be the infinite iterator returned by =differentiate(f0, f x)=. By calling =repeat(improve, s)=, we get =s=, =improve(s)=, =improve(improve(s))=... and so on. It's an infinite iterator of infinite iterators!
 
+The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The =repeat_f= function defined previously (in =newton.org=) doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators (without calling =itertools.tee=, all the yielded iterators will be dependent on the first one).
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def repeat_itr(f, i):
@@ -177,19 +170,53 @@ The =super_= function below applies =improve= repeatedly to iterator =itr= (=rep
           acc = f(i1)
 #+end_src
 
+Let's see if the 5th item in the yield iterator is the same as applying =improve= 4 times:
 
+#+begin_src python :noweb yes :tangle ../src/test_diff.py
+  def test_repeat_improve():
+      print("\n##test_repeat_improve():")
+      def f(x):
+          return sin(x)
+
+      d = differentiate(1.0, f, 0.3)
+      d4 = improve(improve(improve(improve(d))))
+      seq1 = list(islice(d4, 5))
+      print("seq1:", seq1)
+
+      d = differentiate(1.0, f, 0.3)
+      dx = repeat_itr(improve, d)
+      next(dx)
+      next(dx)
+      next(dx)
+      next(dx)
+      seq2 = list(islice(next(dx), 5))
+      print("seq2:", seq2)
+
+      assert seq1 == seq2
+#+end_src
+
+I don't know enough numerical analysis to understand why this works, but the paper says that the
+second approximation from each of the improved iterator is a good sequence for solving our differentiation problem. So, we have our third version:
 
 #+begin_src python :noweb yes :tangle ../src/diff.py
-  def super__(itr):
-      return repeat_itr(improve, itr)
-
   def second(itr):
       next(itr)
       return next(itr)
 
-  def super_(itr):
-      return map(second, super__(itr))
+  def super_improve(itr):
+      return map(second, repeat_itr(improve, itr))
 
-  def super_differentiate(h0, f, x):
-      return super_(differentiate(h0, f, x))
+  def diff3(h0: float, f: Callable[[float], float], x: float) -> float:
+      d = within(esp, super_improve(differentiate(h0, f, x)))
+      return next(d)
+#+end_src
+
+Does it work?
+
+#+begin_src python :noweb yes :tangle ../src/test_diff.py
+  def test_diff3():
+      h0 = 1.0
+      x = 0.3
+      d = diff3(h0, f, x)
+      assert d == pytest.approx(cos(x))
 #+end_src

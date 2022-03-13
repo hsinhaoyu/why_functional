@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-12 Sat 21:25 -->
+<!-- 2022-03-13 Sun 21:18 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>&lrm;</title>
@@ -223,27 +223,27 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org399f0e5">1. Numerical differentiation using iterators</a>
+<li><a href="#org350720d">1. Numerical differentiation using iterators</a>
 <ul>
-<li><a href="#org1bfcd05">1.1. A first stab at the problem</a></li>
-<li><a href="#org4aa0e70">1.2. Improving convergence with lazy recursive functions</a></li>
-<li><a href="#org3eb35bc">1.3. Super improvements</a></li>
+<li><a href="#org3b6db33">1.1. A first stab at the problem</a></li>
+<li><a href="#org7265404">1.2. Improving convergence with lazy recursive functions</a></li>
+<li><a href="#org54655cb">1.3. Super improvements</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org399f0e5" class="outline-2">
-<h2 id="org399f0e5"><span class="section-number-2">1</span> Numerical differentiation using iterators</h2>
+<div id="outline-container-org350720d" class="outline-2">
+<h2 id="org350720d"><span class="section-number-2">1</span> Numerical differentiation using iterators</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation starts to look cool.
 </p>
 </div>
 
-<div id="outline-container-org1bfcd05" class="outline-3">
-<h3 id="org1bfcd05"><span class="section-number-3">1.1</span> A first stab at the problem</h3>
+<div id="outline-container-org3b6db33" class="outline-3">
+<h3 id="org3b6db33"><span class="section-number-3">1.1</span> A first stab at the problem</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
 For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculate the slope:
@@ -254,10 +254,10 @@ For a real function <code>f</code>, the first-order approximation of <code>f'</c
 from math import log2, sin
 from typing import Callable, Iterator
 from itertools import chain, tee 
-from lazy_utils import repeat_f, within
+from lazy_utils import repeat_f, within, repeat_itr
 
 
-esp = 0.000000001 # a small number that's used to call within()
+esp = 0.0000000001 # a small number that's used to call within()
 
 def easydiff(f: Callable[[float], float], x: float) -&gt; float:
     def easydiff_(h: float):
@@ -300,6 +300,7 @@ A simple test: differentiate sin(x) at 1.0, starting with a very large gap (<cod
 from itertools import *
 from math import cos
 
+from lazy_utils import *
 from diff import *
 
 def f(x):
@@ -315,8 +316,8 @@ def test_diff1():
 </div>
 </div>
 
-<div id="outline-container-org4aa0e70" class="outline-3">
-<h3 id="org4aa0e70"><span class="section-number-3">1.2</span> Improving convergence with lazy recursive functions</h3>
+<div id="outline-container-org7265404" class="outline-3">
+<h3 id="org7265404"><span class="section-number-3">1.2</span> Improving convergence with lazy recursive functions</h3>
 <div class="outline-text-3" id="text-1-2">
 <p>
 A problem with <code>differentiate</code> above is that the sequence converges very slowly. This sections uses numerical tricks to improve the convergence. The math is not our concern here. We will focus just on code structure. 
@@ -361,9 +362,6 @@ We don't know how to set <code>n</code> yet, but let's try the code with an arbi
 <pre class="src src-python">def test_elimerror():
     print("\n## test_elimerror:")
 
-    def f(x):
-	return sin(x)
-
     seq1 = differentiate(5.0, f, 1.0)
     print("seq1:", list(islice(seq1, 20)))
 
@@ -398,9 +396,6 @@ If you run <code>make test</code>, you can see that <code>improve(seq1)</code> c
 <pre class="src src-python">def test_improve():
     print("\n## test_improve")
 
-    def f(x):
-	return sin(x)
-
     seq1 = differentiate(2.0, f, 0.3)
     print("seq1:", list(islice(seq1, 20)))
 
@@ -428,9 +423,6 @@ A simple test:
 
 <div class="org-src-container">
 <pre class="src src-python">def test_diff2():
-    def f(x):
-	return sin(x)
-
     h0 = 1.0
     x = 0.3
     d = diff2(h0, f, x)
@@ -440,30 +432,89 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-org3eb35bc" class="outline-3">
-<h3 id="org3eb35bc"><span class="section-number-3">1.3</span> Super improvements</h3>
+<div id="outline-container-org54655cb" class="outline-3">
+<h3 id="org54655cb"><span class="section-number-3">1.3</span> Super improvements</h3>
 <div class="outline-text-3" id="text-1-3">
 <p>
 Do we actually need any improvements? Not for the simple differentiation problem that we've been doing, but this is where the code gets really interesting!
 </p>
 
 <p>
-The <code>super_</code> function below applies <code>improve</code> repeatedly to iterator <code>itr</code> (<code>repeat_f</code> is defined in <code>newton.org</code>), so the returned object is an infinite iterator of infinite iterators! It's <code>[itr, improve(itr), improve(improve(itr))...]</code> and so on.
+In Hughes' paper, he applied the <code>improve</code> function again and again on a list to get better and better convergence. Let <code>s</code> be the infinite iterator returned by <code>differentiate(f0, f x)</code>. By calling <code>repeat(improve, s)</code>, we get <code>s</code>, <code>improve(s)</code>, <code>improve(improve(s))</code>&#x2026; and so on. It's an infinite iterator of infinite iterators!
+</p>
+
+<p>
+The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The <code>repeat_f</code> function defined previously (in <code>newton.org</code>) doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators (without calling <code>itertools.tee</code>, all the yielded iterators will be dependent on the first one).
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">def super__(itr):
-    return repeat_itr(improve, itr)
+<pre class="src src-python">def repeat_itr(f, i):
+    acc = i
 
-def second(itr):
+    while True:
+	(i0, i1) = tee(acc)
+	yield i0
+	acc = f(i1)
+</pre>
+</div>
+
+<p>
+Let's see if the 5th item in the yield iterator is the same as applying <code>improve</code> 4 times:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">def test_repeat_improve():
+    print("\n##test_repeat_improve():")
+    def f(x):
+	return sin(x)
+
+    d = differentiate(1.0, f, 0.3)
+    d4 = improve(improve(improve(improve(d))))
+    seq1 = list(islice(d4, 5))
+    print("seq1:", seq1)
+
+    d = differentiate(1.0, f, 0.3)
+    dx = repeat_itr(improve, d)
+    next(dx)
+    next(dx)
+    next(dx)
+    next(dx)
+    seq2 = list(islice(next(dx), 5))
+    print("seq2:", seq2)
+
+    assert seq1 == seq2
+</pre>
+</div>
+
+<p>
+I don't know enough numerical analysis to understand why this works, but the paper says that the
+second approximation from each of the improved iterator is a good sequence for solving our differentiation problem. So, we have our third version:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">def second(itr):
     next(itr)
     return next(itr)
 
-def super_(itr):
-    return map(second, super__(itr))
+def super_improve(itr):
+    return map(second, repeat_itr(improve, itr))
 
-def super_differentiate(h0, f, x):
-    return super_(differentiate(h0, f, x))
+def diff3(h0: float, f: Callable[[float], float], x: float) -&gt; float:
+    d = within(esp, super_improve(differentiate(h0, f, x)))
+    return next(d)
+</pre>
+</div>
+
+<p>
+Does it work?
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">def test_diff3():
+    h0 = 1.0
+    x = 0.3
+    d = diff3(h0, f, x)
+    assert d == pytest.approx(cos(x))
 </pre>
 </div>
 </div>
@@ -472,7 +523,7 @@ def super_differentiate(h0, f, x):
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-12 Sat 21:25</p>
+<p class="date">Created: 2022-03-13 Sun 21:18</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

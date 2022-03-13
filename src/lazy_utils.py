@@ -1,12 +1,3 @@
-def repeat_itr(f, i):
-    acc = i
-
-    while True:
-        (i0, i1) = tee(acc)
-        yield i0
-        acc = f(i1)
-
-
 from typing import Callable, Iterator
 from itertools import tee
 

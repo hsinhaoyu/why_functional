@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-12 Sat 21:25 -->
+<!-- 2022-03-13 Sun 21:18 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>&lrm;</title>
@@ -223,28 +223,28 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org47a018b">1. Higher-order functions for trees</a>
+<li><a href="#orgd3f0616">1. Higher-order functions for trees</a>
 <ul>
-<li><a href="#orgb42af78">1.1. Representing trees</a></li>
-<li><a href="#orgf241723">1.2. <code>foldtree</code>: <code>reduce</code> for trees</a></li>
-<li><a href="#org21ab875">1.3. Example #1: sum all labels (i.e., leaf nodes) in a tree</a></li>
-<li><a href="#org59a8925">1.4. Example #2: tree flattening</a></li>
-<li><a href="#org3ed3379">1.5. Example #3: <code>map</code> for trees</a></li>
+<li><a href="#orgd480f13">1.1. Representing trees</a></li>
+<li><a href="#orge412cfb">1.2. <code>foldtree</code>: <code>reduce</code> for trees</a></li>
+<li><a href="#org98269a3">1.3. Example #1: sum all labels (i.e., leaf nodes) in a tree</a></li>
+<li><a href="#org8205a0d">1.4. Example #2: tree flattening</a></li>
+<li><a href="#org5159942">1.5. Example #3: <code>map</code> for trees</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org47a018b" class="outline-2">
-<h2 id="org47a018b"><span class="section-number-2">1</span> Higher-order functions for trees</h2>
+<div id="outline-container-orgd3f0616" class="outline-2">
+<h2 id="orgd3f0616"><span class="section-number-2">1</span> Higher-order functions for trees</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 Higher-order functions that operate on iterators should be familiar to most Python programmers. Hughes' paper has a section on <code>foldr</code> (which is just <code>functools.reduce</code> in Python). I'll skip it, and jump directly to an extension of <code>reduce</code> that operates on trees.
 </p>
 </div>
 
-<div id="outline-container-orgb42af78" class="outline-3">
-<h3 id="orgb42af78"><span class="section-number-3">1.1</span> Representing trees</h3>
+<div id="outline-container-orgd480f13" class="outline-3">
+<h3 id="orgd480f13"><span class="section-number-3">1.1</span> Representing trees</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
 I'll represent a tree this way: <code>(label, [subtrees...])</code>: it's a tuple with a label (i.e., a leaf node) and a list of subtrees. Note that it's not a binary tree. It's set up this way, because later in his paper, it's used to build game trees.
@@ -266,8 +266,8 @@ my_tree = (1, [
 </div>
 </div>
 
-<div id="outline-container-orgf241723" class="outline-3">
-<h3 id="orgf241723"><span class="section-number-3">1.2</span> <code>foldtree</code>: <code>reduce</code> for trees</h3>
+<div id="outline-container-orge412cfb" class="outline-3">
+<h3 id="orge412cfb"><span class="section-number-3">1.2</span> <code>foldtree</code>: <code>reduce</code> for trees</h3>
 <div class="outline-text-3" id="text-1-2">
 <p>
 To generalize <code>reduce</code> to trees, we have to specify two reduction functions (rather than one, as in <code>reduce</code>). The two functions are <code>f</code> for reducing a label and subtrees, and <code>g</code> for reducing subtrees. Both are functions of two arguments.
@@ -302,8 +302,8 @@ def foldtree(f, g, a, tree_comp):
 </div>
 </div>
 
-<div id="outline-container-org21ab875" class="outline-3">
-<h3 id="org21ab875"><span class="section-number-3">1.3</span> Example #1: sum all labels (i.e., leaf nodes) in a tree</h3>
+<div id="outline-container-org98269a3" class="outline-3">
+<h3 id="org98269a3"><span class="section-number-3">1.3</span> Example #1: sum all labels (i.e., leaf nodes) in a tree</h3>
 <div class="outline-text-3" id="text-1-3">
 <div class="org-src-container">
 <pre class="src src-python">def sumtree(tree):
@@ -320,8 +320,8 @@ def foldtree(f, g, a, tree_comp):
 </div>
 </div>
 
-<div id="outline-container-org59a8925" class="outline-3">
-<h3 id="org59a8925"><span class="section-number-3">1.4</span> Example #2: tree flattening</h3>
+<div id="outline-container-org8205a0d" class="outline-3">
+<h3 id="org8205a0d"><span class="section-number-3">1.4</span> Example #2: tree flattening</h3>
 <div class="outline-text-3" id="text-1-4">
 <p>
 Collect all labels (i.e., leaf nodes) in a tree into a list.
@@ -345,8 +345,8 @@ Collect all labels (i.e., leaf nodes) in a tree into a list.
 </div>
 </div>
 
-<div id="outline-container-org3ed3379" class="outline-3">
-<h3 id="org3ed3379"><span class="section-number-3">1.5</span> Example #3: <code>map</code> for trees</h3>
+<div id="outline-container-org5159942" class="outline-3">
+<h3 id="org5159942"><span class="section-number-3">1.5</span> Example #3: <code>map</code> for trees</h3>
 <div class="outline-text-3" id="text-1-5">
 <p>
 Map a function to all labels in a tree.
@@ -377,7 +377,7 @@ Map a function to all labels in a tree.
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-12 Sat 21:25</p>
+<p class="date">Created: 2022-03-13 Sun 21:18</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

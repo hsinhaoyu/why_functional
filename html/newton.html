@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-12 Sat 21:25 -->
+<!-- 2022-03-13 Sun 21:18 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>&lrm;</title>
@@ -223,24 +223,24 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgb3f9b8a">1. Calculating square roots with lazy evaluation (i.e., Python generators)</a>
+<li><a href="#org6354388">1. Calculating square roots with lazy evaluation (i.e., Python generators)</a>
 <ul>
-<li><a href="#org53f921b">1.1. The math bit</a></li>
-<li><a href="#org4769b1a">1.2. Define a generic nesting iterator</a></li>
-<li><a href="#org62d4d8e">1.3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
-<li><a href="#org69f385c">1.4. Add a stopping condition</a></li>
+<li><a href="#org3962527">1.1. The math bit</a></li>
+<li><a href="#org1a01749">1.2. Define a generic nesting iterator</a></li>
+<li><a href="#org38225ce">1.3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
+<li><a href="#org168cc8b">1.4. Add a stopping condition</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-orgb3f9b8a" class="outline-2">
-<h2 id="orgb3f9b8a"><span class="section-number-2">1</span> Calculating square roots with lazy evaluation (i.e., Python generators)</h2>
+<div id="outline-container-org6354388" class="outline-2">
+<h2 id="org6354388"><span class="section-number-2">1</span> Calculating square roots with lazy evaluation (i.e., Python generators)</h2>
 <div class="outline-text-2" id="text-1">
 </div>
-<div id="outline-container-org53f921b" class="outline-3">
-<h3 id="org53f921b"><span class="section-number-3">1.1</span> The math bit</h3>
+<div id="outline-container-org3962527" class="outline-3">
+<h3 id="org3962527"><span class="section-number-3">1.1</span> The math bit</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
 To approximate sqrt(n), we start with an initial value <code>x</code>, and apply (x + n/x) / 2.0 repeatedly.
@@ -279,8 +279,8 @@ def test_next_sqrt_approx():
 </div>
 </div>
 
-<div id="outline-container-org4769b1a" class="outline-3">
-<h3 id="org4769b1a"><span class="section-number-3">1.2</span> Define a generic nesting iterator</h3>
+<div id="outline-container-org1a01749" class="outline-3">
+<h3 id="org1a01749"><span class="section-number-3">1.2</span> Define a generic nesting iterator</h3>
 <div class="outline-text-3" id="text-1-2">
 <p>
 <code>repeat_f(f, a)</code> applies the function f repeatedly to a.
@@ -298,17 +298,6 @@ def repeat_f(f: Callable[[float], float], a: float) -&gt; Iterator[float]:
     while True:
 	yield acc
 	acc = f(acc)
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">def repeat_itr(f, i):
-    acc = i
-
-    while True:
-	(i0, i1) = tee(acc)
-	yield i0
-	acc = f(i1)
 </pre>
 </div>
 
@@ -331,8 +320,8 @@ def test_repeat_f():
 </div>
 </div>
 
-<div id="outline-container-org62d4d8e" class="outline-3">
-<h3 id="org62d4d8e"><span class="section-number-3">1.3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h3>
+<div id="outline-container-org38225ce" class="outline-3">
+<h3 id="org38225ce"><span class="section-number-3">1.3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h3>
 <div class="outline-text-3" id="text-1-3">
 <p>
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain <code>next_sqrt_approx</code> and <code>repeat_f</code> together:
@@ -361,8 +350,8 @@ Again, approximating sqrt(10.0) from 2.0:
 </div>
 </div>
 
-<div id="outline-container-org69f385c" class="outline-3">
-<h3 id="org69f385c"><span class="section-number-3">1.4</span> Add a stopping condition</h3>
+<div id="outline-container-org168cc8b" class="outline-3">
+<h3 id="org168cc8b"><span class="section-number-3">1.4</span> Add a stopping condition</h3>
 <div class="outline-text-3" id="text-1-4">
 <p>
 We add a <code>within</code> function to stop the iteration until the difference between two successive iterations is smaller than <code>esp</code>.
@@ -406,7 +395,7 @@ A simple test:
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-12 Sat 21:25</p>
+<p class="date">Created: 2022-03-13 Sun 21:18</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
