@@ -1,4 +1,3 @@
-import pytest
 from foldtree import *
 
 my_tree = (1, [(2, []), (3, [(4, [])])])

@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-13 Sun 21:18 -->
+<!-- 2022-03-13 Sun 23:24 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>&lrm;</title>
@@ -223,44 +223,43 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org350720d">1. Numerical differentiation using iterators</a>
+<li><a href="#orgf4cf735">1. Numerical differentiation using iterators</a>
 <ul>
-<li><a href="#org3b6db33">1.1. A first stab at the problem</a></li>
-<li><a href="#org7265404">1.2. Improving convergence with lazy recursive functions</a></li>
-<li><a href="#org54655cb">1.3. Super improvements</a></li>
+<li><a href="#orgdd37836">1.1. A first stab at the problem</a></li>
+<li><a href="#orgf9c6fc1">1.2. Improve convergence with another iterator</a></li>
+<li><a href="#org9f31b8e">1.3. An iterator of iterators</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org350720d" class="outline-2">
-<h2 id="org350720d"><span class="section-number-2">1</span> Numerical differentiation using iterators</h2>
+<div id="outline-container-orgf4cf735" class="outline-2">
+<h2 id="orgf4cf735"><span class="section-number-2">1</span> Numerical differentiation using iterators</h2>
 <div class="outline-text-2" id="text-1">
 <p>
-From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation starts to look cool.
+From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation starts to be interesting.
 </p>
 </div>
 
-<div id="outline-container-org3b6db33" class="outline-3">
-<h3 id="org3b6db33"><span class="section-number-3">1.1</span> A first stab at the problem</h3>
+<div id="outline-container-orgdd37836" class="outline-3">
+<h3 id="orgdd37836"><span class="section-number-3">1.1</span> A first stab at the problem</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
-For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculate the slope:
+For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculating the slope:
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">import copy
-from math import log2, sin
+<pre class="src src-python">from math import log2
 from typing import Callable, Iterator
-from itertools import chain, tee 
+from itertools import tee 
 from lazy_utils import repeat_f, within, repeat_itr
 
 
 esp = 0.0000000001 # a small number that's used to call within()
 
-def easydiff(f: Callable[[float], float], x: float) -&gt; float:
-    def easydiff_(h: float):
+def easydiff(f: Callable[[float], float], x: float) -&gt; Callable[[float], float]:
+    def easydiff_(h: float) -&gt; float:
 	return (f(x + h) - f(x)) / h
 
     return easydiff_
@@ -268,14 +267,16 @@ def easydiff(f: Callable[[float], float], x: float) -&gt; float:
 </div>
 
 <p>
-Now we generate a lazy list (i.e., iterator) of smaller and smaller <code>h</code>, by applying <code>half</code> repeatedly with <code>repeat_f</code> (defined in <code>newton.org</code>). Mapping the slope function to this iterator, <code>differentiate_</code> returns another iterator that approximates the derivative closer and closer.
+Now we generate an iterator of smaller and smaller <code>h</code>, by applying <code>half</code> repeatedly with (<code>repeat_f</code> defined in <code>newton.org</code>). Mapping the slope function to this iterator, <code>differentiate</code> returns another iterator that approximates the derivative closer and closer.
 </p>
 
 <div class="org-src-container">
 <pre class="src src-python">def half(x: float) -&gt; float:
+    """Half the value"""
     return x / 2.0
 
 def differentiate(h0: float, f: Callable[[float], float], x: float) -&gt; Iterator:
+    """An interator of 1st-order approximation of f'(x) with initial h0"""
     return map(easydiff(f, x), repeat_f(half, h0))
 </pre>
 </div>
@@ -286,6 +287,7 @@ This is our first version of the numerical differentiation function:
 
 <div class="org-src-container">
 <pre class="src src-python">def diff1(h0: float, f: Callable[[float], float], x: float) -&gt; float:
+    """Approximate f'(x), with an initial h0."""
     d = within(esp, differentiate(h0, f, x))
     return next(d)
 </pre>
@@ -298,17 +300,16 @@ A simple test: differentiate sin(x) at 1.0, starting with a very large gap (<cod
 <div class="org-src-container">
 <pre class="src src-python">import pytest
 from itertools import *
-from math import cos
+from math import cos, sin
 
 from lazy_utils import *
 from diff import *
 
-def f(x):
+def f(x: float) -&gt; float:
     return sin(x)
 
 def test_diff1():
-    x = 1.0
-    h0 = 5.0
+    h0, x = 5.0, 1.0
     d = diff1(h0, f, x)
     assert d == pytest.approx(cos(x))
 </pre>
@@ -316,34 +317,20 @@ def test_diff1():
 </div>
 </div>
 
-<div id="outline-container-org7265404" class="outline-3">
-<h3 id="org7265404"><span class="section-number-3">1.2</span> Improving convergence with lazy recursive functions</h3>
+<div id="outline-container-orgf9c6fc1" class="outline-3">
+<h3 id="orgf9c6fc1"><span class="section-number-3">1.2</span> Improve convergence with another iterator</h3>
 <div class="outline-text-3" id="text-1-2">
 <p>
-A problem with <code>differentiate</code> above is that the sequence converges very slowly. This sections uses numerical tricks to improve the convergence. The math is not our concern here. We will focus just on code structure. 
+A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses numerical tricks to improve the convergence. The math is not our concern here. We will focus just on code structure. 
 </p>
 
 <p>
-With some math, it can be shown that with an appropriately chosen integer <code>n</code>, convergence can improved with the <code>elimerror</code> function defined below. What it does is that it slides a two-item window over the original sequence, and applies a correction (<code>c</code> below). 
-</p>
-
-<p>
-To accomplish this, we need to add something to the beginning of an iterator, which is done with <code>itertools.chain</code> in Python. The following Python code is still short and sweet, but the original Miranda code is much nicer. This is because Miranda evaluates lazily by default, so there is no need for <code>yield</code>:
+With some math, it can be shown that with an appropriately-chosen integer <code>n</code>, convergence can improved with the <code>elimerror</code> function defined below. What it does is that it slides a <code>(a, b)</code> window over the original sequence, and applies a correction based on the two values(<code>c</code> below). 
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">def elimerror__(n: int, itr: Iterator) -&gt; Iterator:
-    a, b = next(itr), next(itr)
-    p: float = 2.0 ** n
-    c: float = (b * p - a) / (p - 1.0)
-
-    for x in chain([c], elimerror(n, chain([b], itr))):
-	yield x
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">def elimerror(n, itr):
+<pre class="src src-python">def elimerror(n: int, itr: Iterator[float]) -&gt; Iterator[float]:
+    """Reduce the error of sequence approx. derivative, assuming order n."""
     a = next(itr)
     while True:
 	b = next(itr)
@@ -355,33 +342,37 @@ To accomplish this, we need to add something to the beginning of an iterator, wh
 </div>
 
 <p>
-We don't know how to set <code>n</code> yet, but let's try the code with an arbitrary number (<code>n=2.0</code>). 
+We don't know how to set <code>n</code> yet, but let's try the code with an arbitrary number (<code>n=2</code>). 
 </p>
 
 <div class="org-src-container">
 <pre class="src src-python">def test_elimerror():
     print("\n## test_elimerror:")
 
-    seq1 = differentiate(5.0, f, 1.0)
+    h0, x, n = 5.0, 1.0, 2
+
+    seq1 = differentiate(h0, f, x)
     print("seq1:", list(islice(seq1, 20)))
 
-    seq1 = differentiate(5.0, f, 1.0)     
-    seq2 = elimerror(2.0, seq1)
+    seq1 = differentiate(h0, f, x)     
+    seq2 = elimerror(n, seq1)
 
     print("seq2:", list(islice(seq2, 20)))
 </pre>
 </div>
 
 <p>
-The appropriate <code>n</code> can be estimated by <code>order</code>, using the first three values in the sequence. Taking a slow converging iterator as input, <code>improve</code> returns a new iterator that converges much faster. It does it by estimating the order and calling <code>elimerror</code>.
+The appropriate <code>n</code> can be estimated by <code>order</code>, using the first three values in the sequence. Taking a slow converging iterator as input, <code>improve</code> returns a new iterator that converges faster. It does it by estimating the order and calling <code>elimerror</code>.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">def order(itr: Iterator) -&gt; int:
+<pre class="src src-python">def order(itr: Iterator[float]) -&gt; int:
+    """Estimate the order for elimerror()."""
     a, b, c = next(itr), next(itr), next(itr)
     return round(log2((a - c) / (b - c) - 1.0))
 
-def improve(itr: Iterator) -&gt; Iterator:
+def improve(itr: Iterator[float]) -&gt; Iterator[float]:
+    """Improve the congergence of sequence approx. derivative."""
     (itr1, itr2) = tee(itr)
     n: int = order(itr1)
     return elimerror(n, itr2)
@@ -389,17 +380,19 @@ def improve(itr: Iterator) -&gt; Iterator:
 </div>
 
 <p>
-If you run <code>make test</code>, you can see that <code>improve(seq1)</code> converges to the correct answer 0.6  much faster.
+You can compare the two sequences by running <code>make test</code>:
 </p>
 
 <div class="org-src-container">
 <pre class="src src-python">def test_improve():
     print("\n## test_improve")
 
-    seq1 = differentiate(2.0, f, 0.3)
+    h0, x = 2.0, 0.3
+
+    seq1 = differentiate(h0, f, x)
     print("seq1:", list(islice(seq1, 20)))
 
-    seq1 = differentiate(2.0, f, 0.3)
+    seq1 = differentiate(h0, f, x)
     seq2 = improve(seq1)
 
     print("seq2:", list(islice(seq2, 20)))
@@ -407,11 +400,12 @@ If you run <code>make test</code>, you can see that <code>improve(seq1)</code> c
 </div>
 
 <p>
-This is the improved differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met. 
+This is second version of the numerical differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met. 
 </p>
 
 <div class="org-src-container">
 <pre class="src src-python">def diff2(h0: float, f: Callable[[float], float], x: float) -&gt; float:
+    """Approximate f'(x), with an initial h0."""
     d = within(esp, improve(differentiate(h0, f, x)))
     return next(d)
 </pre>
@@ -423,8 +417,7 @@ A simple test:
 
 <div class="org-src-container">
 <pre class="src src-python">def test_diff2():
-    h0 = 1.0
-    x = 0.3
+    h0, x = 1.0, 0.3
     d = diff2(h0, f, x)
     assert d == pytest.approx(cos(x))
 </pre>
@@ -432,24 +425,25 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-org54655cb" class="outline-3">
-<h3 id="org54655cb"><span class="section-number-3">1.3</span> Super improvements</h3>
+<div id="outline-container-org9f31b8e" class="outline-3">
+<h3 id="org9f31b8e"><span class="section-number-3">1.3</span> An iterator of iterators</h3>
 <div class="outline-text-3" id="text-1-3">
 <p>
-Do we actually need any improvements? Not for the simple differentiation problem that we've been doing, but this is where the code gets really interesting!
+Do we actually need any improvements? Not for the simple problems that we've been solving, but this is where the code gets really interesting!
 </p>
 
 <p>
-In Hughes' paper, he applied the <code>improve</code> function again and again on a list to get better and better convergence. Let <code>s</code> be the infinite iterator returned by <code>differentiate(f0, f x)</code>. By calling <code>repeat(improve, s)</code>, we get <code>s</code>, <code>improve(s)</code>, <code>improve(improve(s))</code>&#x2026; and so on. It's an infinite iterator of infinite iterators!
+In Hughes' paper, he used the <code>improve</code> function again and again on the same sequence to get better and better convergence. Let <code>s</code> be the infinite iterator returned by <code>differentiate(f0, f x)</code>. By calling <code>repeat(improve, s)</code>, we get <code>s</code>, <code>improve(s)</code>, <code>improve(improve(s))</code>&#x2026; and so on. It's an infinite iterator of infinite iterators!
 </p>
 
 <p>
-The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The <code>repeat_f</code> function defined previously (in <code>newton.org</code>) doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators (without calling <code>itertools.tee</code>, all the yielded iterators will be dependent on the first one).
+The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The <code>repeat_f</code> function defined previously (in <code>newton.org</code>) doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">def repeat_itr(f, i):
-    acc = i
+<pre class="src src-python">def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -&gt; Iterator:
+    """[i, f(i), f(f(i))...]"""
+    acc: Iterator[float] = i
 
     while True:
 	(i0, i1) = tee(acc)
@@ -459,12 +453,12 @@ The Miranda code in the paper expresses this idea with a beautiful one-liner. Un
 </div>
 
 <p>
-Let's see if the 5th item in the yield iterator is the same as applying <code>improve</code> 4 times:
+Let's see if the 5th item in the yielded iterator is the same as applying <code>improve</code> 4 times:
 </p>
 
 <div class="org-src-container">
 <pre class="src src-python">def test_repeat_improve():
-    print("\n##test_repeat_improve():")
+    print("\n## test_repeat_improve():")
     def f(x):
 	return sin(x)
 
@@ -487,19 +481,21 @@ Let's see if the 5th item in the yield iterator is the same as applying <code>im
 </div>
 
 <p>
-I don't know enough numerical analysis to understand why this works, but the paper says that the
-second approximation from each of the improved iterator is a good sequence for solving our differentiation problem. So, we have our third version:
+I haven't checked a textbook, but the paper says that the second approximation from each of the improved iterator is a good sequence for solving our problem. So, this is the third version of the numerical differentiation function:
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">def second(itr):
+<pre class="src src-python">def second(itr: Iterator[float]) -&gt; float:
+    """Returns the second item in an iterator."""
     next(itr)
     return next(itr)
 
-def super_improve(itr):
+def super_improve(itr: Iterator[float]) -&gt; Iterator[float]:
+    """Improve the convergenve of a sequence approx. derivative."""
     return map(second, repeat_itr(improve, itr))
 
 def diff3(h0: float, f: Callable[[float], float], x: float) -&gt; float:
+    """Approximate f'(x), with an initial h0."""      
     d = within(esp, super_improve(differentiate(h0, f, x)))
     return next(d)
 </pre>
@@ -511,8 +507,7 @@ Does it work?
 
 <div class="org-src-container">
 <pre class="src src-python">def test_diff3():
-    h0 = 1.0
-    x = 0.3
+    h0, x = 1.0, 0.3
     d = diff3(h0, f, x)
     assert d == pytest.approx(cos(x))
 </pre>
@@ -523,7 +518,7 @@ Does it work?
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-13 Sun 21:18</p>
+<p class="date">Created: 2022-03-13 Sun 23:24</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

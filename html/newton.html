@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-13 Sun 21:18 -->
+<!-- 2022-03-13 Sun 23:24 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>&lrm;</title>
@@ -223,24 +223,24 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org6354388">1. Calculating square roots with lazy evaluation (i.e., Python generators)</a>
+<li><a href="#orgcde840d">1. Calculating square roots with lazy evaluation</a>
 <ul>
-<li><a href="#org3962527">1.1. The math bit</a></li>
-<li><a href="#org1a01749">1.2. Define a generic nesting iterator</a></li>
-<li><a href="#org38225ce">1.3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
-<li><a href="#org168cc8b">1.4. Add a stopping condition</a></li>
+<li><a href="#orgbce0ce6">1.1. The math bit</a></li>
+<li><a href="#org3a09636">1.2. Define a nesting iterator</a></li>
+<li><a href="#org5961d8d">1.3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
+<li><a href="#org544f75b">1.4. Add a stopping condition</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org6354388" class="outline-2">
-<h2 id="org6354388"><span class="section-number-2">1</span> Calculating square roots with lazy evaluation (i.e., Python generators)</h2>
+<div id="outline-container-orgcde840d" class="outline-2">
+<h2 id="orgcde840d"><span class="section-number-2">1</span> Calculating square roots with lazy evaluation</h2>
 <div class="outline-text-2" id="text-1">
 </div>
-<div id="outline-container-org3962527" class="outline-3">
-<h3 id="org3962527"><span class="section-number-3">1.1</span> The math bit</h3>
+<div id="outline-container-orgbce0ce6" class="outline-3">
+<h3 id="orgbce0ce6"><span class="section-number-3">1.1</span> The math bit</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
 To approximate sqrt(n), we start with an initial value <code>x</code>, and apply (x + n/x) / 2.0 repeatedly.
@@ -263,7 +263,7 @@ def next_sqrt_approx(n: float) -&gt; Callable[[float], float]:
 </div>
 
 <p>
-Approximating sqrt(10.0) from 2.0 for just one iteration:
+Approximating sqrt(10.0) from 2.0, in just one iteration:
 </p>
 
 <div class="org-src-container">
@@ -279,11 +279,11 @@ def test_next_sqrt_approx():
 </div>
 </div>
 
-<div id="outline-container-org1a01749" class="outline-3">
-<h3 id="org1a01749"><span class="section-number-3">1.2</span> Define a generic nesting iterator</h3>
+<div id="outline-container-org3a09636" class="outline-3">
+<h3 id="org3a09636"><span class="section-number-3">1.2</span> Define a nesting iterator</h3>
 <div class="outline-text-3" id="text-1-2">
 <p>
-<code>repeat_f(f, a)</code> applies the function f repeatedly to a.
+<code>repeat_f(f, a)</code> applies the function <code>f</code> repeatedly to <code>a</code>. (The original code is more elegant and more general, but Python is not a lazy functional language).
 </p>
 
 <div class="org-src-container">
@@ -306,8 +306,7 @@ A simple test: an iterator that yields 0, 1, 2, 3&#x2026;
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">import pytest
-from lazy_utils import *
+<pre class="src src-python">from lazy_utils import *
 
 def test_repeat_f():
     r = repeat_f(lambda n: n + 1, 0)
@@ -320,8 +319,8 @@ def test_repeat_f():
 </div>
 </div>
 
-<div id="outline-container-org38225ce" class="outline-3">
-<h3 id="org38225ce"><span class="section-number-3">1.3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h3>
+<div id="outline-container-org5961d8d" class="outline-3">
+<h3 id="org5961d8d"><span class="section-number-3">1.3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h3>
 <div class="outline-text-3" id="text-1-3">
 <p>
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain <code>next_sqrt_approx</code> and <code>repeat_f</code> together:
@@ -350,16 +349,16 @@ Again, approximating sqrt(10.0) from 2.0:
 </div>
 </div>
 
-<div id="outline-container-org168cc8b" class="outline-3">
-<h3 id="org168cc8b"><span class="section-number-3">1.4</span> Add a stopping condition</h3>
+<div id="outline-container-org544f75b" class="outline-3">
+<h3 id="org544f75b"><span class="section-number-3">1.4</span> Add a stopping condition</h3>
 <div class="outline-text-3" id="text-1-4">
 <p>
-We add a <code>within</code> function to stop the iteration until the difference between two successive iterations is smaller than <code>esp</code>.
+We add a <code>within</code> function to stop the iteration when the difference between two successive iterations is smaller than <code>esp</code>.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">def within(esp: float, itr: Iterator) -&gt; Iterator:
-    """Stop if the next two iterations have a small delta"""
+<pre class="src src-python">def within(esp: float, itr: Iterator[float]) -&gt; Iterator[float]:
+    """Stop if the next two iterations have a small delta."""
     while True:
 	a = next(itr)
 	b = next(itr)
@@ -369,11 +368,12 @@ We add a <code>within</code> function to stop the iteration until the difference
 </div>
 
 <p>
-Now we can define the function that approximates sqrt(n) with the initial value <code>a</code>.
+Now we can solve our numerical problem:
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">def newton_sqrt(n, a):
+<pre class="src src-python">def newton_sqrt(n: float, a: float) -&gt; float:
+    """Approximate sqrt(n) starting from a, using the Newton-Raphson method."""
     r = within(0.00001, repeat_f(next_sqrt_approx(n), a))
     return next(r)
 </pre>
@@ -395,7 +395,7 @@ A simple test:
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-13 Sun 21:18</p>
+<p class="date">Created: 2022-03-13 Sun 23:24</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

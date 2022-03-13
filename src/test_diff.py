@@ -1,18 +1,17 @@
 import pytest
 from itertools import *
-from math import cos
+from math import cos, sin
 
 from lazy_utils import *
 from diff import *
 
 
-def f(x):
+def f(x: float) -> float:
     return sin(x)
 
 
 def test_diff1():
-    x = 1.0
-    h0 = 5.0
+    h0, x = 5.0, 1.0
     d = diff1(h0, f, x)
     assert d == pytest.approx(cos(x))
 
@@ -20,11 +19,13 @@ def test_diff1():
 def test_elimerror():
     print("\n## test_elimerror:")
 
-    seq1 = differentiate(5.0, f, 1.0)
+    h0, x, n = 5.0, 1.0, 2
+
+    seq1 = differentiate(h0, f, x)
     print("seq1:", list(islice(seq1, 20)))
 
-    seq1 = differentiate(5.0, f, 1.0)
-    seq2 = elimerror(2.0, seq1)
+    seq1 = differentiate(h0, f, x)
+    seq2 = elimerror(n, seq1)
 
     print("seq2:", list(islice(seq2, 20)))
 
@@ -32,24 +33,25 @@ def test_elimerror():
 def test_improve():
     print("\n## test_improve")
 
-    seq1 = differentiate(2.0, f, 0.3)
+    h0, x = 2.0, 0.3
+
+    seq1 = differentiate(h0, f, x)
     print("seq1:", list(islice(seq1, 20)))
 
-    seq1 = differentiate(2.0, f, 0.3)
+    seq1 = differentiate(h0, f, x)
     seq2 = improve(seq1)
 
     print("seq2:", list(islice(seq2, 20)))
 
 
 def test_diff2():
-    h0 = 1.0
-    x = 0.3
+    h0, x = 1.0, 0.3
     d = diff2(h0, f, x)
     assert d == pytest.approx(cos(x))
 
 
 def test_repeat_improve():
-    print("\n##test_repeat_improve():")
+    print("\n## test_repeat_improve():")
 
     def f(x):
         return sin(x)
@@ -72,7 +74,6 @@ def test_repeat_improve():
 
 
 def test_diff3():
-    h0 = 1.0
-    x = 0.3
+    h0, x = 1.0, 0.3
     d = diff3(h0, f, x)
     assert d == pytest.approx(cos(x))

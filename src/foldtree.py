@@ -2,6 +2,7 @@ import operator
 
 
 def foldtree(f, g, a, tree_comp):
+    """Apply two functions (f and g) to transform a tree."""
     if tree_comp == []:
         return a
     elif isinstance(tree_comp, list):
@@ -17,11 +18,14 @@ def foldtree(f, g, a, tree_comp):
 
 
 def sumtree(tree):
+    """Sum all labels in a tree."""
     add = operator.add
     return foldtree(add, add, 0, tree)
 
 
 def tree_labels(tree):
+    """Collect all labels of a tree into a list."""
+
     def cons(label, lst):
         return [label] + lst
 
@@ -32,6 +36,8 @@ def tree_labels(tree):
 
 
 def maptree(f, tree):
+    """Map a function to all labels in a tree"""
+
     def cons(leaf, lst):
         return [leaf] + lst
 

@@ -1,4 +1,3 @@
-import pytest
 from lazy_utils import *
 
 
