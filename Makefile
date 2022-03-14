@@ -3,6 +3,7 @@ tangle: org/*.org
 	./tangle.sh org/foldtree.org
 	./tangle.sh org/newton.org
 	./tangle.sh org/diff.org
+	./tangle.sh org/integration.org
 	yapf --in-place --recursive src/
 
 lint: tangle

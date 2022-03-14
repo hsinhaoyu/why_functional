@@ -3,7 +3,108 @@
 
 #+TITLE:  Numerical integration with recursively defined iterators
 
-For those who don't care about numerical methods, the attraction of this section is recursion. Of course, the original paper uses recursion throughout. I have avoided using recursion to define iterators in Python, because recursion doesn't improve the code in the previous sections. In this section, though, recursion is the most natural way to express the idea.
+For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
 
-* A first stab at the problem
-Bla bla
+* Integrate with lazy recursion
+
+For a linear function, it's easy to calculate the area under the function:
+
+#+begin_src python :noweb yes :tangle ../src/integrate.py
+  from typing import Callable, Iterator, Tuple
+  from lazy_utils import repeat_f, within, repeat_itr
+  from diff import improve
+
+  esp = 0.0000000001 # a small number that's used to call within()
+
+  def easyintegrate(f: Callable[[float], float], a: float, b: float) -> float:
+      """Calculate the area under a linear function f between and and b."""
+      return (f(a) + f(b)) * (b - a) / 2.0
+#+end_src
+
+For a nonlinear function, we can divide the interval (a, b) into two intervals, approximate the areas in the two intervals recursively, and then sum the two areas. The =integrate_= function defined below does this, and returns an iterator that gets closer and closer to the real value:
+
+#+begin_src python :noweb yes :tangle ../src/integrate.py
+  def addpair(pair: Tuple[float, float]) -> float:
+      """(a, b) -> a + b """
+      (v1, v2) = pair
+      return v1 + v2
+
+  def integrate_(f: Callable[[float], float], a: float, b: float) -> Iterator[float]:
+      """Return an iterator that approximates intergral(f) in (a, b)."""
+      yield easyintegrate(f, a, b)
+      mid = (a + b) / 2.0
+      s =  map(addpair, zip(integrate_(f, a, mid), integrate_(f, mid, b)))
+      for i in s:
+          yield i
+#+end_src
+
+This is the first version of our integration function:
+
+#+begin_src python :noweb yes :tangle ../src/integrate.py
+  def integrate1(f: Callable[[float], float], a: float, b: float) -> float:
+      """Calculate the integral of f between a and b."""
+      d = within(esp, integrate_(f, a, b))
+      return next(d)
+#+end_src
+
+A simple test:
+
+#+begin_src python :noweb yes :tangle ../src/test_integrate.py
+  from math import sin, pi
+  import pytest
+  from integrate import *
+
+  def f(x):
+      return sin(x)
+
+  def test_integrate1():
+      print("\n## test_integrate1()")
+      a, b = 0.0, pi 
+      d = integrate1(f, a, b)
+      assert d == pytest.approx(2.0)
+#+end_src
+
+* Avoid redundant evaluation
+A problem with the code in the previous section is that every time =easyintegrate= is called, the value of =f= is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
+
+#+begin_src python :noweb yes :tangle ../src/integrate.py
+  def integ(f: Callable[[float], float], a: float, b: float, fa: float, fb: float) -> Iterator[float]:
+      """Like integrate_, but with pre-calculated f(a) and f(b)."""
+      yield (fa + fb) * (b - a) / 2.0
+      m = (a + b) / 2.0
+      fm = f(m)
+      s = map(addpair, zip(integ(f, a, m, fa, fm), integ(f, m, b, fm, fb)))
+      for i in s:
+          yield i
+
+  def integrate2(f: Callable[[float], float], a: float, b: float) -> float:
+      d = within(esp, integ(f, a, b, f(a), f(b)))
+      return next(d)
+#+end_src
+
+We'll test the second version of our numerical integration function, too:
+#+begin_src python :noweb yes :tangle ../src/test_integrate.py
+  def test_integrate2():
+      print("\n## test_integrate2()")
+      a, b = 0.0, pi 
+      d = integrate2(f, a, b)
+      assert d == pytest.approx(2.0)
+#+end_src
+
+* Accelerate the convergence
+Remember that in =diff.org=, we used the =improve= function to accelerate the convergence of a sequence? We can use it here too:
+
+#+begin_src python :noweb yes :tangle ../src/integrate.py
+  def integrate3(f: Callable[[float], float], a: float, b: float) -> float:
+      d = within(esp, improve(integ(f, a, b, f(a), f(b))))
+      return next(d)
+#+end_src
+
+Let's try it (it's much faster):
+#+begin_src python :noweb yes :tangle ../src/test_integrate.py
+  def test_integrate3():
+      print("\n## test_integrate3()")
+      a, b = 0.0, pi 
+      d = integrate3(f, a, b)
+      assert d == pytest.approx(2.0)
+#+end_src

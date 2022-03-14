@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-14 Mon 19:51 -->
+<!-- 2022-03-14 Mon 21:35 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Numerical integration with recursively defined iterators</title>
@@ -224,26 +224,158 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orga75e99a">1. A first stab at the problem</a></li>
+<li><a href="#org3b83ed5">1. Integrate with lazy recursion</a></li>
+<li><a href="#org19694a1">2. Avoid redundant evaluation</a></li>
+<li><a href="#org38e5cb5">3. Improve convergence</a></li>
 </ul>
 </div>
 </div>
 <p>
-For those who don't care about numerical methods, the attraction of this section is recursion. Of course, the original paper uses recursion throughout. I have avoided using recursion to define iterators in Python, because recursion doesn't improve the code in the previous sections. In this section, though, recursion is the most natural way to express the idea.
+For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
 </p>
 
-<div id="outline-container-orga75e99a" class="outline-2">
-<h2 id="orga75e99a"><span class="section-number-2">1</span> A first stab at the problem</h2>
+<div id="outline-container-org3b83ed5" class="outline-2">
+<h2 id="org3b83ed5"><span class="section-number-2">1</span> Integrate with lazy recursion</h2>
 <div class="outline-text-2" id="text-1">
 <p>
-Bla bla
+For a linear function, it's easy to calculate the area under the function:
 </p>
+
+<div class="org-src-container">
+<pre class="src src-python">from typing import Callable, Iterator, Tuple
+from lazy_utils import repeat_f, within, repeat_itr
+from diff import improve
+
+esp = 0.0000000001 # a small number that's used to call within()
+
+def easyintegrate(f: Callable[[float], float], a: float, b: float) -&gt; float:
+    """Calculate the area under a linear function f between and and b."""
+    return (f(a) + f(b)) * (b - a) / 2.0
+</pre>
+</div>
+
+<p>
+For a nonlinear function, we can divide the interval (a, b) into two intervals, approximate the areas in the two intervals recursively, and then sum the two areas. The <code>integrate_</code> function defined below does this, and returns an iterator that gets closer and closer to the real value:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">def addpair(pair: Tuple[float, float]) -&gt; float:
+    """(a, b) -&gt; a + b """
+    (v1, v2) = pair
+    return v1 + v2
+
+def integrate_(f: Callable[[float], float], a: float, b: float) -&gt; Iterator[float]:
+    """Return an iterator that approximates intergral(f) in (a, b)."""
+    yield easyintegrate(f, a, b)
+    mid = (a + b) / 2.0
+    s =  map(addpair, zip(integrate_(f, a, mid), integrate_(f, mid, b)))
+    for i in s:
+	yield i
+</pre>
+</div>
+
+<p>
+This is the first version of our integration function:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">def integrate1(f: Callable[[float], float], a: float, b: float) -&gt; float:
+    """Calculate the integral of f between a and b."""
+    d = within(esp, integrate_(f, a, b))
+    return next(d)
+</pre>
+</div>
+
+<p>
+A simple test:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">from math import sin, pi
+import pytest
+from integrate import *
+
+def f(x):
+    return sin(x)
+
+def test_integrate1():
+    print("\n## test_integrate1()")
+    a, b = 0.0, pi 
+    d = integrate1(f, a, b)
+    assert d == pytest.approx(2.0)
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org19694a1" class="outline-2">
+<h2 id="org19694a1"><span class="section-number-2">2</span> Avoid redundant evaluation</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+A problem with the code in the previous section is that every time <code>easyintegrate</code> is called, the value of <code>f</code> is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">def integ(f: Callable[[float], float], a: float, b: float, fa: float, fb: float) -&gt; Iterator[float]:
+    """Like integrate_, but with pre-calculated f(a) and f(b)."""
+    yield (fa + fb) * (b - a) / 2.0
+    m = (a + b) / 2.0
+    fm = f(m)
+    s = map(addpair, zip(integ(f, a, m, fa, fm), integ(f, m, b, fm, fb)))
+    for i in s:
+	yield i
+
+def integrate2(f: Callable[[float], float], a: float, b: float) -&gt; float:
+    d = within(esp, integ(f, a, b, f(a), f(b)))
+    return next(d)
+</pre>
+</div>
+
+<p>
+We'll test the second version of our numerical integration function, too:
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def test_integrate2():
+    print("\n## test_integrate2()")
+    a, b = 0.0, pi 
+    d = integrate2(f, a, b)
+    assert d == pytest.approx(2.0)
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org38e5cb5" class="outline-2">
+<h2 id="org38e5cb5"><span class="section-number-2">3</span> Improve convergence</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Remember that in <code>diff.org</code>, we used the <code>improve</code> function to accelerate the convergence of a sequence? We can use it here too:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">def integrate3(f: Callable[[float], float], a: float, b: float) -&gt; float:
+    d = within(esp, improve(integ(f, a, b, f(a), f(b))))
+    return next(d)
+</pre>
+</div>
+
+<p>
+Let's try it (it's much faster):
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def test_integrate3():
+    print("\n## test_integrate3()")
+    a, b = 0.0, pi 
+    d = integrate3(f, a, b)
+    assert d == pytest.approx(2.0)
+</pre>
+</div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-14 Mon 19:51</p>
+<p class="date">Created: 2022-03-14 Mon 21:35</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
