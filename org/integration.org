@@ -1,0 +1,9 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+#+EXPORT_FILE_NAME: ../html/integration.html
+
+#+TITLE:  Numerical integration with recursively defined iterators
+
+For those who don't care about numerical methods, the attraction of this section is recursion. Of course, the original paper uses recursion throughout. I have avoided using recursion to define iterators in Python, because recursion doesn't improve the code in the previous sections. In this section, though, recursion is the most natural way to express the idea.
+
+* A first stab at the problem
+Bla bla

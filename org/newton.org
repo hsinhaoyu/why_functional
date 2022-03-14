@@ -1,9 +1,8 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/newton.html
+#+TITLE: Calculating square roots with lazy evaluation 
 
-* Calculating square roots with lazy evaluation 
-
-** The math bit
+* The math bit
 To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) / 2.0 repeatedly.
 
 =next_sqrt_approx(n)= returns a closure that brings its input closer to sqrt(n).
@@ -31,7 +30,7 @@ Approximating sqrt(10.0) from 2.0, in just one iteration:
       assert f(2.0) == pytest.approx(3.5)
 #+end_src
 
-** Define a nesting iterator
+* Define a nesting iterator
 =repeat_f(f, a)= applies the function =f= repeatedly to =a=. (The original code is more elegant and more general, but Python is not a lazy functional language).
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
@@ -61,7 +60,7 @@ A simple test: an iterator that yields 0, 1, 2, 3...
       assert v3 == 2
 #+end_src
 
-** Define a lazy iterator that approximates =sqrt(n)=
+* Define a lazy iterator that approximates =sqrt(n)=
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain =next_sqrt_approx= and =repeat_f= together:
 
 #+begin_src python :noweb yes :tangle ../src/newton.py
@@ -81,7 +80,7 @@ Again, approximating sqrt(10.0) from 2.0:
       assert v3 == pytest.approx(3.178571428571429)
 #+end_src
 
-** Add a stopping condition
+* Add a stopping condition
 We add a =within= function to stop the iteration when the difference between two successive iterations is smaller than =esp=.
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py

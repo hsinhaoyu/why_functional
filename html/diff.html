@@ -3,10 +3,10 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-13 Sun 23:24 -->
+<!-- 2022-03-14 Mon 19:51 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>&lrm;</title>
+<title>Numerical differentiation using iterators</title>
 <meta name="generator" content="Org mode" />
 <meta name="author" content="Hsin-Hao Yu" />
 <style type="text/css">
@@ -219,32 +219,24 @@
 </head>
 <body>
 <div id="content">
+<h1 class="title">Numerical differentiation using iterators</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgf4cf735">1. Numerical differentiation using iterators</a>
-<ul>
-<li><a href="#orgdd37836">1.1. A first stab at the problem</a></li>
-<li><a href="#orgf9c6fc1">1.2. Improve convergence with another iterator</a></li>
-<li><a href="#org9f31b8e">1.3. An iterator of iterators</a></li>
-</ul>
-</li>
+<li><a href="#orgceaa5e1">1. A first stab at the problem</a></li>
+<li><a href="#org58a699b">2. Improve convergence with sequence transformation</a></li>
+<li><a href="#org3d893b9">3. An iterator of iterators</a></li>
 </ul>
 </div>
 </div>
-
-<div id="outline-container-orgf4cf735" class="outline-2">
-<h2 id="orgf4cf735"><span class="section-number-2">1</span> Numerical differentiation using iterators</h2>
-<div class="outline-text-2" id="text-1">
 <p>
 From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation starts to be interesting.
 </p>
-</div>
 
-<div id="outline-container-orgdd37836" class="outline-3">
-<h3 id="orgdd37836"><span class="section-number-3">1.1</span> A first stab at the problem</h3>
-<div class="outline-text-3" id="text-1-1">
+<div id="outline-container-orgceaa5e1" class="outline-2">
+<h2 id="orgceaa5e1"><span class="section-number-2">1</span> A first stab at the problem</h2>
+<div class="outline-text-2" id="text-1">
 <p>
 For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculating the slope:
 </p>
@@ -317,15 +309,15 @@ def test_diff1():
 </div>
 </div>
 
-<div id="outline-container-orgf9c6fc1" class="outline-3">
-<h3 id="orgf9c6fc1"><span class="section-number-3">1.2</span> Improve convergence with another iterator</h3>
-<div class="outline-text-3" id="text-1-2">
+<div id="outline-container-org58a699b" class="outline-2">
+<h2 id="org58a699b"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
+<div class="outline-text-2" id="text-2">
 <p>
-A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses numerical tricks to improve the convergence. The math is not our concern here. We will focus just on code structure. 
+A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called <a href="https://en.wikipedia.org/wiki/Richardson_extrapolation">Richardson extrapolation</a>. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the next section.
 </p>
 
 <p>
-With some math, it can be shown that with an appropriately-chosen integer <code>n</code>, convergence can improved with the <code>elimerror</code> function defined below. What it does is that it slides a <code>(a, b)</code> window over the original sequence, and applies a correction based on the two values(<code>c</code> below). 
+With an appropriately-chosen integer <code>n</code>, the convergence of a sequence (represented as an iterator) can improved by the <code>elimerror</code> function defined below. What it does is that it slides a <code>(a, b)</code> window over the original sequence, and applies a correction based on the two values(<code>c</code> below). 
 </p>
 
 <div class="org-src-container">
@@ -425,11 +417,11 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-org9f31b8e" class="outline-3">
-<h3 id="org9f31b8e"><span class="section-number-3">1.3</span> An iterator of iterators</h3>
-<div class="outline-text-3" id="text-1-3">
+<div id="outline-container-org3d893b9" class="outline-2">
+<h2 id="org3d893b9"><span class="section-number-2">3</span> An iterator of iterators</h2>
+<div class="outline-text-2" id="text-3">
 <p>
-Do we actually need any improvements? Not for the simple problems that we've been solving, but this is where the code gets really interesting!
+Do we actually need any improvements? Not for the simple problems that we've been solving, but this is where the code gets interesting!
 </p>
 
 <p>
@@ -515,10 +507,9 @@ Does it work?
 </div>
 </div>
 </div>
-</div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-13 Sun 23:24</p>
+<p class="date">Created: 2022-03-14 Mon 19:51</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
