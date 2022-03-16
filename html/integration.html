@@ -3,10 +3,10 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-14 Mon 21:35 -->
+<!-- 2022-03-15 Tue 23:08 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Numerical integration with recursively defined iterators</title>
+<title>Numerical integration with lazy recursion</title>
 <meta name="generator" content="Org mode" />
 <meta name="author" content="Hsin-Hao Yu" />
 <style type="text/css">
@@ -219,14 +219,14 @@
 </head>
 <body>
 <div id="content">
-<h1 class="title">Numerical integration with recursively defined iterators</h1>
+<h1 class="title">Numerical integration with lazy recursion</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org3b83ed5">1. Integrate with lazy recursion</a></li>
-<li><a href="#org19694a1">2. Avoid redundant evaluation</a></li>
-<li><a href="#org38e5cb5">3. Improve convergence</a></li>
+<li><a href="#org267d349">1. Integration with lazy recursion</a></li>
+<li><a href="#org9420d63">2. Avoiding redundant evaluation</a></li>
+<li><a href="#org1c9e05d">3. Accelerating the convergence</a></li>
 </ul>
 </div>
 </div>
@@ -234,8 +234,8 @@
 For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
 </p>
 
-<div id="outline-container-org3b83ed5" class="outline-2">
-<h2 id="org3b83ed5"><span class="section-number-2">1</span> Integrate with lazy recursion</h2>
+<div id="outline-container-org267d349" class="outline-2">
+<h2 id="org267d349"><span class="section-number-2">1</span> Integration with lazy recursion</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a linear function, it's easy to calculate the area under the function:
@@ -243,7 +243,7 @@ For a linear function, it's easy to calculate the area under the function:
 
 <div class="org-src-container">
 <pre class="src src-python">from typing import Callable, Iterator, Tuple
-from lazy_utils import repeat_f, within, repeat_itr
+from lazy_utils import within
 from diff import improve
 
 esp = 0.0000000001 # a small number that's used to call within()
@@ -273,6 +273,10 @@ def integrate_(f: Callable[[float], float], a: float, b: float) -&gt; Iterator[f
 	yield i
 </pre>
 </div>
+
+<p>
+Note that <code>integrate_</code> doesn't look that much different from a regular (i.e., non-lazy) recursive function. However, by using <code>yield</code>, <code>map</code> and <code>zip</code> in the definition, we've defined a function that recurse lazily: the recursion only goes one depth further when we request the next value in the iterator.
+</p>
 
 <p>
 This is the first version of our integration function:
@@ -308,8 +312,8 @@ def test_integrate1():
 </div>
 </div>
 
-<div id="outline-container-org19694a1" class="outline-2">
-<h2 id="org19694a1"><span class="section-number-2">2</span> Avoid redundant evaluation</h2>
+<div id="outline-container-org9420d63" class="outline-2">
+<h2 id="org9420d63"><span class="section-number-2">2</span> Avoiding redundant evaluation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A problem with the code in the previous section is that every time <code>easyintegrate</code> is called, the value of <code>f</code> is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
@@ -332,7 +336,7 @@ def integrate2(f: Callable[[float], float], a: float, b: float) -&gt; float:
 </div>
 
 <p>
-We'll test the second version of our numerical integration function, too:
+Let's test the second version of our numerical integration function:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def test_integrate2():
@@ -345,8 +349,8 @@ We'll test the second version of our numerical integration function, too:
 </div>
 </div>
 
-<div id="outline-container-org38e5cb5" class="outline-2">
-<h2 id="org38e5cb5"><span class="section-number-2">3</span> Improve convergence</h2>
+<div id="outline-container-org1c9e05d" class="outline-2">
+<h2 id="org1c9e05d"><span class="section-number-2">3</span> Accelerating the convergence</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Remember that in <code>diff.org</code>, we used the <code>improve</code> function to accelerate the convergence of a sequence? We can use it here too:
@@ -375,7 +379,7 @@ Let's try it (it's much faster):
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-14 Mon 21:35</p>
+<p class="date">Created: 2022-03-15 Tue 23:08</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

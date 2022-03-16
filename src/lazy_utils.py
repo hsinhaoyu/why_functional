@@ -28,3 +28,33 @@ def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
         (i0, i1) = tee(acc)
         yield i0
         acc = f(i1)
+
+
+def mk_tree(label, subtrees):
+    return (label, subtrees)
+
+
+def decompose_tree(t):
+    try:
+        label, subtrees = t[0], t[1]
+        return label, subtrees
+    except ValueError:
+        raise Exception("Not a tree")
+
+
+def tree_labels(t):
+    label, subtrees = decompose_tree(t)
+    yield label
+    for i in subtrees:
+        for j in tree_labels(i):
+            yield j
+
+
+def mapforest_(f, forest):
+    for t in forest:
+        yield maptree(f, t)
+
+
+def maptree(f, t):
+    label, subtrees = decompose_tree(t)
+    return mk_tree(f(label), mapforest_(f, subtrees))

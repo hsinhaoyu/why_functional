@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-14 Mon 21:35 -->
+<!-- 2022-03-15 Tue 23:08 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Numerical differentiation using iterators</title>
@@ -224,9 +224,9 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org79a0ab1">1. A first stab at the problem</a></li>
-<li><a href="#org2dba924">2. Improve convergence with sequence transformation</a></li>
-<li><a href="#org80af418">3. An iterator of iterators</a></li>
+<li><a href="#orga7389b0">1. A first stab at the problem</a></li>
+<li><a href="#orga5f4c82">2. Improve convergence with sequence transformation</a></li>
+<li><a href="#orga7c83e5">3. An iterator of iterators</a></li>
 </ul>
 </div>
 </div>
@@ -234,8 +234,8 @@
 From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation starts to be interesting.
 </p>
 
-<div id="outline-container-org79a0ab1" class="outline-2">
-<h2 id="org79a0ab1"><span class="section-number-2">1</span> A first stab at the problem</h2>
+<div id="outline-container-orga7389b0" class="outline-2">
+<h2 id="orga7389b0"><span class="section-number-2">1</span> A first stab at the problem</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculating the slope:
@@ -309,8 +309,8 @@ def test_diff1():
 </div>
 </div>
 
-<div id="outline-container-org2dba924" class="outline-2">
-<h2 id="org2dba924"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
+<div id="outline-container-orga5f4c82" class="outline-2">
+<h2 id="orga5f4c82"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called <a href="https://en.wikipedia.org/wiki/Richardson_extrapolation">Richardson extrapolation</a>. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the next section.
@@ -417,8 +417,8 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-org80af418" class="outline-2">
-<h2 id="org80af418"><span class="section-number-2">3</span> An iterator of iterators</h2>
+<div id="outline-container-orga7c83e5" class="outline-2">
+<h2 id="orga7c83e5"><span class="section-number-2">3</span> An iterator of iterators</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Do we actually need any improvements? Not for the simple problems that we've been solving, but this is where the code gets interesting!
@@ -509,7 +509,7 @@ Does it work?
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-14 Mon 21:35</p>
+<p class="date">Created: 2022-03-15 Tue 23:08</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

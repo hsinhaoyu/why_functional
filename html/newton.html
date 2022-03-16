@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-14 Mon 21:35 -->
+<!-- 2022-03-15 Tue 23:08 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Calculating square roots with lazy evaluation</title>
@@ -224,16 +224,16 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org04589ef">1. The math bit</a></li>
-<li><a href="#orgccf42b7">2. Define a nesting iterator</a></li>
-<li><a href="#orgb4c58b6">3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
-<li><a href="#orgdb85f58">4. Add a stopping condition</a></li>
+<li><a href="#orgf38efe7">1. The math bit</a></li>
+<li><a href="#orgaf8d86a">2. Define a nesting iterator</a></li>
+<li><a href="#org1ffe4a1">3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
+<li><a href="#org060c8e3">4. Add a stopping condition</a></li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org04589ef" class="outline-2">
-<h2 id="org04589ef"><span class="section-number-2">1</span> The math bit</h2>
+<div id="outline-container-orgf38efe7" class="outline-2">
+<h2 id="orgf38efe7"><span class="section-number-2">1</span> The math bit</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 To approximate sqrt(n), we start with an initial value <code>x</code>, and apply (x + n/x) / 2.0 repeatedly.
@@ -272,8 +272,8 @@ def test_next_sqrt_approx():
 </div>
 </div>
 
-<div id="outline-container-orgccf42b7" class="outline-2">
-<h2 id="orgccf42b7"><span class="section-number-2">2</span> Define a nesting iterator</h2>
+<div id="outline-container-orgaf8d86a" class="outline-2">
+<h2 id="orgaf8d86a"><span class="section-number-2">2</span> Define a nesting iterator</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 <code>repeat_f(f, a)</code> applies the function <code>f</code> repeatedly to <code>a</code>. (The original code is more elegant and more general, but Python is not a lazy functional language).
@@ -312,8 +312,8 @@ def test_repeat_f():
 </div>
 </div>
 
-<div id="outline-container-orgb4c58b6" class="outline-2">
-<h2 id="orgb4c58b6"><span class="section-number-2">3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h2>
+<div id="outline-container-org1ffe4a1" class="outline-2">
+<h2 id="org1ffe4a1"><span class="section-number-2">3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h2>
 <div class="outline-text-2" id="text-3">
 <p>
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain <code>next_sqrt_approx</code> and <code>repeat_f</code> together:
@@ -342,8 +342,8 @@ Again, approximating sqrt(10.0) from 2.0:
 </div>
 </div>
 
-<div id="outline-container-orgdb85f58" class="outline-2">
-<h2 id="orgdb85f58"><span class="section-number-2">4</span> Add a stopping condition</h2>
+<div id="outline-container-org060c8e3" class="outline-2">
+<h2 id="org060c8e3"><span class="section-number-2">4</span> Add a stopping condition</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 We add a <code>within</code> function to stop the iteration when the difference between two successive iterations is smaller than <code>esp</code>.
@@ -387,7 +387,7 @@ A simple test:
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-14 Mon 21:35</p>
+<p class="date">Created: 2022-03-15 Tue 23:08</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

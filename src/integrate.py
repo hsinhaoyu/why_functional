@@ -1,5 +1,5 @@
 from typing import Callable, Iterator, Tuple
-from lazy_utils import repeat_f, within, repeat_itr
+from lazy_utils import within
 from diff import improve
 
 esp = 0.0000000001  # a small number that's used to call within()

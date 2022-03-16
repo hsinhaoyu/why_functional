@@ -6,7 +6,7 @@
 <!-- 2022-03-15 Tue 23:08 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Higher-order functions for trees</title>
+<title>Tic-Tac-Toe</title>
 <meta name="generator" content="Org mode" />
 <meta name="author" content="Hsin-Hao Yu" />
 <style type="text/css">
@@ -219,161 +219,101 @@
 </head>
 <body>
 <div id="content">
-<h1 class="title">Higher-order functions for trees</h1>
+<h1 class="title">Tic-Tac-Toe</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orged06e51">1. Representing trees</a></li>
-<li><a href="#org17ff55b">2. Extending <code>reduce</code> for trees</a></li>
-<li><a href="#orgaf8a8e6">3. Summing all labels in a tree</a></li>
-<li><a href="#org9f87f5b">4. Flattening trees</a></li>
-<li><a href="#org94a93e9">5. Mapping functions to trees</a></li>
+<li><a href="#org31beeb2">1. Some Tic-Tac-Toe utilities</a></li>
+<li><a href="#org9c39a5c">2. Build a (lazy) game tree</a></li>
 </ul>
 </div>
 </div>
 <p>
-Hughes' paper begins with <i>list folding</i>, a powerful higher-order function that can be used to implement a variety of useful operations on list. In Python, it's the job of <code>functools.reduce</code>. Since it's easy to find a tutorial on <code>reduce</code>, I will skip this part, and directly jump to an extension of <code>reduce</code> that operates on trees. Hughes' code is more powerful than the Python versions given below. We'll return to this topic a bit later (in <code>lazy_tree.org</code>).
+In this section, we're going to apply the ideas developed so far on a more complicated problem: playing a simple two-person game. We'll see an elegant implementation of the minimax algorithm in the style of lazy evaluation.
 </p>
 
-<div id="outline-container-orged06e51" class="outline-2">
-<h2 id="orged06e51"><span class="section-number-2">1</span> Representing trees</h2>
+<div id="outline-container-org31beeb2" class="outline-2">
+<h2 id="org31beeb2"><span class="section-number-2">1</span> Some Tic-Tac-Toe utilities</h2>
 <div class="outline-text-2" id="text-1">
-<p>
-I'll represent a tree this way: <code>(label, [subtree...])</code>: it's a tuple with a label and a list of subtrees. I'll call this structure a node. Note that this is not a binary tree, because a node can have many subtrees. 
-</p>
-
 <div class="org-src-container">
-<pre class="src src-python">from foldtree import *
+<pre class="src src-python">from typing import Tuple, List, Union, Iterator
+from functools import reduce
 
-my_tree = (1, [
-	       (2, []),
-	       (3, [
-		    (4, [])
-		   ]
-		)
-	       ])
-</pre>
-</div>
-</div>
-</div>
+num_pos = 9
 
-<div id="outline-container-org17ff55b" class="outline-2">
-<h2 id="org17ff55b"><span class="section-number-2">2</span> Extending <code>reduce</code> for trees</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-<code>reduce</code> uses a reduction function of two arguments to fold a list. For example, using <code>operator.add</code> as the reduction function, <code>reduce(operator.add, [1, 2, 3, 4], 0)</code> sums the numbers in [1, 2, 3, 4].
-</p>
+def mk_state(board, player, move):
+    return (board, player, move)
 
-<p>
-To generalize <code>reduce</code> to trees, we need two reduction functions of two arguments: <code>f</code> and <code>g</code>. Given a node, <code>g</code> reduces the subtrees to a value which can be further combined with the label using <code>f</code>. As in <code>reduce</code>, an initializing constant <code>a</code> is also needed.
-</p>
+def decompose_state(state):
+    board = state[0]
+    last_player = state[1]
+    last_move = state[2]
+    return (board, last_player, last_move)
 
-<div class="org-src-container">
-<pre class="src src-python">import operator
+def init_state():
+    board = [None for i in range(num_pos)]
+    last_player = None
+    last_move = None
+    return mk_state(board, last_player, last_move)
 
+def make_move(board, move: int, current_player: int) -&gt; List:
+    new_board = board.copy()
+    assert new_board[move] == None
 
-def foldtree(f, g, a, tree_comp):
-    """Apply two functions (f and g) of two arguments to transform a tree.
-    f: combine the label of a node to its subtrees
-    g: combine the subtrees of a node
-    a: an initial constant
-    tree_comp: a node, a list of subtrees, or []
-    """
-    if tree_comp == []:
-	return a
-    elif isinstance(tree_comp, list):
-	# fold multiple subtrees
-	subtree = tree_comp[0]
-	rest = tree_comp[1:]
-	return g(
-		 foldtree(f, g, a, subtree),
-		 foldtree(f, g, a, rest))
+    new_board[move] = current_player
+
+    return mk_state(new_board, current_player, move)
+
+def moves(state) -&gt; Iterator:
+    """Returns an iterator of game states of all legal next moves"""
+    (board, last_player, last_move) = decompose_state(state)
+    if last_player is None:
+	next_player = 0
     else:
-	assert isinstance(tree_comp, tuple)
-	# fold a label with the subtrees
-	(label, subtrees) = tree_comp
-	return f(label, foldtree(f, g, a, subtrees))
+	next_player = (last_player + 1) % 2
+
+    candidate_moves = [i for i in range(num_pos) if board[i] is None]
+    return map(lambda i: make_move(board, i, next_player), candidate_moves)
+
+def display_board(board):
+    def row(lst):
+	return reduce(lambda a, b: a + b, lst, "")
+
+    d = {None: '.', 0: 'O', 1: 'X'}
+    zz = list(map(lambda i: d[i], board))
+    zz = [zz[i:i+3] for i in range(0, 9, 3)]
+    zz = map(row, zz)
+    zz = reduce(lambda a, b: a + "\n" + b, zz, "")
+    print(zz)    
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-orgaf8a8e6" class="outline-2">
-<h2 id="orgaf8a8e6"><span class="section-number-2">3</span> Summing all labels in a tree</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-Just like using <code>reduce</code> to sum the numbers in a list, we can use <code>foldtree</code> to sum the labels in a tree:
-</p>
+<div id="outline-container-org9c39a5c" class="outline-2">
+<h2 id="org9c39a5c"><span class="section-number-2">2</span> Build a (lazy) game tree</h2>
+<div class="outline-text-2" id="text-2">
 <div class="org-src-container">
-<pre class="src src-python">def sumtree(tree):
-    """Sum all labels in a tree."""
-    add = operator.add
-    return foldtree(add, add, 0, tree)
+<pre class="src src-python">def reptree(f, label):
+    return (label, map(lambda b: reptree(f, b), f(label)))
+
+def gametree(state):
+    return reptree(moves, state)
 </pre>
 </div>
 
 <div class="org-src-container">
-<pre class="src src-python">def test_sumtree():
-    assert sumtree(my_tree) == 10
-</pre>
-</div>
-</div>
-</div>
+<pre class="src src-python">from tic_tac_toe import init_state, gametree, display_board
 
-<div id="outline-container-org9f87f5b" class="outline-2">
-<h2 id="org9f87f5b"><span class="section-number-2">4</span> Flattening trees</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-<code>tree_labels</code> collects all labels of a tree into a list.
-</p>
+b0 = init_state()
+t = gametree(b0)
 
-<div class="org-src-container">
-<pre class="src src-python">def tree_labels(tree):
-    """Collect all labels of a tree into a list."""
-    def cons(label, lst):
-	return [label] + lst
-
-    def append(lst1, lst2):
-	return lst1 + lst2
-
-    return foldtree(cons, append, [], tree)
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">def test_tree_labels():
-    assert tree_labels(my_tree) == [1, 2, 3, 4]
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-org94a93e9" class="outline-2">
-<h2 id="org94a93e9"><span class="section-number-2">5</span> Mapping functions to trees</h2>
-<div class="outline-text-2" id="text-5">
-<p>
-Map a function <code>f</code> to all labels in a tree.
-</p>
-
-<div class="org-src-container">
-<pre class="src src-python">def maptree(f, tree):
-    """Map a function to all labels in a tree"""
-    def mk_node(label, lst):
-	return (f(label), lst)
-
-    def cons(label, lst):
-	return [label] + lst
-
-    return foldtree(mk_node, cons, [], tree)
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">def test_maptree():
-    res = maptree(lambda x: -1 * x, my_tree)
-    res = tree_labels(res)
-    assert res == [-1, -2, -3, -4]
+def visit(t):
+    (state, subtrees) = t
+    display_board(state[0])
+    n = next(subtrees)
+    visit(n)
 </pre>
 </div>
 </div>

@@ -2,7 +2,12 @@ import operator
 
 
 def foldtree(f, g, a, tree_comp):
-    """Apply two functions (f and g) to transform a tree."""
+    """Apply two functions (f and g) of two arguments to transform a tree.
+    f: combine the label of a node to its subtrees
+    g: combine the subtrees of a node
+    a: an initial constant
+    tree_comp: a node, a list of subtrees, or []
+    """
     if tree_comp == []:
         return a
     elif isinstance(tree_comp, list):
@@ -38,10 +43,10 @@ def tree_labels(tree):
 def maptree(f, tree):
     """Map a function to all labels in a tree"""
 
-    def cons(leaf, lst):
-        return [leaf] + lst
+    def mk_node(label, lst):
+        return (f(label), lst)
 
-    def mk_leaf(leaf, lst):
-        return (f(leaf), lst)
+    def cons(label, lst):
+        return [label] + lst
 
-    return foldtree(mk_leaf, cons, [], tree)
+    return foldtree(mk_node, cons, [], tree)

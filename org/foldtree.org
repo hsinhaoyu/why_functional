@@ -1,12 +1,11 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
-#+EXPORT_FILE_NAME: ../html/foldtree.org
+#+EXPORT_FILE_NAME: ../html/foldtree.html
 #+TITLE: Higher-order functions for trees
 
-Higher-order functions that operate on iterators should be familiar to many Python programmers. Hughes' paper has a section on =foldr= (which is similar to =functools.reduce= in Python). I'll skip it, and jump directly to an extension of =reduce= that operates on trees.
+Hughes' paper begins with /list folding/, a powerful higher-order function that can be used to implement a variety of useful operations on list. In Python, it's the job of =functools.reduce=. Since it's easy to find a tutorial on =reduce=, I will skip this part, and directly jump to an extension of =reduce= that operates on trees. Hughes' code is more powerful than the Python versions given below. We'll return to this topic a bit later (in =lazy_tree.org=).
 
 * Representing trees
-
-I'll represent a tree this way: =(label, [subtree...])=: it's a tuple with a label and a list of subtrees. Note that this is not a binary tree. It's set up this way, because later in his paper, it's used to build game trees.
+I'll represent a tree this way: =(label, [subtree...])=: it's a tuple with a label and a list of subtrees. I'll call this structure a node. Note that this is not a binary tree, because a node can have many subtrees. 
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   from foldtree import *
@@ -20,16 +19,23 @@ I'll represent a tree this way: =(label, [subtree...])=: it's a tuple with a lab
                  ])
 #+end_src
 
-* =foldtree=: =reduce= for trees
+* Extending =reduce= for trees
 
-To generalize =reduce= to trees, we have to specify two functions (rather than just one, as in =reduce=). The two functions are =f= for combining a label and subtrees, and =g= for combining subtrees. Both are functions of two arguments. =a= is an initializing constant. 
+=reduce= uses a reduction function of two arguments to fold a list. For example, using =operator.add= as the reduction function, =reduce(operator.add, [1, 2, 3, 4], 0)= sums the numbers in [1, 2, 3, 4].
+
+To generalize =reduce= to trees, we need two reduction functions of two arguments: =f= and =g=. Given a node, =g= reduces the subtrees to a value which can be further combined with the label using =f=. As in =reduce=, an initializing constant =a= is also needed.
 
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
   import operator
 
 
   def foldtree(f, g, a, tree_comp):
-      """Apply two functions (f and g) to transform a tree."""
+      """Apply two functions (f and g) of two arguments to transform a tree.
+      f: combine the label of a node to its subtrees
+      g: combine the subtrees of a node
+      a: an initial constant
+      tree_comp: a node, a list of subtrees, or []
+      """
       if tree_comp == []:
           return a
       elif isinstance(tree_comp, list):
@@ -43,12 +49,11 @@ To generalize =reduce= to trees, we have to specify two functions (rather than j
           assert isinstance(tree_comp, tuple)
           # fold a label with the subtrees
           (label, subtrees) = tree_comp
-          return f(label,
-                   foldtree(f, g, a, subtrees))
+          return f(label, foldtree(f, g, a, subtrees))
 #+end_src
 
-* Example #1: sum all labels  in a tree
-
+* Summing all labels in a tree
+Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to sum the labels in a tree:
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
   def sumtree(tree):
       """Sum all labels in a tree."""
@@ -61,17 +66,18 @@ To generalize =reduce= to trees, we have to specify two functions (rather than j
       assert sumtree(my_tree) == 10
 #+end_src
 
-* Example #2: tree flattening
-
-Collect all labels of a tree into a list.
+* Flattening trees
+=tree_labels= collects all labels of a tree into a list.
 
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
   def tree_labels(tree):
       """Collect all labels of a tree into a list."""
       def cons(label, lst):
           return [label] + lst
+
       def append(lst1, lst2):
           return lst1 + lst2
+      
       return foldtree(cons, append, [], tree)
 #+end_src
 
@@ -80,20 +86,19 @@ Collect all labels of a tree into a list.
       assert tree_labels(my_tree) == [1, 2, 3, 4]
 #+end_src
 
-* Example #3: =map= for trees
-
-Map a function to all labels in a tree.
+* Mapping functions to trees
+Map a function =f= to all labels in a tree.
 
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
   def maptree(f, tree):
       """Map a function to all labels in a tree"""
-      def cons(leaf, lst):
-          return [leaf] + lst
+      def mk_node(label, lst):
+          return (f(label), lst)
+      
+      def cons(label, lst):
+          return [label] + lst
 
-      def mk_leaf(leaf, lst):
-          return (f(leaf), lst)
-
-      return foldtree(mk_leaf, cons, [], tree)
+      return foldtree(mk_node, cons, [], tree)
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py

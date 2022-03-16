@@ -1,0 +1,94 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+#+EXPORT_FILE_NAME: ../html/lazy_tree.html
+#+TITLE: Lazy trees
+
+Recall that in =foldtree.org=, we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees, meaning that he could write a function that generates an enormous or even infinite tree, without actually evaluating all the nodes. This characteristic is very useful for implementing complex algorithms that we will see in the next section.
+
+Lazy evaluation is not integral to Python, so we have to write extra codes. I've found it difficult to write a lazy version of the higher-order function =foldtree= in Python, so I will do it less elegantly. I will just lazify =treelabels= and =maptree= in the style of Python's generators.
+
+* Representing lazy trees
+
+As in =foldtree.org=, a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list.
+
+Some simple utilities:
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def mk_tree(label, subtrees):
+      return (label, subtrees)
+
+  def decompose_tree(t):
+      try:
+          label, subtrees = t[0], t[1]
+          return label, subtrees
+      except ValueError:
+          raise Exception("Not a tree")
+#+end_src
+
+Let's build the same tree in =foldtree.org=, replacing lists with iterators: 
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  from lazy_utils import *
+
+  def mk_tree_(label, lst):
+      """A throw-away function just for this example"""
+      return (label, iter(lst))
+
+  my_tree = mk_tree_(1, [
+                         mk_tree_(2, []),
+                         mk_tree_(3, [
+                                      mk_tree_(4, [])
+                                     ]
+                         )
+                        ])
+#+end_src
+
+* Flattening lazy trees
+This version returns an iterator, which visits every label in the tree one by one:
+
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def tree_labels(t):
+      label, subtrees = decompose_tree(t)
+      yield label
+      for i in subtrees:
+          for j in tree_labels(i):
+              yield j
+#+end_src
+
+Let's try it. Note that =tree_labels= is lazy. It returns an iterator. I use =list(t)= to convert it to a regular list.
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  def test_tree_labels():
+      t = tree_labels(my_tree)
+      assert list(t) == [1, 2, 3, 4]
+#+end_src
+
+* Mapping functions to lazy trees
+This version of =maptree= maps a function =f= to all labels in the input, and returns another lazy tree. 
+
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def mapforest_(f, forest):
+      for t in forest:
+          yield maptree(f, t)
+
+  def maptree(f, t):
+      label, subtrees = decompose_tree(t)
+      return mk_tree(f(label),
+                     mapforest_(f, subtrees))
+#+end_src
+
+Let's try it. I use the =tree_labels= function to collect all the labels in the returned lazy tree.
+
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  my_tree2 = mk_tree_(1, [
+                         mk_tree_(2, []),
+                         mk_tree_(3, [
+                                      mk_tree_(4, [])
+                                     ]
+                         )
+                        ])
+
+  def test_maptree():
+      def f(n):
+          return -1 * n
+
+      t = maptree(f, my_tree2)
+      t = tree_labels(t)
+      assert list(t) == [-1, -2, -3, -4]
+#+end_src

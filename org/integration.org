@@ -1,17 +1,17 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/integration.html
 
-#+TITLE:  Numerical integration with recursively defined iterators
+#+TITLE:  Numerical integration with lazy recursion
 
 For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
 
-* Integrate with lazy recursion
+* Integration with lazy recursion
 
 For a linear function, it's easy to calculate the area under the function:
 
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   from typing import Callable, Iterator, Tuple
-  from lazy_utils import repeat_f, within, repeat_itr
+  from lazy_utils import within
   from diff import improve
 
   esp = 0.0000000001 # a small number that's used to call within()
@@ -37,6 +37,8 @@ For a nonlinear function, we can divide the interval (a, b) into two intervals, 
       for i in s:
           yield i
 #+end_src
+
+Note that =integrate_= doesn't look that much different from a regular (i.e., non-lazy) recursive function. However, by using =yield=, =map= and =zip= in the definition, we've defined a function that recurse lazily: the recursion only goes one depth further when we request the next value in the iterator.
 
 This is the first version of our integration function:
 
@@ -64,7 +66,7 @@ A simple test:
       assert d == pytest.approx(2.0)
 #+end_src
 
-* Avoid redundant evaluation
+* Avoiding redundant evaluation
 A problem with the code in the previous section is that every time =easyintegrate= is called, the value of =f= is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
 
 #+begin_src python :noweb yes :tangle ../src/integrate.py
@@ -82,7 +84,7 @@ A problem with the code in the previous section is that every time =easyintegrat
       return next(d)
 #+end_src
 
-We'll test the second version of our numerical integration function, too:
+Let's test the second version of our numerical integration function:
 #+begin_src python :noweb yes :tangle ../src/test_integrate.py
   def test_integrate2():
       print("\n## test_integrate2()")
@@ -91,7 +93,7 @@ We'll test the second version of our numerical integration function, too:
       assert d == pytest.approx(2.0)
 #+end_src
 
-* Accelerate the convergence
+* Accelerating the convergence
 Remember that in =diff.org=, we used the =improve= function to accelerate the convergence of a sequence? We can use it here too:
 
 #+begin_src python :noweb yes :tangle ../src/integrate.py
