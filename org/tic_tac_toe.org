@@ -4,7 +4,7 @@
 
 In this section, we're going to apply the ideas developed so far on a more complicated problem: playing a simple two-person game: Tic-tac-toe. We'll see an elegant implementation of the minimax algorithm using lazy evaluation.
 
-The game itself is not important, so I have moved all Tic-tac-toe specific functions to the end of this document. All that matters is that =init_board()= creates an empty 9x9 board, =moves(board)= returns an iterator of all legal configurations for the next move, and =static_eval(board)= use heuristics to score a board configuration. 
+The game itself is not important, so I have moved all Tic-tac-toe specific functions to the end of this document. All that matters is that =init_board()= creates an empty 9x9 board, =moves(board)= returns an iterator of all legal configurations for the next move, and =static_eval(board)= uses heuristics to score a board configuration. 
 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
@@ -13,7 +13,7 @@ The game itself is not important, so I have moved all Tic-tac-toe specific funct
 #+end_src
 
 * Build a (lazy) game tree
-Remember that we defined =repeat_f= in =diff.org= that repeatedly maps a function to an initial value. =repree= is a similar. =f= is a function that takes a value, and returns a list of values. =f= is applied repeatedly to the list.
+Remember that =repeat_f= (defined in =diff.org=) repeatedly maps a function to an initial value to generate a list. =repree= extends the idea to trees. Let =f= be a function that takes a value, and returns a list of values. =reptree= grows a tree out of an initial value by applying =f= repeatedly:
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def reptree(f, label):
@@ -21,7 +21,7 @@ Remember that we defined =repeat_f= in =diff.org= that repeatedly maps a functio
       return mk_tree(label, map(lambda b: reptree(f, b), f(label)))
 #+end_src
 
-By applying =moves= repeatedly to a board configuration using =reptree=, we get a tree of all possible future configurations of the game! Of course, =reptree= is lazy, so no future configuration is actually generated. They will only be generated when we access the iterators.
+By applying =moves= repeatedly to a board configuration, we get a tree of all possible future configurations of the game! Of course, =reptree= is lazy, so no future configuration is actually generated. They will only be generated when we access the iterators.
 
 #+begin_src python :noweb yes :tangle ../src/game.py
   <<GAME_IMPORTS>>
@@ -81,9 +81,9 @@ Let's check the size of the pruned tree:
 #+end_src
 
 * Apply static evaluation to the game tree
-In the appendix, I defined =static_eval=, which scores a board configuration (a positive value means player 0 is winning; a negative values means that player 1 is winning). It's called a static evaluation, because it doesn't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
+In the appendix, I defined =static_eval=, which scores a board configuration. It's called a static evaluation, because it doesn't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
 
-Here's an example of a score:
+Here's an example:
 
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_static_eval():
