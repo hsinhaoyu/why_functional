@@ -3,10 +3,10 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-16 Wed 17:58 -->
+<!-- 2022-03-16 Wed 18:10 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Play Tic-Tac-Toe with lazy trees</title>
+<title>Play Tic-Tac-Toe using lazy trees</title>
 <meta name="generator" content="Org mode" />
 <meta name="author" content="Hsin-Hao Yu" />
 <style type="text/css">
@@ -219,15 +219,15 @@
 </head>
 <body>
 <div id="content">
-<h1 class="title">Play Tic-Tac-Toe with lazy trees</h1>
+<h1 class="title">Play Tic-Tac-Toe using lazy trees</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org8e4bdea">1. Some Tic-Tac-Toe utilities</a></li>
-<li><a href="#org829264f">2. Build a (lazy) game tree</a></li>
-<li><a href="#org204a76e">3. Prune the game tree</a></li>
-<li><a href="#org34b2895">4. Static evaluation function</a></li>
+<li><a href="#org2b4a86f">1. Build a (lazy) game tree</a></li>
+<li><a href="#orgdedcab1">2. Prune the game tree</a></li>
+<li><a href="#org66aa4ed">3. A static evaluation function</a></li>
+<li><a href="#org0ec46cb">4. Some Tic-Tac-Toe utilities</a></li>
 </ul>
 </div>
 </div>
@@ -235,9 +235,224 @@
 In this section, we're going to apply the ideas developed so far on a more complicated problem: playing a simple two-person game. We'll see an elegant implementation of the minimax algorithm in the style of lazy evaluation.
 </p>
 
-<div id="outline-container-org8e4bdea" class="outline-2">
-<h2 id="org8e4bdea"><span class="section-number-2">1</span> Some Tic-Tac-Toe utilities</h2>
+<div class="org-src-container">
+<pre class="src src-python">from typing import Tuple, List, Union, Iterator
+from functools import reduce
+from lazy_utils import mk_tree, decompose_tree
+
+num_pos = 9
+
+def init_board():
+    board = [None for i in range(num_pos)]
+    return board
+
+def make_move(board, move: int, current_player: int) -&gt; List:
+    new_board = board.copy()
+    assert new_board[move] == None
+
+    new_board[move] = current_player
+
+    return new_board
+
+def moves(board) -&gt; Iterator:
+    """Returns an iterator of all legal next moves.
+    Player 0 (X) makes the first move in a game.
+    """
+    next_player = board.count(0) - board.count(1)
+
+    candidate_moves = [i for i in range(num_pos) if board[i] is None]
+    return map(lambda i: make_move(board, i, next_player), candidate_moves)
+
+def display_board(board, coordinates=False):
+    def row(lst):
+	return reduce(lambda a, b: a + b, lst, "")
+
+    d = {None: '.', 1: 'O', 0: 'X'}
+    zz = list(map(lambda i: d[i], board))
+    zz = [zz[i:i+3] for i in range(0, 9, 3)]
+    zz = list(map(row, zz))
+
+    if coordinates:
+	def d(i):
+	    if board[i] is None:
+		return str(i)
+	    else:
+		return " "
+	zz2 = [d(i) for i in range(9)]
+	zz2 = [zz2[i:i+3] for i in range(0, 9, 3)]
+	zz2 = list(map(row, zz2))
+
+    res = ""
+    if coordinates:
+	for i in range(3):
+	    res = res + zz[i] + "\t" + zz2[i] + "\n"
+    else:
+	for i in range(3):
+	    res = res + zz[i] + "\n"
+
+    print(res)
+
+def player_input(board):
+    display_board(board, coordinates = True)
+    legal_moves = [i for i in range(9) if board[i] is None]
+    ok = False
+    while not ok:
+	m = input("move?")
+	try:
+	    i = int(m)
+	    if i in legal_moves:
+		ok = True
+	except:
+	    pass
+
+    # the human player is always player 0
+    return make_move(board, i, 0) 
+</pre>
+</div>
+
+<div id="outline-container-org2b4a86f" class="outline-2">
+<h2 id="org2b4a86f"><span class="section-number-2">1</span> Build a (lazy) game tree</h2>
 <div class="outline-text-2" id="text-1">
+<p>
+This is the equivalence of <code>repeat</code> for trees.
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def reptree(f, label):
+    """Appy a function f to all labels in a tree repeatedly."""
+    return mk_tree(label, map(lambda b: reptree(f, b), f(label)))
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">from lazy_utils import reptree, mk_tree
+
+def gametree(moves, board):
+    return reptree(moves, board)
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">from tic_tac_toe import init_board, display_board, moves, static_eval
+from game import gametree, prune
+from lazy_utils import tree_size, tree_depth
+
+def test_gametree():
+    b0 = init_board()
+    t = gametree(moves, b0)
+    d = tree_depth(t)
+    print("\nBefore pruning:")
+    print("depth=", d)
+
+def test_gametree2():
+    b0 = init_board()
+    t = gametree(moves, b0)
+    s = tree_size(t)
+    print("\nBefore pruning:")
+    print("size=", s)
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgdedcab1" class="outline-2">
+<h2 id="orgdedcab1"><span class="section-number-2">2</span> Prune the game tree</h2>
+<div class="outline-text-2" id="text-2">
+<div class="org-src-container">
+<pre class="src src-python">def prune(n, tree):
+    (board, subtrees) = tree
+    if n == 0:
+	return mk_tree(board, iter([]))
+    else:
+	return mk_tree(board, map(lambda t: prune(n - 1, t), subtrees))
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">def test_prune():
+    b0 = init_board()
+    t = prune(4, gametree(moves, b0))
+    d = tree_depth(t)
+    print("\nAfter pruning:")
+    print("depth=", d)
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">def test_prune2():
+    b0 = init_board()
+    t = prune(5, gametree(moves, b0))
+    s = tree_size(t)
+    print("\nAfter pruning:")
+    print("size=", s)
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org66aa4ed" class="outline-2">
+<h2 id="org66aa4ed"><span class="section-number-2">3</span> A static evaluation function</h2>
+<div class="outline-text-2" id="text-3">
+<div class="org-src-container">
+<pre class="src src-python">line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+
+def board_line(line_idx, board):
+    return [board[i] for i in line_idx]
+
+def board_lines(board):
+    return list(map(lambda idx: board_line(idx, board), line_idx))
+
+def is_good_line(n, player, line):
+    v1 = line.count(player) == n
+    v2 = line.count(None) == 3 - n
+    return v1 and v2
+
+def count_good_lines(n, player, lines):
+    zz = list(map(lambda l: is_good_line(n, player, l), lines))
+    return zz.count(True)
+
+def player0_wins(board):
+    lines = board_lines(board)
+    return any(map(lambda l: l.count(0) == 3, lines))
+
+def static_eval(board):
+    """Static board value.
+    &gt;0: player 0 is doing better
+    &lt;0: player 1 is doing better
+    """
+    lines = board_lines(board)
+
+    if any(map(lambda l: l.count(0) == 3, lines)):
+	val = 1000000
+    elif any(map(lambda l: l.count(1) ==3, lines)):
+	val = -1000000
+    else:
+	x2 = count_good_lines(2, 0, lines)
+	x1 = count_good_lines(1, 0, lines)
+
+	o2 = count_good_lines(2, 1, lines)
+	o1 = count_good_lines(1, 1, lines)
+
+	val = 3 * x2 + x1 - (3 * o2 + o1)
+    return val
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">def test_static_eval():
+    b0 = init_board()
+    b0[4] = 0
+    print(b0)
+
+    v = static_eval(b0)
+    print(v)
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0ec46cb" class="outline-2">
+<h2 id="org0ec46cb"><span class="section-number-2">4</span> Some Tic-Tac-Toe utilities</h2>
+<div class="outline-text-2" id="text-4">
 <div class="org-src-container">
 <pre class="src src-python">from typing import Tuple, List, Union, Iterator
 from functools import reduce
@@ -314,150 +529,10 @@ def player_input(board):
 </div>
 </div>
 </div>
-
-<div id="outline-container-org829264f" class="outline-2">
-<h2 id="org829264f"><span class="section-number-2">2</span> Build a (lazy) game tree</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-This is the equivalence of <code>repeat</code> for trees.
-</p>
-<div class="org-src-container">
-<pre class="src src-python">def reptree(f, label):
-    """Appy a function f to all labels in a tree repeatedly."""
-    return mk_tree(label, map(lambda b: reptree(f, b), f(label)))
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">from lazy_utils import reptree, mk_tree
-
-def gametree(moves, board):
-    return reptree(moves, board)
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">from tic_tac_toe import init_board, display_board, moves, static_eval
-from game import gametree, prune
-from lazy_utils import tree_size, tree_depth
-
-def test_gametree():
-    b0 = init_board()
-    t = gametree(moves, b0)
-    d = tree_depth(t)
-    print("\nBefore pruning:")
-    print("depth=", d)
-
-def test_gametree2():
-    b0 = init_board()
-    t = gametree(moves, b0)
-    s = tree_size(t)
-    print("\nBefore pruning:")
-    print("size=", s)
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-org204a76e" class="outline-2">
-<h2 id="org204a76e"><span class="section-number-2">3</span> Prune the game tree</h2>
-<div class="outline-text-2" id="text-3">
-<div class="org-src-container">
-<pre class="src src-python">def prune(n, tree):
-    (board, subtrees) = tree
-    if n == 0:
-	return mk_tree(board, iter([]))
-    else:
-	return mk_tree(board, map(lambda t: prune(n - 1, t), subtrees))
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">def test_prune():
-    b0 = init_board()
-    t = prune(4, gametree(moves, b0))
-    d = tree_depth(t)
-    print("\nAfter pruning:")
-    print("depth=", d)
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">def test_prune2():
-    b0 = init_board()
-    t = prune(5, gametree(moves, b0))
-    s = tree_size(t)
-    print("\nAfter pruning:")
-    print("size=", s)
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-org34b2895" class="outline-2">
-<h2 id="org34b2895"><span class="section-number-2">4</span> Static evaluation function</h2>
-<div class="outline-text-2" id="text-4">
-<div class="org-src-container">
-<pre class="src src-python">line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
-
-def board_line(line_idx, board):
-    return [board[i] for i in line_idx]
-
-def board_lines(board):
-    return list(map(lambda idx: board_line(idx, board), line_idx))
-
-def is_good_line(n, player, line):
-    v1 = line.count(player) == n
-    v2 = line.count(None) == 3 - n
-    return v1 and v2
-
-def count_good_lines(n, player, lines):
-    zz = list(map(lambda l: is_good_line(n, player, l), lines))
-    return zz.count(True)
-
-def player0_wins(board):
-    lines = board_lines(board)
-    return any(map(lambda l: l.count(0) == 3, lines))
-
-def static_eval(board):
-    """Static board value.
-    &gt;0: player 0 is doing better
-    &lt;0: player 1 is doing better
-    """
-    lines = board_lines(board)
-
-    if any(map(lambda l: l.count(0) == 3, lines)):
-	val = 1000000
-    elif any(map(lambda l: l.count(1) ==3, lines)):
-	val = -1000000
-    else:
-	x2 = count_good_lines(2, 0, lines)
-	x1 = count_good_lines(1, 0, lines)
-
-	o2 = count_good_lines(2, 1, lines)
-	o1 = count_good_lines(1, 1, lines)
-
-	val = 3 * x2 + x1 - (3 * o2 + o1)
-    return val
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-python">def test_static_eval():
-    b0 = init_board()
-    b0[4] = 0
-    print(b0)
-
-    v = static_eval(b0)
-    print(v)
-</pre>
-</div>
-</div>
-</div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-16 Wed 17:58</p>
+<p class="date">Created: 2022-03-16 Wed 18:10</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
