@@ -6,6 +6,7 @@ In this section, we're going to apply the ideas developed so far on a more compl
 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_UTILS>>
+  <<TIC_TAC_TOE_EVAL>>
 #+end_src
 
 * Build a (lazy) game tree
@@ -71,62 +72,7 @@ This is the equivalence of =repeat= for trees.
       print("size=", s)
 #+end_src
 
-* A static evaluation function
-#+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
-  line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
-
-  def board_line(line_idx, board):
-      return [board[i] for i in line_idx]
-
-  def board_lines(board):
-      return list(map(lambda idx: board_line(idx, board), line_idx))
-
-  def is_good_line(n, player, line):
-      v1 = line.count(player) == n
-      v2 = line.count(None) == 3 - n
-      return v1 and v2
-
-  def count_good_lines(n, player, lines):
-      zz = list(map(lambda l: is_good_line(n, player, l), lines))
-      return zz.count(True)
-
-  def player0_wins(board):
-      lines = board_lines(board)
-      return any(map(lambda l: l.count(0) == 3, lines))
-
-  def static_eval(board):
-      """Static board value.
-      >0: player 0 is doing better
-      <0: player 1 is doing better
-      """
-      lines = board_lines(board)
-
-      if any(map(lambda l: l.count(0) == 3, lines)):
-          val = 1000000
-      elif any(map(lambda l: l.count(1) ==3, lines)):
-          val = -1000000
-      else:
-          x2 = count_good_lines(2, 0, lines)
-          x1 = count_good_lines(1, 0, lines)
-
-          o2 = count_good_lines(2, 1, lines)
-          o1 = count_good_lines(1, 1, lines)
-
-          val = 3 * x2 + x1 - (3 * o2 + o1)
-      return val
-#+end_src
-
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_static_eval():
-      b0 = init_board()
-      b0[4] = 0
-      print(b0)
-
-      v = static_eval(b0)
-      print(v)
-#+end_src
-
-* Some Tic-Tac-Toe utilities
+* Appendix 1: Tic-Tac-Toe utilities
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_UTILS
   from typing import Tuple, List, Union, Iterator
   from functools import reduce
@@ -199,4 +145,59 @@ This is the equivalence of =repeat= for trees.
 
       # the human player is always player 0
       return make_move(board, i, 0) 
+#+end_src
+
+* Appendix 2: A static evaluation function for Tic-Tac-Toe
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_EVAL
+  line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+
+  def board_line(line_idx, board):
+      return [board[i] for i in line_idx]
+
+  def board_lines(board):
+      return list(map(lambda idx: board_line(idx, board), line_idx))
+
+  def is_good_line(n, player, line):
+      v1 = line.count(player) == n
+      v2 = line.count(None) == 3 - n
+      return v1 and v2
+
+  def count_good_lines(n, player, lines):
+      zz = list(map(lambda l: is_good_line(n, player, l), lines))
+      return zz.count(True)
+
+  def player0_wins(board):
+      lines = board_lines(board)
+      return any(map(lambda l: l.count(0) == 3, lines))
+
+  def static_eval(board):
+      """Static board value.
+      >0: player 0 is doing better
+      <0: player 1 is doing better
+      """
+      lines = board_lines(board)
+
+      if any(map(lambda l: l.count(0) == 3, lines)):
+          val = 1000000
+      elif any(map(lambda l: l.count(1) ==3, lines)):
+          val = -1000000
+      else:
+          x2 = count_good_lines(2, 0, lines)
+          x1 = count_good_lines(1, 0, lines)
+
+          o2 = count_good_lines(2, 1, lines)
+          o1 = count_good_lines(1, 1, lines)
+
+          val = 3 * x2 + x1 - (3 * o2 + o1)
+      return val
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_static_eval():
+      b0 = init_board()
+      b0[4] = 0
+      print(b0)
+
+      v = static_eval(b0)
+      print(v)
 #+end_src
