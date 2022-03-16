@@ -31,13 +31,15 @@ Let's build the same tree in =foldtree.org=, replacing lists with iterators:
       """A throw-away function just for this example"""
       return (label, iter(lst))
 
-  my_tree = mk_tree_(1, [
-                         mk_tree_(2, []),
-                         mk_tree_(3, [
-                                      mk_tree_(4, [])
-                                     ]
-                         )
-                        ])
+  def mk_test_tree():
+      my_tree = mk_tree_(1, [
+                             mk_tree_(2, []),
+                             mk_tree_(3, [
+                                          mk_tree_(4, [])
+                                         ]
+                              )
+                             ])
+      return my_tree
 #+end_src
 
 * Flattening lazy trees
@@ -55,8 +57,9 @@ This version returns an iterator, which visits every label in the tree one by on
 Let's try it. Note that =tree_labels= is lazy. It returns an iterator. I use =list(t)= to convert it to a regular list.
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
   def test_tree_labels():
-      t = tree_labels(my_tree)
-      assert list(t) == [1, 2, 3, 4]
+      t = mk_test_tree()
+      i = tree_labels(t)
+      assert list(i) == [1, 2, 3, 4]
 #+end_src
 
 * Mapping functions to lazy trees
@@ -76,19 +79,50 @@ This version of =maptree= maps a function =f= to all labels in the input, and re
 Let's try it. I use the =tree_labels= function to collect all the labels in the returned lazy tree.
 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
-  my_tree2 = mk_tree_(1, [
-                         mk_tree_(2, []),
-                         mk_tree_(3, [
-                                      mk_tree_(4, [])
-                                     ]
-                         )
-                        ])
-
   def test_maptree():
       def f(n):
           return -1 * n
 
-      t = maptree(f, my_tree2)
+      t = mk_test_tree()
+      t = maptree(f, t)
       t = tree_labels(t)
       assert list(t) == [-1, -2, -3, -4]
+#+end_src
+
+* Other useful functions
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def tree_size(t):
+      label, subtrees = decompose_tree(t)
+
+      count  = 1
+      for t in subtrees:
+          count = count + tree_size(t)
+      return count
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  def test_tree_size():
+      t = mk_test_tree()
+      s = tree_size(t)
+      assert s == 4
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def tree_depth(t):
+      def tree_depth_(t, d):
+          label, subtrees = decompose_tree(t)
+
+          mx = d
+          for t_ in subtrees:
+              mx = max(mx, tree_depth_(t_, d + 1))
+          return mx
+
+      return tree_depth_(t, 1)
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  def test_tree_depth():
+      t = mk_test_tree()
+      d = tree_depth(t)
+      assert d == 3
 #+end_src

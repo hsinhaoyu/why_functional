@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-15 Tue 23:08 -->
+<!-- 2022-03-16 Wed 17:58 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Numerical integration with lazy recursion</title>
@@ -224,9 +224,9 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org267d349">1. Integration with lazy recursion</a></li>
-<li><a href="#org9420d63">2. Avoiding redundant evaluation</a></li>
-<li><a href="#org1c9e05d">3. Accelerating the convergence</a></li>
+<li><a href="#orgaf1666b">1. Integration with lazy recursion</a></li>
+<li><a href="#org68e334d">2. Avoiding redundant evaluation</a></li>
+<li><a href="#org9fa0061">3. Accelerating the convergence</a></li>
 </ul>
 </div>
 </div>
@@ -234,8 +234,8 @@
 For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
 </p>
 
-<div id="outline-container-org267d349" class="outline-2">
-<h2 id="org267d349"><span class="section-number-2">1</span> Integration with lazy recursion</h2>
+<div id="outline-container-orgaf1666b" class="outline-2">
+<h2 id="orgaf1666b"><span class="section-number-2">1</span> Integration with lazy recursion</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a linear function, it's easy to calculate the area under the function:
@@ -312,8 +312,8 @@ def test_integrate1():
 </div>
 </div>
 
-<div id="outline-container-org9420d63" class="outline-2">
-<h2 id="org9420d63"><span class="section-number-2">2</span> Avoiding redundant evaluation</h2>
+<div id="outline-container-org68e334d" class="outline-2">
+<h2 id="org68e334d"><span class="section-number-2">2</span> Avoiding redundant evaluation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A problem with the code in the previous section is that every time <code>easyintegrate</code> is called, the value of <code>f</code> is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
@@ -349,8 +349,8 @@ Let's test the second version of our numerical integration function:
 </div>
 </div>
 
-<div id="outline-container-org1c9e05d" class="outline-2">
-<h2 id="org1c9e05d"><span class="section-number-2">3</span> Accelerating the convergence</h2>
+<div id="outline-container-org9fa0061" class="outline-2">
+<h2 id="org9fa0061"><span class="section-number-2">3</span> Accelerating the convergence</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Remember that in <code>diff.org</code>, we used the <code>improve</code> function to accelerate the convergence of a sequence? We can use it here too:
@@ -379,7 +379,7 @@ Let's try it (it's much faster):
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-15 Tue 23:08</p>
+<p class="date">Created: 2022-03-16 Wed 17:58</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

@@ -58,3 +58,30 @@ def mapforest_(f, forest):
 def maptree(f, t):
     label, subtrees = decompose_tree(t)
     return mk_tree(f(label), mapforest_(f, subtrees))
+
+
+def tree_size(t):
+    label, subtrees = decompose_tree(t)
+
+    count = 1
+    for t in subtrees:
+        count = count + tree_size(t)
+    return count
+
+
+def tree_depth(t):
+
+    def tree_depth_(t, d):
+        label, subtrees = decompose_tree(t)
+
+        mx = d
+        for t_ in subtrees:
+            mx = max(mx, tree_depth_(t_, d + 1))
+        return mx
+
+    return tree_depth_(t, 1)
+
+
+def reptree(f, label):
+    """Appy a function f to all labels in a tree repeatedly."""
+    return mk_tree(label, map(lambda b: reptree(f, b), f(label)))

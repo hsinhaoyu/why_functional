@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-15 Tue 23:08 -->
+<!-- 2022-03-16 Wed 17:58 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Higher-order functions for trees</title>
@@ -224,11 +224,11 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orged06e51">1. Representing trees</a></li>
-<li><a href="#org17ff55b">2. Extending <code>reduce</code> for trees</a></li>
-<li><a href="#orgaf8a8e6">3. Summing all labels in a tree</a></li>
-<li><a href="#org9f87f5b">4. Flattening trees</a></li>
-<li><a href="#org94a93e9">5. Mapping functions to trees</a></li>
+<li><a href="#org2a0e086">1. Representing trees</a></li>
+<li><a href="#org36926b0">2. Extending <code>reduce</code> for trees</a></li>
+<li><a href="#org6e8d69a">3. Summing all labels in a tree</a></li>
+<li><a href="#orgd06183d">4. Flattening trees</a></li>
+<li><a href="#org3697207">5. Mapping functions to trees</a></li>
 </ul>
 </div>
 </div>
@@ -236,8 +236,8 @@
 Hughes' paper begins with <i>list folding</i>, a powerful higher-order function that can be used to implement a variety of useful operations on list. In Python, it's the job of <code>functools.reduce</code>. Since it's easy to find a tutorial on <code>reduce</code>, I will skip this part, and directly jump to an extension of <code>reduce</code> that operates on trees. Hughes' code is more powerful than the Python versions given below. We'll return to this topic a bit later (in <code>lazy_tree.org</code>).
 </p>
 
-<div id="outline-container-orged06e51" class="outline-2">
-<h2 id="orged06e51"><span class="section-number-2">1</span> Representing trees</h2>
+<div id="outline-container-org2a0e086" class="outline-2">
+<h2 id="org2a0e086"><span class="section-number-2">1</span> Representing trees</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 I'll represent a tree this way: <code>(label, [subtree...])</code>: it's a tuple with a label and a list of subtrees. I'll call this structure a node. Note that this is not a binary tree, because a node can have many subtrees. 
@@ -258,8 +258,8 @@ my_tree = (1, [
 </div>
 </div>
 
-<div id="outline-container-org17ff55b" class="outline-2">
-<h2 id="org17ff55b"><span class="section-number-2">2</span> Extending <code>reduce</code> for trees</h2>
+<div id="outline-container-org36926b0" class="outline-2">
+<h2 id="org36926b0"><span class="section-number-2">2</span> Extending <code>reduce</code> for trees</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 <code>reduce</code> uses a reduction function of two arguments to fold a list. For example, using <code>operator.add</code> as the reduction function, <code>reduce(operator.add, [1, 2, 3, 4], 0)</code> sums the numbers in [1, 2, 3, 4].
@@ -299,8 +299,8 @@ def foldtree(f, g, a, tree_comp):
 </div>
 </div>
 
-<div id="outline-container-orgaf8a8e6" class="outline-2">
-<h2 id="orgaf8a8e6"><span class="section-number-2">3</span> Summing all labels in a tree</h2>
+<div id="outline-container-org6e8d69a" class="outline-2">
+<h2 id="org6e8d69a"><span class="section-number-2">3</span> Summing all labels in a tree</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Just like using <code>reduce</code> to sum the numbers in a list, we can use <code>foldtree</code> to sum the labels in a tree:
@@ -321,8 +321,8 @@ Just like using <code>reduce</code> to sum the numbers in a list, we can use <co
 </div>
 </div>
 
-<div id="outline-container-org9f87f5b" class="outline-2">
-<h2 id="org9f87f5b"><span class="section-number-2">4</span> Flattening trees</h2>
+<div id="outline-container-orgd06183d" class="outline-2">
+<h2 id="orgd06183d"><span class="section-number-2">4</span> Flattening trees</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 <code>tree_labels</code> collects all labels of a tree into a list.
@@ -349,8 +349,8 @@ Just like using <code>reduce</code> to sum the numbers in a list, we can use <co
 </div>
 </div>
 
-<div id="outline-container-org94a93e9" class="outline-2">
-<h2 id="org94a93e9"><span class="section-number-2">5</span> Mapping functions to trees</h2>
+<div id="outline-container-org3697207" class="outline-2">
+<h2 id="org3697207"><span class="section-number-2">5</span> Mapping functions to trees</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 Map a function <code>f</code> to all labels in a tree.
@@ -381,7 +381,7 @@ Map a function <code>f</code> to all labels in a tree.
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-15 Tue 23:08</p>
+<p class="date">Created: 2022-03-16 Wed 17:58</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

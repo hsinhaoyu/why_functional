@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-15 Tue 23:08 -->
+<!-- 2022-03-16 Wed 17:58 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Lazy trees</title>
@@ -224,9 +224,10 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgad7f319">1. Representing lazy trees</a></li>
-<li><a href="#orgc0678d8">2. Flattening lazy trees</a></li>
-<li><a href="#orgafdfe4a">3. Mapping functions to lazy trees</a></li>
+<li><a href="#org19ad52e">1. Representing lazy trees</a></li>
+<li><a href="#orgbda75e1">2. Flattening lazy trees</a></li>
+<li><a href="#org3c5eb89">3. Mapping functions to lazy trees</a></li>
+<li><a href="#org4b7335a">4. Other useful functions</a></li>
 </ul>
 </div>
 </div>
@@ -238,8 +239,8 @@ Recall that in <code>foldtree.org</code>, we used a higher-order function <code>
 Lazy evaluation is not integral to Python, so we have to write extra codes. I've found it difficult to write a lazy version of the higher-order function <code>foldtree</code> in Python, so I will do it less elegantly. I will just lazify <code>treelabels</code> and <code>maptree</code> in the style of Python's generators.
 </p>
 
-<div id="outline-container-orgad7f319" class="outline-2">
-<h2 id="orgad7f319"><span class="section-number-2">1</span> Representing lazy trees</h2>
+<div id="outline-container-org19ad52e" class="outline-2">
+<h2 id="org19ad52e"><span class="section-number-2">1</span> Representing lazy trees</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 As in <code>foldtree.org</code>, a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list.
@@ -271,20 +272,22 @@ def mk_tree_(label, lst):
     """A throw-away function just for this example"""
     return (label, iter(lst))
 
-my_tree = mk_tree_(1, [
-		       mk_tree_(2, []),
-		       mk_tree_(3, [
-				    mk_tree_(4, [])
-				   ]
-		       )
-		      ])
+def mk_test_tree():
+    my_tree = mk_tree_(1, [
+			   mk_tree_(2, []),
+			   mk_tree_(3, [
+					mk_tree_(4, [])
+				       ]
+			    )
+			   ])
+    return my_tree
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-orgc0678d8" class="outline-2">
-<h2 id="orgc0678d8"><span class="section-number-2">2</span> Flattening lazy trees</h2>
+<div id="outline-container-orgbda75e1" class="outline-2">
+<h2 id="orgbda75e1"><span class="section-number-2">2</span> Flattening lazy trees</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 This version returns an iterator, which visits every label in the tree one by one:
@@ -305,15 +308,16 @@ Let's try it. Note that <code>tree_labels</code> is lazy. It returns an iterator
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def test_tree_labels():
-    t = tree_labels(my_tree)
-    assert list(t) == [1, 2, 3, 4]
+    t = mk_test_tree()
+    i = tree_labels(t)
+    assert list(i) == [1, 2, 3, 4]
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-orgafdfe4a" class="outline-2">
-<h2 id="orgafdfe4a"><span class="section-number-2">3</span> Mapping functions to lazy trees</h2>
+<div id="outline-container-org3c5eb89" class="outline-2">
+<h2 id="org3c5eb89"><span class="section-number-2">3</span> Mapping functions to lazy trees</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 This version of <code>maptree</code> maps a function <code>f</code> to all labels in the input, and returns another lazy tree. 
@@ -336,21 +340,60 @@ Let's try it. I use the <code>tree_labels</code> function to collect all the lab
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python">my_tree2 = mk_tree_(1, [
-		       mk_tree_(2, []),
-		       mk_tree_(3, [
-				    mk_tree_(4, [])
-				   ]
-		       )
-		      ])
-
-def test_maptree():
+<pre class="src src-python">def test_maptree():
     def f(n):
 	return -1 * n
 
-    t = maptree(f, my_tree2)
+    t = mk_test_tree()
+    t = maptree(f, t)
     t = tree_labels(t)
     assert list(t) == [-1, -2, -3, -4]
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org4b7335a" class="outline-2">
+<h2 id="org4b7335a"><span class="section-number-2">4</span> Other useful functions</h2>
+<div class="outline-text-2" id="text-4">
+<div class="org-src-container">
+<pre class="src src-python">def tree_size(t):
+    label, subtrees = decompose_tree(t)
+
+    count  = 1
+    for t in subtrees:
+	count = count + tree_size(t)
+    return count
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">def test_tree_size():
+    t = mk_test_tree()
+    s = tree_size(t)
+    assert s == 4
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">def tree_depth(t):
+    def tree_depth_(t, d):
+	label, subtrees = decompose_tree(t)
+
+	mx = d
+	for t_ in subtrees:
+	    mx = max(mx, tree_depth_(t_, d + 1))
+	return mx
+
+    return tree_depth_(t, 1)
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">def test_tree_depth():
+    t = mk_test_tree()
+    d = tree_depth(t)
+    assert d == 3
 </pre>
 </div>
 </div>
@@ -358,7 +401,7 @@ def test_maptree():
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-15 Tue 23:08</p>
+<p class="date">Created: 2022-03-16 Wed 17:58</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
