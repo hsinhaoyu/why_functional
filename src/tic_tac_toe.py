@@ -4,12 +4,15 @@ from functools import reduce
 num_pos = 9
 
 
-def init_board():
+def init_board() -> List:
+    """Creat an empty board.
+    An unoccupied position is represented by None"""
     board = [None for i in range(num_pos)]
     return board
 
 
-def make_move(board, move: int, current_player: int) -> List:
+def make_move(board: List, move: int, current_player: int) -> List:
+    """Apply a move (0-8) to a board for a player"""
     new_board = board.copy()
     assert new_board[move] is None
 
@@ -19,8 +22,8 @@ def make_move(board, move: int, current_player: int) -> List:
 
 
 def moves(board) -> Iterator:
-    """Returns an iterator of all legal next moves.
-    Player 0 (X) makes the first move in a game.
+    """Returns an iterator of boards for all legal next moves.
+    Player 0 (X) always makes the first move in a game.
     """
     next_player = board.count(0) - board.count(1)
 
@@ -28,7 +31,8 @@ def moves(board) -> Iterator:
     return map(lambda i: make_move(board, i, next_player), candidate_moves)
 
 
-def display_board(board, coordinates=False):
+def display_board(board: List, coordinates=False) -> None:
+    """Display a board"""
 
     def row(lst):
         return reduce(lambda a, b: a + b, lst, "")
@@ -61,7 +65,10 @@ def display_board(board, coordinates=False):
     print(res)
 
 
-def player_input(board):
+def player_input(board: List) -> List:
+    """Display current board, ask player to make the next move.
+    Return a board after the player's move.
+    """
     display_board(board, coordinates=True)
     legal_moves = [i for i in range(9) if board[i] is None]
     ok = False
@@ -77,6 +84,8 @@ def player_input(board):
     # the human player is always player 0
     return make_move(board, i, 0)
 
+
+########## Hueristic evaluation of board configurations
 
 line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8],
             [0, 4, 8], [2, 4, 6]]

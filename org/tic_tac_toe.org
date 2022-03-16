@@ -1,8 +1,10 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/tic-tac-toe.html
-#+TITLE: Play Tic-Tac-Toe using lazy trees
+#+TITLE: Play Tic-tac-toe using lazy trees
 
-In this section, we're going to apply the ideas developed so far on a more complicated problem: playing a simple two-person game. We'll see an elegant implementation of the minimax algorithm in the style of lazy evaluation.
+In this section, we're going to apply the ideas developed so far on a more complicated problem: playing a simple two-person game: Tic-tac-toe. We'll see an elegant implementation of the minimax algorithm using lazy evaluation.
+
+The game itself is not important, so I have moved all Tic-tac-toe specific functions to the end of this document. All that matters is that =init_board()= creates an empty 9x9 board, =moves(board)= returns an iterator of all legal configurations for the next move, and =static_eval(board)= use heuristics to score a board configuration. 
 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
@@ -11,12 +13,15 @@ In this section, we're going to apply the ideas developed so far on a more compl
 #+end_src
 
 * Build a (lazy) game tree
-This is the equivalence of =repeat= for trees.
+Remember that we defined =repeat_f= in =diff.org= that repeatedly maps a function to an initial value. =repree= is a similar. =f= is a function that takes a value, and returns a list of values. =f= is applied repeatedly to the list.
+
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def reptree(f, label):
-      """Appy a function f to all labels in a tree repeatedly."""
+      """Appy a function f to a label repeatedly to create a tree."""
       return mk_tree(label, map(lambda b: reptree(f, b), f(label)))
 #+end_src
+
+By applying =moves= repeatedly to a board configuration using =reptree=, we get a tree of all possible future configurations of the game! Of course, =reptree= is lazy, so no future configuration is actually generated. They will only be generated when we access the iterators.
 
 #+begin_src python :noweb yes :tangle ../src/game.py
   <<GAME_IMPORTS>>
@@ -25,27 +30,30 @@ This is the equivalence of =repeat= for trees.
       return reptree(moves, board)
 #+end_src
 
+Here, we generate all possible Tic-tac-toe games! Let's find out how big it is.
+
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   <<TEST_TIC_TAC_TOE_IMPORTS>>
 
   def test_gametree():
+      print("\n\n## test_gametree: no pruning")
       b0 = init_board()
       t = gametree(moves, b0)
       d = tree_depth(t)
-      print("\nBefore pruning:")
       print("depth=", d)
 
   def test_gametree2():
       b0 = init_board()
       t = gametree(moves, b0)
       s = tree_size(t)
-      print("\nBefore pruning:")
       print("size=", s)
 #+end_src
 
 * Prune the game tree
+We can make a game tree smaller by removing nodes after a certain depth (=n=):
+
 #+begin_src python :noweb yes :tangle ../src/game.py
-  def prune(n, tree):
+  def prune(n: int, tree):
       (board, subtrees) = tree
       if n == 0:
           return mk_tree(board, iter([]))
@@ -53,12 +61,14 @@ This is the equivalence of =repeat= for trees.
           return mk_tree(board, map(lambda t: prune(n - 1, t), subtrees))
 #+end_src
 
+Let's check the size of the pruned tree:
+
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_prune():
+      print("\n\n## test_prune: after pruning")
       b0 = init_board()
-      t = prune(4, gametree(moves, b0))
+      t = prune(5, gametree(moves, b0))
       d = tree_depth(t)
-      print("\nAfter pruning:")
       print("depth=", d)
 #+end_src
 
@@ -67,19 +77,70 @@ This is the equivalence of =repeat= for trees.
       b0 = init_board()
       t = prune(5, gametree(moves, b0))
       s = tree_size(t)
-      print("\nAfter pruning:")
       print("size=", s)
 #+end_src
 
-* Appendix 1: Tic-Tac-Toe utilities
+* Apply static evaluation to the game tree
+In the appendix, I defined =static_eval=, which scores a board configuration (a positive value means player 0 is winning; a negative values means that player 1 is winning). It's called a static evaluation, because it doesn't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
+
+Here's an example of a score:
+
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_static_eval():
+      """Apply static eval to one board"""
+      print("\n## test_static_eval()")
+      b0 = init_board()
+      b0[4] = 0
+      b0[5] = 1
+      print()
+      display_board(b0)
+
+      v = static_eval(b0)
+      print("score:", v)
+#+end_src
+
+Using the =maptree= function defined in =lazy_tree.org=, we can score the entire tree. The following shows the distribution of the scores in a pruned tree:
+
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_static_eval2():
+      """Apply static eval to a game tree"""
+      print("\n## test_static_eval2")
+      def freq(lst):
+          dict = {}
+          for i in lst:
+              if i in dict:
+                  dict[i] = dict[i] + 1
+              else:
+                  dict[i] = 1
+          return dict
+
+      def show_freq(dict):
+          k = dict.keys()
+          k = sorted(k)
+          for kk in k:
+              print(f'{kk:10}     {dict[kk]}')
+
+      b0 = init_board()
+      t = prune(5, gametree(moves, b0))
+      t = maptree(static_eval, t)
+      t = list(tree_labels(t))
+      show_freq(freq(t))
+#+end_src
+
+* Implement the Minimax algorithm
+
+* Appendix 1: Tic-tac-toe utilities
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_UTILS
   num_pos = 9
 
-  def init_board():
+  def init_board() -> List:
+      """Creat an empty board.
+      An unoccupied position is represented by None"""
       board = [None for i in range(num_pos)]
       return board
 
-  def make_move(board, move: int, current_player: int) -> List:
+  def make_move(board: List, move: int, current_player: int) -> List:
+      """Apply a move (0-8) to a board for a player""" 
       new_board = board.copy()
       assert new_board[move] is None
 
@@ -87,16 +148,17 @@ This is the equivalence of =repeat= for trees.
 
       return new_board
 
-  def moves(board) -> Iterator:
-      """Returns an iterator of all legal next moves.
-      Player 0 (X) makes the first move in a game.
+  def moves(board: List) -> Iterator:
+      """Returns an iterator of boards for all legal next moves.
+      Player 0 (X) always makes the first move in a game.
       """
       next_player = board.count(0) - board.count(1)
 
       candidate_moves = [i for i in range(num_pos) if board[i] is None]
       return map(lambda i: make_move(board, i, next_player), candidate_moves)
 
-  def display_board(board, coordinates=False):
+  def display_board(board: List, coordinates=False) -> None:
+      """Display a board"""
       def row(lst):
           return reduce(lambda a, b: a + b, lst, "")
 
@@ -125,7 +187,10 @@ This is the equivalence of =repeat= for trees.
 
       print(res)
 
-  def player_input(board):
+  def player_input(board: List) -> List:
+      """Display current board, ask player to make the next move.
+      Return a board after the player's move.
+      """
       display_board(board, coordinates = True)
       legal_moves = [i for i in range(9) if board[i] is None]
       ok = False
@@ -142,59 +207,51 @@ This is the equivalence of =repeat= for trees.
       return make_move(board, i, 0) 
 #+end_src
 
-* Appendix 2: A static evaluation function for Tic-Tac-Toe
+* Appendix 2: A static evaluation function for Tic-tac-toe
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_EVAL
-  line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+    ########## Hueristic evaluation of board configurations
 
-  def board_line(line_idx, board):
-      return [board[i] for i in line_idx]
+    line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
 
-  def board_lines(board):
-      return list(map(lambda idx: board_line(idx, board), line_idx))
+    def board_line(line_idx: List, board: List) -> List:
+        """Return a line (one of line_idx) of a board"""
+        return [board[i] for i in line_idx]
 
-  def is_good_line(n, player, line):
-      v1 = line.count(player) == n
-      v2 = line.count(None) == 3 - n
-      return v1 and v2
+    def board_lines(board: List) -> List:
+        """"Return all lines of a board"""
+        return list(map(lambda idx: board_line(idx, board), line_idx))
 
-  def count_good_lines(n, player, lines):
-      zz = list(map(lambda l: is_good_line(n, player, l), lines))
-      return zz.count(True)
+    def is_good_line(n: int, player: int, line: List) -> bool:
+        """A typical way to evaluate if a line is good"""
+        v1 = line.count(player) == n
+        v2 = line.count(None) == 3 - n
+        return v1 and v2
 
-  def player0_wins(board):
-      lines = board_lines(board)
-      return any(map(lambda l: l.count(0) == 3, lines))
+    def count_good_lines(n: int , player: int, lines: List) -> int:
+        """How many good lines?"""
+        zz = list(map(lambda l: is_good_line(n, player, l), lines))
+        return zz.count(True)
 
-  def static_eval(board):
-      """Static board value.
-      >0: player 0 is doing better
-      <0: player 1 is doing better
-      """
-      lines = board_lines(board)
+    def static_eval(board):
+        """Static board value.
+        >0: player 0 is doing better
+        <0: player 1 is doing better
+        """
+        lines = board_lines(board)
 
-      if any(map(lambda l: l.count(0) == 3, lines)):
-          val = 1000000
-      elif any(map(lambda l: l.count(1) ==3, lines)):
-          val = -1000000
-      else:
-          x2 = count_good_lines(2, 0, lines)
-          x1 = count_good_lines(1, 0, lines)
+        if any(map(lambda l: l.count(0) == 3, lines)):
+            val = 1000000
+        elif any(map(lambda l: l.count(1) ==3, lines)):
+            val = -1000000
+        else:
+            x2 = count_good_lines(2, 0, lines)
+            x1 = count_good_lines(1, 0, lines)
 
-          o2 = count_good_lines(2, 1, lines)
-          o1 = count_good_lines(1, 1, lines)
+            o2 = count_good_lines(2, 1, lines)
+            o1 = count_good_lines(1, 1, lines)
 
-          val = 3 * x2 + x1 - (3 * o2 + o1)
-      return val
-#+end_src
-
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_static_eval():
-      b0 = init_board()
-      b0[4] = 0
-      print(b0)
-
-      v = static_eval(b0)
-      print(v)
+            val = 3 * x2 + x1 - (3 * o2 + o1)
+        return val
 #+end_src
 
 * Appendix 3: imports
@@ -203,13 +260,12 @@ This is the equivalence of =repeat= for trees.
   from functools import reduce
 #+end_src
 
-
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
   from lazy_utils import reptree, mk_tree
 #+end_src
 
 #+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
-  from tic_tac_toe import init_board, moves, static_eval
+  from tic_tac_toe import init_board, moves, static_eval, display_board
   from game import gametree, prune
-  from lazy_utils import tree_size, tree_depth
+  from lazy_utils import tree_size, tree_depth, maptree, tree_labels
 #+end_src

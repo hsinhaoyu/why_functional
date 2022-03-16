@@ -83,5 +83,5 @@ def tree_depth(t):
 
 
 def reptree(f, label):
-    """Appy a function f to all labels in a tree repeatedly."""
+    """Appy a function f to a label repeatedly to create a tree."""
     return mk_tree(label, map(lambda b: reptree(f, b), f(label)))
