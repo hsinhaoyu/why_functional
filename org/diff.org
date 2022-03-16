@@ -17,7 +17,7 @@ For a real function =f=, the first-order approximation of =f'= at =x= can be obt
       return easydiff_
 #+end_src
 
-Now we generate an iterator of smaller and smaller =h=, by applying =half= repeatedly with (=repeat_f= defined in =newton.org=). Mapping the slope function to this iterator, =differentiate= returns another iterator that approximates the derivative closer and closer.
+Now we generate an iterator of smaller and smaller =h=, by applying =half= repeatedly with =repeat_f= (defined in =newton.org=). Mapping the slope function to this iterator, =differentiate= returns another iterator that approximates the derivative closer and closer.
 
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def half(x: float) -> float:
