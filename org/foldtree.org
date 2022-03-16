@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/foldtree.html
 #+TITLE: Higher-order functions for trees
 
-Hughes' paper begins with /list folding/, a powerful higher-order function that can be used to implement a variety of useful operations on list. In Python, it's the job of =functools.reduce=. Since it's easy to find a tutorial on =reduce=, I will skip this part, and directly jump to an extension of =reduce= that operates on trees. Hughes' code is more powerful than the Python versions given below. We'll return to this topic a bit later (in =lazy_tree.org=).
+Hughes' paper begins with /list folding/, a powerful higher-order function that can be used to implement a variety of useful operations on list. In Python, it's the job of =functools.reduce=. Since it's easy to find a tutorial on =reduce=, I will skip this part, and directly jump to an extension of =reduce= that operates on trees. Hughes' code is more powerful than the Python versions given below. We'll return to this topic in a later [[lazy_tree.org][chapter]].
 
 * Representing trees
 I'll represent a tree this way: =(label, [subtree...])=: it's a tuple with a label and a list of subtrees. I'll call this structure a node. Note that this is not a binary tree, because a node can have many subtrees. 

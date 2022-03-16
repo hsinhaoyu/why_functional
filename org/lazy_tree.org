@@ -2,13 +2,13 @@
 #+EXPORT_FILE_NAME: ../html/lazy_tree.html
 #+TITLE: Lazy trees
 
-Recall that in [[foldtree.org][foldtree.org]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees, meaning that he could write a function that generates an enormous or even infinite tree, without actually evaluating all the nodes. This characteristic is very useful for implementing complex algorithms that we will see in the next section.
+Recall that in [[foldtree.org][foldtree.org]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees, meaning that he could write a function that generates an enormous or even infinite tree, without actually evaluating all the nodes. is very useful for implementing complex algorithms that we will see in the [[tic_tac_toe.org][next chapter]].
 
 Lazy evaluation is not integral to Python, so we have to write some extra codes. I've found it difficult to write a lazy version of the higher-order function =foldtree= in Python, so I will do it less elegantly. I will just lazify =treelabels= and =maptree= in the style of Python's generators.
 
 * Representing lazy trees
 
-As in =foldtree.org=, a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list.
+As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list.
 
 Some utilities:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
@@ -23,7 +23,7 @@ Some utilities:
           raise Exception("Not a tree")
 #+end_src
 
-Let's build the same tree in =foldtree.org=, replacing lists with iterators: 
+Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists with iterators: 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
   <<TEST_LAZY_TREE_IMPORTS>>
 
@@ -90,6 +90,8 @@ Let's try it. I use the =tree_labels= function to collect all the labels in the 
 #+end_src
 
 * Other useful functions
+A couple of more functions that we'll use in the [[tic_tac_toe.org][next chapter]].
+
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_size(t):
       label, subtrees = decompose_tree(t)

@@ -87,7 +87,7 @@ Let's test the second version of our numerical integration function:
 #+end_src
 
 * Accelerating the convergence
-Remember that in =diff.org=, we used the =improve= function to accelerate the convergence of a sequence? We can use it here too:
+Remember that in the [[diff.org][previous chapter]], we used the =improve= function to accelerate the convergence of a sequence? We can use it here too:
 
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   def integrate3(f: Callable[[float], float], a: float, b: float) -> float:

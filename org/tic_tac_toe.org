@@ -4,7 +4,7 @@
 
 In this section, we're going to apply the ideas developed so far on a more complicated problem: playing a simple two-person game: Tic-tac-toe. We'll see an elegant implementation of the minimax algorithm using lazy evaluation.
 
-The game itself is not important, so I have moved all Tic-tac-toe specific functions to the end of this document. All that matters is that =init_board()= creates an empty 9x9 board, =moves(board)= returns an iterator of all legal configurations for the next move, and =static_eval(board)= uses heuristics to score a board configuration. 
+The game itself is not important, so I have moved all Tic-tac-toe specific functions to the end of this chapter. All that matters is that =init_board()= creates an empty 9x9 board, =moves(board)= returns an iterator of all legal configurations for the next move, and =static_eval(board)= uses heuristics to score a board configuration. 
 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
@@ -13,7 +13,7 @@ The game itself is not important, so I have moved all Tic-tac-toe specific funct
 #+end_src
 
 * Build a (lazy) game tree
-Remember that =repeat_f= (defined in =diff.org=) repeatedly maps a function to an initial value to generate a list. =repree= extends the idea to trees. Let =f= be a function that takes a value, and returns a list of values. =reptree= grows a tree out of an initial value by applying =f= repeatedly:
+Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly maps a function to an initial value to generate a list. =repree= extends the idea to trees. Let =f= be a function that takes a value, and returns a list of values. =reptree= grows a tree out of an initial value by applying =f= repeatedly:
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def reptree(f, label):
@@ -99,7 +99,7 @@ Here's an example:
       print("score:", v)
 #+end_src
 
-Using the =maptree= function defined in =lazy_tree.org=, we can score the entire tree. The following shows the distribution of the scores in a pruned tree:
+Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], we can score the entire tree. The following shows the distribution of the scores in a pruned tree:
 
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_static_eval2():
