@@ -141,7 +141,7 @@ Do we actually need any improvements? Not for the simple problems that we've bee
 
 In Hughes' paper, he used the =improve= function again and again on the same sequence to get better and better convergence. Let =s= be the infinite iterator returned by =differentiate(f0, f x)=. By calling =repeat(improve, s)=, we get =s=, =improve(s)=, =improve(improve(s))=... and so on. It's an infinite iterator of infinite iterators!
 
-The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The =repeat_f= function defined previously (in =newton.org=) doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
+The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The =repeat_f= function defined [[newton.org][previously]] doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:

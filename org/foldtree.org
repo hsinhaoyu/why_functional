@@ -87,7 +87,7 @@ Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to 
 #+end_src
 
 * Mapping functions to trees
-Map a function =f= to all labels in a tree.
+Map a function =f= to all labels in a tree:
 
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
   def maptree(f, tree):

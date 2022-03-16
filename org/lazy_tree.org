@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/lazy_tree.html
 #+TITLE: Lazy trees
 
-Recall that in [[foldtree.org][foldtree.org]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees, meaning that he could write a function that generates an enormous or even infinite tree, without actually evaluating all the nodes. is very useful for implementing complex algorithms that we will see in the [[tic_tac_toe.org][next chapter]].
+Recall that [[foldtree.org][previously]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees, meaning that he could write a function that generates an enormous or even infinite tree, without actually evaluating all the nodes. is very useful for implementing complex algorithms that we will see in the [[tic_tac_toe.org][next chapter]].
 
 Lazy evaluation is not integral to Python, so we have to write some extra codes. I've found it difficult to write a lazy version of the higher-order function =foldtree= in Python, so I will do it less elegantly. I will just lazify =treelabels= and =maptree= in the style of Python's generators.
 
