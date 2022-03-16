@@ -10,7 +10,7 @@ Lazy evaluation is not integral to Python, so we have to write extra codes. I've
 
 As in =foldtree.org=, a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list.
 
-Some simple utilities:
+Some utilities:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def mk_tree(label, subtrees):
       return (label, subtrees)
@@ -25,7 +25,7 @@ Some simple utilities:
 
 Let's build the same tree in =foldtree.org=, replacing lists with iterators: 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
-  from lazy_utils import *
+  <<TEST_LAZY_TREE_IMPORTS>>
 
   def mk_tree_(label, lst):
       """A throw-away function just for this example"""
@@ -125,4 +125,9 @@ Let's try it. I use the =tree_labels= function to collect all the labels in the 
       t = mk_test_tree()
       d = tree_depth(t)
       assert d == 3
+#+end_src
+
+* Appendix: imports
+#+begin_src python :tangle no :noweb-ref TEST_LAZY_TREE_IMPORTS
+  from lazy_utils import *
 #+end_src

@@ -5,6 +5,7 @@
 In this section, we're going to apply the ideas developed so far on a more complicated problem: playing a simple two-person game. We'll see an elegant implementation of the minimax algorithm in the style of lazy evaluation.
 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
+  <<TIC_TAC_TOE_IMPORTS>>
   <<TIC_TAC_TOE_UTILS>>
   <<TIC_TAC_TOE_EVAL>>
 #+end_src
@@ -18,16 +19,14 @@ This is the equivalence of =repeat= for trees.
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/game.py
-  from lazy_utils import reptree, mk_tree
+  <<GAME_IMPORTS>>
 
   def gametree(moves, board):
       return reptree(moves, board)
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  from tic_tac_toe import init_board, display_board, moves, static_eval
-  from game import gametree, prune
-  from lazy_utils import tree_size, tree_depth
+  <<TEST_TIC_TAC_TOE_IMPORTS>>
 
   def test_gametree():
       b0 = init_board()
@@ -74,10 +73,6 @@ This is the equivalence of =repeat= for trees.
 
 * Appendix 1: Tic-Tac-Toe utilities
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_UTILS
-  from typing import Tuple, List, Union, Iterator
-  from functools import reduce
-  from lazy_utils import mk_tree, decompose_tree
-
   num_pos = 9
 
   def init_board():
@@ -86,7 +81,7 @@ This is the equivalence of =repeat= for trees.
 
   def make_move(board, move: int, current_player: int) -> List:
       new_board = board.copy()
-      assert new_board[move] == None
+      assert new_board[move] is None
 
       new_board[move] = current_player
 
@@ -140,7 +135,7 @@ This is the equivalence of =repeat= for trees.
               i = int(m)
               if i in legal_moves:
                   ok = True
-          except:
+          except ValueError:
               pass
 
       # the human player is always player 0
@@ -200,4 +195,21 @@ This is the equivalence of =repeat= for trees.
 
       v = static_eval(b0)
       print(v)
+#+end_src
+
+* Appendix 3: imports
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_IMPORTS
+  from typing import List, Iterator
+  from functools import reduce
+#+end_src
+
+
+#+begin_src python :tangle no :noweb-ref GAME_IMPORTS
+  from lazy_utils import reptree, mk_tree
+#+end_src
+
+#+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
+  from tic_tac_toe import init_board, moves, static_eval
+  from game import gametree, prune
+  from lazy_utils import tree_size, tree_depth
 #+end_src

@@ -8,8 +8,7 @@ To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) 
 =next_sqrt_approx(n)= returns a closure that brings its input closer to sqrt(n).
 
 #+begin_src python :noweb yes :tangle ../src/newton.py
-  from typing import Callable, Iterator
-  from lazy_utils import *
+  <<NEWTON_IMPORTS>>
 
   def next_sqrt_approx(n: float) -> Callable[[float], float]:
       """Next step in the approximation of sqrt(n) from x"""
@@ -21,9 +20,7 @@ To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) 
 Approximating sqrt(10.0) from 2.0, in just one iteration:
 
 #+begin_src python :noweb yes :tangle ../src/test_newton.py
-  import math
-  import pytest
-  from newton import *
+  <<TEST_NEWTON_IMPORTS>>
 
   def test_next_sqrt_approx():
       f = next_sqrt_approx(10.0)
@@ -34,9 +31,7 @@ Approximating sqrt(10.0) from 2.0, in just one iteration:
 =repeat_f(f, a)= applies the function =f= repeatedly to =a=. (The original code is more elegant and more general, but Python is not a lazy functional language).
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  from typing import Callable, Iterator
-  from itertools import tee
-
+  <<LAZY_UTILS_IMPORTS>>
 
   def repeat_f(f: Callable[[float], float], a: float) -> Iterator[float]:
       """Infinite iterator: [a, f(a), f(f(a)), f(f(f(a))) ...]"""
@@ -50,7 +45,7 @@ Approximating sqrt(10.0) from 2.0, in just one iteration:
 A simple test: an iterator that yields 0, 1, 2, 3...
 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_utils.py
-  from lazy_utils import *
+  <<TEST_LAZY_UTILS_IMPORTS>>
 
   def test_repeat_f():
       r = repeat_f(lambda n: n + 1, 0)
@@ -71,7 +66,7 @@ At this stage, we can create an iterator that takes us closer and closer to sqrt
 
 Again, approximating sqrt(10.0) from 2.0:
 
-#+begin_src python :noweb yes :tangle ../src/test_newton.py :padlines no
+#+begin_src python :noweb yes :tangle ../src/test_newton.py
   def test_newton_sqrt_():
       r = newton_sqrt_(10.0, 2.0)
       v1, v2, v3 = next(r), next(r), next(r)
@@ -108,4 +103,25 @@ A simple test:
   def test_newton_sqrt():
       res = newton_sqrt(10.0, 2.0)
       assert res == pytest.approx(math.sqrt(10.0))
+#+end_src
+
+* Appendix: Imports
+#+begin_src python :tangle no :noweb-ref NEWTON_IMPORTS
+  from typing import Callable, Iterator
+  from lazy_utils import *
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref TEST_NEWTON_IMPORTS
+  import math
+  import pytest
+  from newton import *
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref LAZY_UTILS_IMPORTS
+  from typing import Callable, Iterator
+  from itertools import tee
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref TEST_LAZY_UTILS_IMPORTS
+  from lazy_utils import *
 #+end_src

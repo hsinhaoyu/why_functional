@@ -1,6 +1,5 @@
-from typing import Tuple, List, Union, Iterator
+from typing import List, Iterator
 from functools import reduce
-from lazy_utils import mk_tree, decompose_tree
 
 num_pos = 9
 
@@ -12,7 +11,7 @@ def init_board():
 
 def make_move(board, move: int, current_player: int) -> List:
     new_board = board.copy()
-    assert new_board[move] == None
+    assert new_board[move] is None
 
     new_board[move] = current_player
 
@@ -72,7 +71,7 @@ def player_input(board):
             i = int(m)
             if i in legal_moves:
                 ok = True
-        except:
+        except ValueError:
             pass
 
     # the human player is always player 0

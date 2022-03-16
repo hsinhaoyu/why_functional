@@ -8,8 +8,8 @@ Hughes' paper begins with /list folding/, a powerful higher-order function that 
 I'll represent a tree this way: =(label, [subtree...])=: it's a tuple with a label and a list of subtrees. I'll call this structure a node. Note that this is not a binary tree, because a node can have many subtrees. 
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
-  from foldtree import *
-  
+  <<TEST_FOLDTREE_IMPORTS>>
+
   my_tree = (1, [
                  (2, []),
                  (3, [
@@ -108,3 +108,7 @@ Map a function =f= to all labels in a tree.
       assert res == [-1, -2, -3, -4]
 #+end_src
 
+* Appendix: imports
+#+begin_src python :tangle no :noweb-ref TEST_FOLDTREE_IMPORTS
+  from foldtree import *
+#+end_src

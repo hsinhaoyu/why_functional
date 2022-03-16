@@ -8,13 +8,7 @@ From a glance, this section of Hughes' paper appears to be all about numerical m
 For a real function =f=, the first-order approximation of =f'= at =x= can be obtained by displacing =x= by =h=, and then calculating the slope:
 
 #+begin_src python :noweb yes :tangle ../src/diff.py
-  from math import log2
-  from typing import Callable, Iterator
-  from itertools import tee 
-  from lazy_utils import repeat_f, within, repeat_itr
-
-
-  esp = 0.0000000001 # a small number that's used to call within()
+  <<DIFF_IMPORTS>>
 
   def easydiff(f: Callable[[float], float], x: float) -> Callable[[float], float]:
       def easydiff_(h: float) -> float:
@@ -47,12 +41,7 @@ This is our first version of the numerical differentiation function:
 A simple test: differentiate sin(x) at 1.0, starting with a very large gap (=h0=5.0=). We know that the right answer is cos(1.0).
 
 #+begin_src python :noweb yes :tangle ../src/test_diff.py
-  import pytest
-  from itertools import *
-  from math import cos, sin
-
-  from lazy_utils import *
-  from diff import *
+  <<TEST_DIFF_IMPORTS>>
 
   def f(x: float) -> float:
       return sin(x)
@@ -215,4 +204,24 @@ Does it work?
       h0, x = 1.0, 0.3
       d = diff3(h0, f, x)
       assert d == pytest.approx(cos(x))
+#+end_src
+
+* Appendix: imports
+#+begin_src python :tangle no :noweb-ref DIFF_IMPORTS
+  from math import log2
+  from typing import Callable, Iterator
+  from itertools import tee 
+  from lazy_utils import repeat_f, within, repeat_itr
+
+
+  esp = 0.0000000001 # a small number that's used to call within()
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref TEST_DIFF_IMPORTS
+  import pytest
+  from itertools import *
+  from math import cos, sin
+
+  from lazy_utils import *
+  from diff import *
 #+end_src

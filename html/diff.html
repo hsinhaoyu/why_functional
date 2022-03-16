@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-16 Wed 18:10 -->
+<!-- 2022-03-16 Wed 21:44 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Numerical differentiation using iterators</title>
@@ -224,9 +224,10 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org908b777">1. A first stab at the problem</a></li>
-<li><a href="#org7d821f5">2. Improve convergence with sequence transformation</a></li>
-<li><a href="#org4e9f06d">3. An iterator of iterators</a></li>
+<li><a href="#org2388103">1. A first stab at the problem</a></li>
+<li><a href="#org6806739">2. Improve convergence with sequence transformation</a></li>
+<li><a href="#org9687d21">3. An iterator of iterators</a></li>
+<li><a href="#orga10e231">4. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
@@ -234,8 +235,8 @@
 From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation starts to be interesting.
 </p>
 
-<div id="outline-container-org908b777" class="outline-2">
-<h2 id="org908b777"><span class="section-number-2">1</span> A first stab at the problem</h2>
+<div id="outline-container-org2388103" class="outline-2">
+<h2 id="org2388103"><span class="section-number-2">1</span> A first stab at the problem</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculating the slope:
@@ -309,8 +310,8 @@ def test_diff1():
 </div>
 </div>
 
-<div id="outline-container-org7d821f5" class="outline-2">
-<h2 id="org7d821f5"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
+<div id="outline-container-org6806739" class="outline-2">
+<h2 id="org6806739"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called <a href="https://en.wikipedia.org/wiki/Richardson_extrapolation">Richardson extrapolation</a>. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the next section.
@@ -417,8 +418,8 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-org4e9f06d" class="outline-2">
-<h2 id="org4e9f06d"><span class="section-number-2">3</span> An iterator of iterators</h2>
+<div id="outline-container-org9687d21" class="outline-2">
+<h2 id="org9687d21"><span class="section-number-2">3</span> An iterator of iterators</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Do we actually need any improvements? Not for the simple problems that we've been solving, but this is where the code gets interesting!
@@ -506,10 +507,36 @@ Does it work?
 </div>
 </div>
 </div>
+
+<div id="outline-container-orga10e231" class="outline-2">
+<h2 id="orga10e231"><span class="section-number-2">4</span> Appendix: imports</h2>
+<div class="outline-text-2" id="text-4">
+<div class="org-src-container">
+<pre class="src src-python">from math import log2
+from typing import Callable, Iterator
+from itertools import tee 
+from lazy_utils import repeat_f, within, repeat_itr
+
+
+esp = 0.0000000001 # a small number that's used to call within()
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">import pytest
+from itertools import *
+from math import cos, sin
+
+from lazy_utils import *
+from diff import *
+</pre>
+</div>
+</div>
+</div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-16 Wed 18:10</p>
+<p class="date">Created: 2022-03-16 Wed 21:44</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

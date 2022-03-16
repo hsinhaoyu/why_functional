@@ -1,4 +1,4 @@
-from tic_tac_toe import init_board, display_board, moves, static_eval
+from tic_tac_toe import init_board, moves, static_eval
 from game import gametree, prune
 from lazy_utils import tree_size, tree_depth
 

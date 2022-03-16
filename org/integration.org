@@ -6,15 +6,10 @@
 For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
 
 * Integration with lazy recursion
-
 For a linear function, it's easy to calculate the area under the function:
 
 #+begin_src python :noweb yes :tangle ../src/integrate.py
-  from typing import Callable, Iterator, Tuple
-  from lazy_utils import within
-  from diff import improve
-
-  esp = 0.0000000001 # a small number that's used to call within()
+  <<INTEGRATE_IMPORTS>>
 
   def easyintegrate(f: Callable[[float], float], a: float, b: float) -> float:
       """Calculate the area under a linear function f between and and b."""
@@ -52,9 +47,7 @@ This is the first version of our integration function:
 A simple test:
 
 #+begin_src python :noweb yes :tangle ../src/test_integrate.py
-  from math import sin, pi
-  import pytest
-  from integrate import *
+  <<TEST_INTEGRATE_IMPORTS>>
 
   def f(x):
       return sin(x)
@@ -109,4 +102,19 @@ Let's try it (it's much faster):
       a, b = 0.0, pi 
       d = integrate3(f, a, b)
       assert d == pytest.approx(2.0)
+#+end_src
+
+* Appendix: imports
+#+begin_src python :tangle no :noweb-ref INTEGRATE_IMPORTS
+  from typing import Callable, Iterator, Tuple
+  from lazy_utils import within
+  from diff import improve
+
+  esp = 0.0000000001 # a small number that's used to call within()
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref TEST_INTEGRATE_IMPORTS
+  from math import sin, pi
+  import pytest
+  from integrate import *
 #+end_src
