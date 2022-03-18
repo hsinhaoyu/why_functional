@@ -4,7 +4,7 @@
 
 In this section, we're going to apply the ideas developed so far on a more complicated problem: playing a simple two-person game: Tic-tac-toe. We'll see an elegant implementation of the minimax algorithm using lazy evaluation.
 
-The game itself is not important, so I have moved all Tic-tac-toe specific functions to the end of this chapter. All that matters is that =init_board()= creates an empty 9x9 board, =moves(board)= returns an iterator of all legal configurations for the next move, and =static_eval(board)= uses heuristics to score a board configuration. 
+The game itself is not important, so I have moved all Tic-tac-toe specific functions to the end of this chapter. It's sufficient to say that =init_board()= creates an empty 9x9 board, =moves(board)= returns an iterator of all legal configurations for the next move, and we have a pair of functions that use heuristics to score a board configuration. 
 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
@@ -81,7 +81,9 @@ Let's check the size of the pruned tree:
 #+end_src
 
 * Apply static evaluation to the game tree
-In the appendix, I defined =static_eval=, which scores a board configuration. It's called a static evaluation, because it doesn't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
+In the appendix, I defined a pair of functions (=static_eval_0=, =static_eval_1=) to score a board configuration. =static_eval_0= scores the configuration for player 0: a positive score means that the board looks good for player 0; a negative score means that it looks bad. =static_eval_1= changes the sign of this score, so that positive is good for player 1, and negative is bad. 
+
+These are static evaluation functions, meaning that they  don't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
 
 Here's an example:
 
@@ -95,8 +97,8 @@ Here's an example:
       print()
       display_board(b0)
 
-      v = static_eval(b0)
-      print("score:", v)
+      v = static_eval_0(b0)
+      print("score for player 0:", v)
 #+end_src
 
 Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], we can score the entire tree. The following shows the distribution of the scores in a pruned tree:
@@ -122,12 +124,94 @@ Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], w
 
       b0 = init_board()
       t = prune(5, gametree(moves, b0))
-      t = maptree(static_eval, t)
+      t = maptree(static_eval_0, t)
       t = list(tree_labels(t))
       show_freq(freq(t))
 #+end_src
 
 * Implement the Minimax algorithm
+
+#+begin_src python :noweb yes :tangle ../src/game.py
+  def maximize(gametree, depth):
+      """The max step of Minimax"""
+      ((board, score), subtrees) = gametree
+
+      # if there is no subtree, return the score of the node
+      # otherwise, find the max of the min's
+      b, s = None, -100000
+      for subtree in subtrees:
+          ((board_, _), _) = subtree
+          _, min_s = minimize(subtree, depth + 1)
+          if min_s > s:
+              b, s = board_, min_s
+
+      if s == -100000:
+          b, s = board, score
+
+      if depth == 1:
+          return b, s
+      else:
+          return None, s
+
+  def minimize(gametree, depth):
+      """The min step of Minimax.
+      A node in gametree is ((board, score), subtrees)
+      Returns (board, score) with the minimal score
+      """    
+      ((board, score), subtrees) = gametree
+
+      # if there is no subtree, return the score of the node
+      # otherwise, find the min of the max's
+      #b, s = board, score
+      #for (_, s_) in map(maximize, subtrees):
+      #    if s_ < s:
+      #        s = s_
+
+      #return (b, s)
+      b, s = None, 100000
+      for subtree in subtrees:
+          ((board_, _), _) = subtree
+          _, max_s = maximize(subtree, depth + 1)
+          if max_s < s:
+              b, s = board_, max_s
+
+      if s == 100000:
+          b, s = board, score
+
+      if depth == 1:
+          return b, s
+      else:
+          return None, s
+#+end_src
+
+This is our first attempt at finding the next move:
+
+#+begin_src python :noweb yes :tangle ../src/game.py
+  def evaluate1(board, moves, eval_func):
+      """Evaluate a game position for player 1 with Minimax"""
+      def maximize_(tree):
+          return maximize(tree, 1)
+      def eval_(board):
+          return (board, eval_func(board))
+    
+      return maximize_(maptree(eval_, prune(5, gametree(moves, board))))
+#+end_src
+
+* Let's play Tic-tac-toe
+#+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
+  def tic_tac_toe1():
+      b = init_board()
+
+      while True:
+          b = player_input(b)
+          print("you played")
+          display_board(b)
+          print(f"your score: {static_eval_0(b)}")
+
+          b, s = evaluate1(b, moves, static_eval_1)
+          display_board(b)
+          print(f"computer score: {s}")
+#+end_src
 
 * Appendix 1: Tic-tac-toe utilities
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_UTILS
@@ -143,6 +227,7 @@ Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], w
       """Apply a move (0-8) to a board for a player""" 
       new_board = board.copy()
       assert new_board[move] is None
+      assert current_player in [0, 1], "err current_player:" + str(current_player)
 
       new_board[move] = current_player
 
@@ -160,7 +245,7 @@ Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], w
   def display_board(board: List, coordinates=False) -> None:
       """Display a board"""
       def row(lst):
-          return reduce(lambda a, b: a + b, lst, "")
+          return reduce(lambda a, b: a + " "+ b, lst, "")
 
       d = {None: '.', 1: 'O', 0: 'X'}
       zz = list(map(lambda i: d[i], board))
@@ -209,59 +294,76 @@ Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], w
 
 * Appendix 2: A static evaluation function for Tic-tac-toe
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_EVAL
-    ########## Hueristic evaluation of board configurations
+  ########## Hueristic evaluation of board configurations
 
-    line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+  line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
 
-    def board_line(line_idx: List, board: List) -> List:
-        """Return a line (one of line_idx) of a board"""
-        return [board[i] for i in line_idx]
+  def board_line(line_idx: List, board: List) -> List:
+      """Return a line (one of line_idx) of a board"""
+      return [board[i] for i in line_idx]
 
-    def board_lines(board: List) -> List:
-        """"Return all lines of a board"""
-        return list(map(lambda idx: board_line(idx, board), line_idx))
+  def board_lines(board: List) -> List:
+      """"Return all lines of a board"""
+      return list(map(lambda idx: board_line(idx, board), line_idx))
 
-    def is_good_line(n: int, player: int, line: List) -> bool:
-        """A typical way to evaluate if a line is good"""
-        v1 = line.count(player) == n
-        v2 = line.count(None) == 3 - n
-        return v1 and v2
+  def is_good_line(n: int, player: int, line: List) -> bool:
+      """A typical way to evaluate if a line is good"""
 
-    def count_good_lines(n: int , player: int, lines: List) -> int:
-        """How many good lines?"""
-        zz = list(map(lambda l: is_good_line(n, player, l), lines))
-        return zz.count(True)
+      assert n in [1, 2]
+      assert player in [0, 1]
 
-    def static_eval(board):
-        """Static board value.
-        >0: player 0 is doing better
-        <0: player 1 is doing better
-        """
-        lines = board_lines(board)
+      v1 = line.count(player) == n
+      v2 = line.count(None) == 3 - n
+      return v1 and v2
 
-        if any(map(lambda l: l.count(0) == 3, lines)):
-            val = 1000000
-        elif any(map(lambda l: l.count(1) ==3, lines)):
-            val = -1000000
-        else:
-            x2 = count_good_lines(2, 0, lines)
-            x1 = count_good_lines(1, 0, lines)
+  def count_good_lines(n: int , player: int, lines: List) -> int:
+      """How many good lines?"""
 
-            o2 = count_good_lines(2, 1, lines)
-            o1 = count_good_lines(1, 1, lines)
+      assert n in [1, 2]
+      assert player in [0, 1]
 
-            val = 3 * x2 + x1 - (3 * o2 + o1)
-        return val
+      zz = list(map(lambda l: is_good_line(n, player, l), lines))
+      return zz.count(True)
+
+  def static_eval_0(board):
+      """Static board value for player 0
+      >0: player 0 is doing better
+      <0: player 1 is doing better
+      """
+      lines = board_lines(board)
+
+      if any(map(lambda l: l.count(0) == 3, lines)):
+          val = 1000000
+      elif any(map(lambda l: l.count(1) ==3, lines)):
+          val = -1000000
+      else:
+          x2 = count_good_lines(2, 0, lines)
+          x1 = count_good_lines(1, 0, lines)
+
+          o2 = count_good_lines(2, 1, lines)
+          o1 = count_good_lines(1, 1, lines)
+
+          val = 3 * x2 + x1 - (3 * o2 + o1)
+      return val
+
+  def static_eval_1(board):
+      """Static board value for player 1
+      >0: player 1 is doing better
+      <0: player 0 is doing better
+      """
+      return -1 * static_eval_0(board)
 #+end_src
 
 * Appendix 3: imports
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_IMPORTS
   from typing import List, Iterator
   from functools import reduce
+  from lazy_utils import maptree
+  from game import gametree, maximize, prune, evaluate1
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
-  from lazy_utils import reptree, mk_tree
+  from lazy_utils import reptree, mk_tree, decompose_tree, maptree
 #+end_src
 
 #+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS

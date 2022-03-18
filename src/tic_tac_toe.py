@@ -1,5 +1,7 @@
 from typing import List, Iterator
 from functools import reduce
+from lazy_utils import maptree
+from game import gametree, maximize, prune, evaluate1
 
 num_pos = 9
 
@@ -15,13 +17,15 @@ def make_move(board: List, move: int, current_player: int) -> List:
     """Apply a move (0-8) to a board for a player"""
     new_board = board.copy()
     assert new_board[move] is None
+    assert current_player in [0,
+                              1], "err current_player:" + str(current_player)
 
     new_board[move] = current_player
 
     return new_board
 
 
-def moves(board) -> Iterator:
+def moves(board: List) -> Iterator:
     """Returns an iterator of boards for all legal next moves.
     Player 0 (X) always makes the first move in a game.
     """
@@ -35,7 +39,7 @@ def display_board(board: List, coordinates=False) -> None:
     """Display a board"""
 
     def row(lst):
-        return reduce(lambda a, b: a + b, lst, "")
+        return reduce(lambda a, b: a + " " + b, lst, "")
 
     d = {None: '.', 1: 'O', 0: 'X'}
     zz = list(map(lambda i: d[i], board))
@@ -91,32 +95,39 @@ line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8],
             [0, 4, 8], [2, 4, 6]]
 
 
-def board_line(line_idx, board):
+def board_line(line_idx: List, board: List) -> List:
+    """Return a line (one of line_idx) of a board"""
     return [board[i] for i in line_idx]
 
 
-def board_lines(board):
+def board_lines(board: List) -> List:
+    """"Return all lines of a board"""
     return list(map(lambda idx: board_line(idx, board), line_idx))
 
 
-def is_good_line(n, player, line):
+def is_good_line(n: int, player: int, line: List) -> bool:
+    """A typical way to evaluate if a line is good"""
+
+    assert n in [1, 2]
+    assert player in [0, 1]
+
     v1 = line.count(player) == n
     v2 = line.count(None) == 3 - n
     return v1 and v2
 
 
-def count_good_lines(n, player, lines):
+def count_good_lines(n: int, player: int, lines: List) -> int:
+    """How many good lines?"""
+
+    assert n in [1, 2]
+    assert player in [0, 1]
+
     zz = list(map(lambda l: is_good_line(n, player, l), lines))
     return zz.count(True)
 
 
-def player0_wins(board):
-    lines = board_lines(board)
-    return any(map(lambda l: l.count(0) == 3, lines))
-
-
-def static_eval(board):
-    """Static board value.
+def static_eval_0(board):
+    """Static board value for player 0
     >0: player 0 is doing better
     <0: player 1 is doing better
     """
@@ -135,3 +146,25 @@ def static_eval(board):
 
         val = 3 * x2 + x1 - (3 * o2 + o1)
     return val
+
+
+def static_eval_1(board):
+    """Static board value for player 1
+    >0: player 1 is doing better
+    <0: player 0 is doing better
+    """
+    return -1 * static_eval_0(board)
+
+
+def tic_tac_toe1():
+    b = init_board()
+
+    while True:
+        b = player_input(b)
+        print("you played")
+        display_board(b)
+        print(f"your score: {static_eval_0(b)}")
+
+        b, s = evaluate1(b, moves, static_eval_1)
+        display_board(b)
+        print(f"computer score: {s}")

@@ -42,8 +42,8 @@ def test_static_eval():
     print()
     display_board(b0)
 
-    v = static_eval(b0)
-    print("score:", v)
+    v = static_eval_0(b0)
+    print("score for player 0:", v)
 
 
 def test_static_eval2():
@@ -67,6 +67,6 @@ def test_static_eval2():
 
     b0 = init_board()
     t = prune(5, gametree(moves, b0))
-    t = maptree(static_eval, t)
+    t = maptree(static_eval_0, t)
     t = list(tree_labels(t))
     show_freq(freq(t))
