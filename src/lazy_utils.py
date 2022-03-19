@@ -45,28 +45,33 @@ def decompose_tree(t):
 def tree_labels(t):
     label, subtrees = decompose_tree(t)
     yield label
-    for i in subtrees:
-        for j in tree_labels(i):
-            yield j
+    if subtrees is not None:
+        for i in subtrees:
+            for j in tree_labels(i):
+                yield j
 
 
 def mapforest_(f, forest):
+    assert forest is not None
     for t in forest:
         yield maptree(f, t)
 
 
 def maptree(f, t):
     label, subtrees = decompose_tree(t)
-    return mk_tree(f(label), mapforest_(f, subtrees))
+    if subtrees is not None:
+        return mk_tree(f(label), mapforest_(f, subtrees))
+    else:
+        return mk_tree(f(label), None)
 
 
 def tree_size(t):
     label, subtrees = decompose_tree(t)
 
-    count = 1
-    for t in subtrees:
-        count = count + tree_size(t)
-    return count
+    if subtrees is None:
+        return 1
+    else:
+        return 1 + sum(map(tree_size, subtrees))
 
 
 def tree_depth(t):
@@ -74,14 +79,40 @@ def tree_depth(t):
     def tree_depth_(t, d):
         label, subtrees = decompose_tree(t)
 
-        mx = d
-        for t_ in subtrees:
-            mx = max(mx, tree_depth_(t_, d + 1))
-        return mx
+        if subtrees is None:
+            return d
+        else:
+            try:
+                return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
+            except ValueError:
+                print(label, subtrees)
 
     return tree_depth_(t, 1)
 
 
 def reptree(f, label):
-    """Appy a function f to a label repeatedly to create a tree."""
-    return mk_tree(label, map(lambda b: reptree(f, b), f(label)))
+    """Appy a function f to a label repeatedly to create a tree.
+    f(label) is a list of labels
+    """
+
+    def make_children(lst):
+        if lst == None:
+            # f produces nothing
+            return None
+        else:
+            # else, apply f repeatedly to elements of lst
+            return map(lambda b: reptree(f, b), lst)
+
+    return mk_tree(label, make_children(f(label)))
+
+
+def prune(n: int, tree):
+    """Remove nodes n levels below in the tree"""
+
+    (board, subtrees) = decompose_tree(tree)
+    if n == 0:
+        return mk_tree(board, None)
+    elif subtrees is None:
+        return mk_tree(board, None)
+    else:
+        return mk_tree(board, map(lambda t: prune(n - 1, t), subtrees))

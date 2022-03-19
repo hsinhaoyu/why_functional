@@ -1,78 +1,70 @@
-from lazy_utils import reptree, mk_tree, decompose_tree, maptree
+from lazy_utils import reptree, mk_tree, decompose_tree, maptree, prune
 
 
-def gametree(moves, board):
-    return reptree(moves, board)
+def gametree(moves):
+
+    def gametree_(board):
+        return reptree(moves, board)
+
+    return gametree_
 
 
-def prune(n: int, tree):
-    (board, subtrees) = tree
-    if n == 0:
-        return mk_tree(board, iter([]))
-    else:
-        return mk_tree(board, map(lambda t: prune(n - 1, t), subtrees))
-
-
-def maximize(gametree, depth):
+def maximize(gametree):
     """The max step of Minimax"""
-    ((board, score), subtrees) = gametree
+    (score, subtrees) = gametree
 
     # if there is no subtree, return the score of the node
     # otherwise, find the max of the min's
-    b, s = None, -100000
-    for subtree in subtrees:
-        ((board_, _), _) = subtree
-        _, min_s = minimize(subtree, depth + 1)
-        if min_s > s:
-            b, s = board_, min_s
-
-    if s == -100000:
-        b, s = board, score
-
-    if depth == 1:
-        return b, s
+    if subtrees is None:
+        s = score
     else:
-        return None, s
+        s = max(map(minimize, subtrees))
+    return s
 
 
-def minimize(gametree, depth):
+def minimize(gametree):
     """The min step of Minimax.
     A node in gametree is ((board, score), subtrees)
     Returns (board, score) with the minimal score
     """
-    ((board, score), subtrees) = gametree
+    (score, subtrees) = gametree
 
     # if there is no subtree, return the score of the node
     # otherwise, find the min of the max's
-    #b, s = board, score
-    #for (_, s_) in map(maximize, subtrees):
-    #    if s_ < s:
-    #        s = s_
-
-    #return (b, s)
-    b, s = None, 100000
-    for subtree in subtrees:
-        ((board_, _), _) = subtree
-        _, max_s = maximize(subtree, depth + 1)
-        if max_s < s:
-            b, s = board_, max_s
-
-    if s == 100000:
-        b, s = board, score
-
-    if depth == 1:
-        return b, s
+    if subtrees is None:
+        s = score
     else:
-        return None, s
+        s = min(map(maximize, subtrees))
+    return s
 
 
-def evaluate1(board, moves, eval_func):
-    """Evaluate a game position for player 1 with Minimax"""
+#def evaluate1(board, moves, eval_func):
+#    """Evaluate a game position for player 1 with Minimax"""
+#    return minimize(maptree(eval_func, prune(5, gametree(moves, board))))
 
-    def maximize_(tree):
-        return maximize(tree, 1)
 
-    def eval_(board):
-        return (board, eval_func(board))
+def evaluate1(gametree_, eval_, prune_):
 
-    return maximize_(maptree(eval_, prune(5, gametree(moves, board))))
+    def evaluate_(board):
+        return minimize(maptree(eval_, prune_(gametree_(board))))
+
+    return evaluate_
+
+
+def ai_next_move(board, moves, eval_):
+    """Given a board, return a board with AI's move.
+    Note that AI is always player 1.
+    """
+
+    (_, subtrees) = gametree(moves, board)
+
+    if subtrees is None:
+        return None
+    else:
+        b, s = None, -1000000
+        for next_move in subtrees:
+            next_move_board = next_move[0]
+            next_move_score = eval_(next_move_board)
+            if next_move_score > s:
+                b, s = next_move_board, next_move_score
+        return b

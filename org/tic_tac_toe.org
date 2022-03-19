@@ -10,6 +10,8 @@ The game itself is not important, so I have moved all Tic-tac-toe specific funct
   <<TIC_TAC_TOE_IMPORTS>>
   <<TIC_TAC_TOE_UTILS>>
   <<TIC_TAC_TOE_EVAL>>
+  <<TIC_TAC_TOE_TREE>>
+  <<TIC_TAC_TOE_PLAY>>
 #+end_src
 
 * Build a (lazy) game tree
@@ -17,34 +19,44 @@ Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly maps a function
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def reptree(f, label):
-      """Appy a function f to a label repeatedly to create a tree."""
-      return mk_tree(label, map(lambda b: reptree(f, b), f(label)))
+      """Appy a function f to a label repeatedly to create a tree.
+      f(label) is a list of labels
+      """
+      def make_children(lst):
+          if lst == None:
+              # f produces nothing
+              return None
+          else:
+              # else, apply f repeatedly to elements of lst
+              return map(lambda b: reptree(f, b), lst)
+
+      return mk_tree(label, make_children(f(label)))
 #+end_src
 
 By applying =moves= repeatedly to a board configuration, we get a tree of all possible future configurations of the game! Of course, =reptree= is lazy, so no future configuration is actually generated. They will only be generated when we access the iterators.
-
 #+begin_src python :noweb yes :tangle ../src/game.py
   <<GAME_IMPORTS>>
 
-  def gametree(moves, board):
-      return reptree(moves, board)
+  def gametree(moves):
+      def gametree_(board):
+          return reptree(moves, board)
+      return gametree_
 #+end_src
 
 Here, we generate all possible Tic-tac-toe games! Let's find out how big it is.
-
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   <<TEST_TIC_TAC_TOE_IMPORTS>>
 
   def test_gametree():
       print("\n\n## test_gametree: no pruning")
       b0 = init_board()
-      t = gametree(moves, b0)
+      t = gametree(b0)
       d = tree_depth(t)
       print("depth=", d)
 
   def test_gametree2():
       b0 = init_board()
-      t = gametree(moves, b0)
+      t = gametree(b0)
       s = tree_size(t)
       print("size=", s)
 #+end_src
@@ -52,22 +64,26 @@ Here, we generate all possible Tic-tac-toe games! Let's find out how big it is.
 * Prune the game tree
 We can make a game tree smaller by removing nodes after a certain depth (=n=):
 
-#+begin_src python :noweb yes :tangle ../src/game.py
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def prune(n: int, tree):
-      (board, subtrees) = tree
+      """Remove nodes n levels below in the tree"""
+
+      (board, subtrees) = decompose_tree(tree)
       if n == 0:
-          return mk_tree(board, iter([]))
+          return mk_tree(board, None)
+      elif subtrees is None:
+          return mk_tree(board, None)
       else:
           return mk_tree(board, map(lambda t: prune(n - 1, t), subtrees))
+
 #+end_src
 
 Let's check the size of the pruned tree:
-
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_prune():
       print("\n\n## test_prune: after pruning")
       b0 = init_board()
-      t = prune(5, gametree(moves, b0))
+      t = prune(gametree(b0))
       d = tree_depth(t)
       print("depth=", d)
 #+end_src
@@ -75,7 +91,7 @@ Let's check the size of the pruned tree:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_prune2():
       b0 = init_board()
-      t = prune(5, gametree(moves, b0))
+      t = prune(gametree(b0))
       s = tree_size(t)
       print("size=", s)
 #+end_src
@@ -84,22 +100,6 @@ Let's check the size of the pruned tree:
 In the appendix, I defined a pair of functions (=static_eval_0=, =static_eval_1=) to score a board configuration. =static_eval_0= scores the configuration for player 0: a positive score means that the board looks good for player 0; a negative score means that it looks bad. =static_eval_1= changes the sign of this score, so that positive is good for player 1, and negative is bad. 
 
 These are static evaluation functions, meaning that they  don't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
-
-Here's an example:
-
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_static_eval():
-      """Apply static eval to one board"""
-      print("\n## test_static_eval()")
-      b0 = init_board()
-      b0[4] = 0
-      b0[5] = 1
-      print()
-      display_board(b0)
-
-      v = static_eval_0(b0)
-      print("score for player 0:", v)
-#+end_src
 
 Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], we can score the entire tree. The following shows the distribution of the scores in a pruned tree:
 
@@ -123,99 +123,67 @@ Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], w
               print(f'{kk:10}     {dict[kk]}')
 
       b0 = init_board()
-      t = prune(5, gametree(moves, b0))
-      t = maptree(static_eval_0, t)
+      t = prune(gametree(b0))
+      t = maptree(static_eval(0), t)
       t = list(tree_labels(t))
       show_freq(freq(t))
 #+end_src
 
 * Implement the Minimax algorithm
-
 #+begin_src python :noweb yes :tangle ../src/game.py
-  def maximize(gametree, depth):
+  def maximize(gametree):
       """The max step of Minimax"""
-      ((board, score), subtrees) = gametree
+      (score, subtrees) = gametree
 
       # if there is no subtree, return the score of the node
       # otherwise, find the max of the min's
-      b, s = None, -100000
-      for subtree in subtrees:
-          ((board_, _), _) = subtree
-          _, min_s = minimize(subtree, depth + 1)
-          if min_s > s:
-              b, s = board_, min_s
-
-      if s == -100000:
-          b, s = board, score
-
-      if depth == 1:
-          return b, s
+      if subtrees is None:
+          s = score
       else:
-          return None, s
+          s = max(map(minimize, subtrees))
+      return s
 
-  def minimize(gametree, depth):
+  def minimize(gametree):
       """The min step of Minimax.
       A node in gametree is ((board, score), subtrees)
       Returns (board, score) with the minimal score
       """    
-      ((board, score), subtrees) = gametree
+      (score, subtrees) = gametree
 
       # if there is no subtree, return the score of the node
       # otherwise, find the min of the max's
-      #b, s = board, score
-      #for (_, s_) in map(maximize, subtrees):
-      #    if s_ < s:
-      #        s = s_
-
-      #return (b, s)
-      b, s = None, 100000
-      for subtree in subtrees:
-          ((board_, _), _) = subtree
-          _, max_s = maximize(subtree, depth + 1)
-          if max_s < s:
-              b, s = board_, max_s
-
-      if s == 100000:
-          b, s = board, score
-
-      if depth == 1:
-          return b, s
+      if subtrees is None:
+          s = score
       else:
-          return None, s
+          s = min(map(maximize, subtrees))
+      return s
 #+end_src
 
-This is our first attempt at finding the next move:
-
+This is our first attempt at the tree evaluation function:
 #+begin_src python :noweb yes :tangle ../src/game.py
-  def evaluate1(board, moves, eval_func):
-      """Evaluate a game position for player 1 with Minimax"""
-      def maximize_(tree):
-          return maximize(tree, 1)
-      def eval_(board):
-          return (board, eval_func(board))
-    
-      return maximize_(maptree(eval_, prune(5, gametree(moves, board))))
-#+end_src
+  #def evaluate1(board, moves, eval_func):
+  #    """Evaluate a game position for player 1 with Minimax"""
+  #    return minimize(maptree(eval_func, prune(5, gametree(moves, board))))    
 
-* Let's play Tic-tac-toe
-#+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
-  def tic_tac_toe1():
-      b = init_board()
-
-      while True:
-          b = player_input(b)
-          print("you played")
-          display_board(b)
-          print(f"your score: {static_eval_0(b)}")
-
-          b, s = evaluate1(b, moves, static_eval_1)
-          display_board(b)
-          print(f"computer score: {s}")
+  def evaluate1(gametree_, eval_, prune_):
+      def evaluate_(board):
+          return minimize(maptree(eval_, prune_(gametree_(board))))
+      return evaluate_
 #+end_src
 
 * Appendix 1: Tic-tac-toe utilities
+These functions define the Tic-tac-toe game.
+
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_UTILS
+  ### searching
+  max_depth = 5
+  
+  ### board configuration and geometry
+  posinf = 100000
+  neginf = -1 * posinf
+
   num_pos = 9
+  line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
 
   def init_board() -> List:
       """Creat an empty board.
@@ -223,31 +191,68 @@ This is our first attempt at finding the next move:
       board = [None for i in range(num_pos)]
       return board
 
+  def board_line(line_idx: List, board: List) -> List:
+      """Return a line (one of line_idx) of a board"""
+      return [board[i] for i in line_idx]
+
+  def board_lines(board: List) -> List:
+      """Return all the lines in a board"""
+      return list(map(lambda idx: board_line(idx, board), line_idx))
+
+  def won(board: List, player: int) -> bool:
+      """Has player won?"""
+      assert player in [0, 1]
+      lines = board_lines(board)
+
+      if any(map(lambda l: l.count(player) == 3, lines)):
+          return True
+      else:
+          return False
+
+  ### Moves
   def make_move(board: List, move: int, current_player: int) -> List:
-      """Apply a move (0-8) to a board for a player""" 
+      """Apply a move (0-8) to a board for a player.
+      Return a new board.
+      """
       new_board = board.copy()
       assert new_board[move] is None
-      assert current_player in [0, 1], "err current_player:" + str(current_player)
+      assert current_player in [0, 1]
 
       new_board[move] = current_player
 
       return new_board
 
-  def moves(board: List) -> Iterator:
+  def who_plays(board: List) -> int:
+      return board.count(0) - board.count(1)
+
+  def moves(board: List) -> Union[Iterator, None]:
       """Returns an iterator of boards for all legal next moves.
       Player 0 (X) always makes the first move in a game.
       """
-      next_player = board.count(0) - board.count(1)
+      next_player = who_plays(board)
+      other_player = (next_player + 1) % 2
 
-      candidate_moves = [i for i in range(num_pos) if board[i] is None]
-      return map(lambda i: make_move(board, i, next_player), candidate_moves)
+      if won(board, other_player):
+          # There is no legal move if the game is already won
+          return None
+      else:
+          candidate_moves = [i for i in range(num_pos) if board[i] is None]
+          if len(candidate_moves) == 0:
+              return None
+          else:
+              return map(lambda i: make_move(board, i, next_player), candidate_moves)
 
-  def display_board(board: List, coordinates=False) -> None:
+  ### game I/O
+  def display_board(board: List, coordinates = False, displayXO = False) -> None:
       """Display a board"""
       def row(lst):
           return reduce(lambda a, b: a + " "+ b, lst, "")
 
-      d = {None: '.', 1: 'O', 0: 'X'}
+      if displayXO:
+          d = {None: '.', 1: 'O', 0: 'X'}
+      else:
+          d = {None: '.', 1: '1', 0: '0'}
+
       zz = list(map(lambda i: d[i], board))
       zz = [zz[i:i+3] for i in range(0, 9, 3)]
       zz = list(map(row, zz))
@@ -257,7 +262,7 @@ This is our first attempt at finding the next move:
               if board[i] is None:
                   return str(i)
               else:
-                  return " "
+                  return "."
           zz2 = [d(i) for i in range(9)]
           zz2 = [zz2[i:i+3] for i in range(0, 9, 3)]
           zz2 = list(map(row, zz2))
@@ -265,12 +270,12 @@ This is our first attempt at finding the next move:
       res = ""
       if coordinates:
           for i in range(3):
-              res = res + zz[i] + "\t" + zz2[i] + "\n"
+              res = res + zz[i] + "\t\t" + zz2[i] + "\n"
       else:
           for i in range(3):
               res = res + zz[i] + "\n"
 
-      print(res)
+      print(res[:-1])
 
   def player_input(board: List) -> List:
       """Display current board, ask player to make the next move.
@@ -292,20 +297,40 @@ This is our first attempt at finding the next move:
       return make_move(board, i, 0) 
 #+end_src
 
+Some basic testing:
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_who_plays():
+      b = init_board()
+      assert who_plays(b) == 0
+
+      b[1] = 0
+      assert who_plays(b) == 1
+
+      b[2] = 1
+      assert who_plays(b) == 0
+#+end_src
+
+=moves= is very important because it defines all the legal moves. Some basic testing is needed:
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_moves():
+      # there should be no legal move for 0 because 1 has already won
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      assert moves(b) is None
+
+      # there should be no legal move for 0 because 0 has already won    
+      b = [1, 0, 0, 1, 0, None, None, 0, 1]
+      assert moves(b) is None
+
+      # the board is full
+      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+      assert moves(b) is None
+#+end_src
+
 * Appendix 2: A static evaluation function for Tic-tac-toe
+A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a configuration is. I implemented a very common one.
+
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_EVAL
-  ########## Hueristic evaluation of board configurations
-
-  line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
-
-  def board_line(line_idx: List, board: List) -> List:
-      """Return a line (one of line_idx) of a board"""
-      return [board[i] for i in line_idx]
-
-  def board_lines(board: List) -> List:
-      """"Return all lines of a board"""
-      return list(map(lambda idx: board_line(idx, board), line_idx))
-
+  ### Heuristic evaluation of board configurations
   def is_good_line(n: int, player: int, line: List) -> bool:
       """A typical way to evaluate if a line is good"""
 
@@ -325,7 +350,7 @@ This is our first attempt at finding the next move:
       zz = list(map(lambda l: is_good_line(n, player, l), lines))
       return zz.count(True)
 
-  def static_eval_0(board):
+  def static_eval_0(board: List) -> int:
       """Static board value for player 0
       >0: player 0 is doing better
       <0: player 1 is doing better
@@ -333,9 +358,9 @@ This is our first attempt at finding the next move:
       lines = board_lines(board)
 
       if any(map(lambda l: l.count(0) == 3, lines)):
-          val = 1000000
+          val = posinf
       elif any(map(lambda l: l.count(1) ==3, lines)):
-          val = -1000000
+          val = neginf
       else:
           x2 = count_good_lines(2, 0, lines)
           x1 = count_good_lines(1, 0, lines)
@@ -346,28 +371,186 @@ This is our first attempt at finding the next move:
           val = 3 * x2 + x1 - (3 * o2 + o1)
       return val
 
-  def static_eval_1(board):
-      """Static board value for player 1
-      >0: player 1 is doing better
-      <0: player 0 is doing better
-      """
-      return -1 * static_eval_0(board)
+  def static_eval(i: int) -> Callable[[List], int]:
+      """Static board value for player i"""
+      assert i in [0, 1]
+    
+      def static_eval_(board):
+          v = static_eval_0(board)
+          if i == 0:
+              return v
+          else:
+              return -1 * v
+        
+      return static_eval_
 #+end_src
 
-* Appendix 3: imports
+It's important that the static evaluation function knows when a player wins the game.
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_static_eval_winning_condition():
+      # evaluate for player 0
+      eval_0 = static_eval(0)
+      # evaluate for player 1
+      eval_1 = static_eval(1)
+
+      # player 0 won
+      b = [1, 0, 0, 1, 0, None, None, 0, 1]
+      assert eval_0(b) == posinf
+      assert eval_1(b) == neginf
+
+      # player 1 won
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      assert eval_0(b) == neginf
+      assert eval_1(b) == posinf
+#+end_src
+
+* Appendix 3: Tic-tac-toe gametree structure 
+Functions related to game theory (=gametree=, =prune=, =evaluate=) defined in =game.py= are generic, and therefore require a couple of parameters to call. Here, we define Tic-tac-toe specific versions of these functions, to make them easier to call.
+
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_TREE
+  gametree = game.gametree(moves)
+
+  def prune(tree):
+      return lazy_utils.prune(max_depth, tree)
+
+  evaluate1 = game.evaluate1(gametree, static_eval(1), prune)
+#+end_src
+
+The winning conditions have to be reflected in the game tree. Let's make sure that they are:
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_game_tree_structure():
+      # Since player 0 has won, there should be no subtrees
+      b = [1, 0, 0, 1, 0, None, None, 0, 1]
+      t = gametree(b)
+      assert t[1] is None
+
+      # Since player 1 has won, there should be no subtrees
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      t = gametree(b)
+      assert t[1] is None
+
+      # This is a draw. There should be no subtrees
+      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+      t = gametree(b)
+      assert t[1] is None
+#+end_src
+
+The static evaluation function, when applied to the game tree, should also reflect the winning conditions.
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_gametree_evaluation():
+      # player 0 has won
+      b = [1, 0, 0, 1, 0, None, None, 0, 1]
+      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+      assert subtrees is None and score == posinf
+
+      # player 1 has won
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+      assert subtrees is None and score == neginf
+
+      # This is a draw
+      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+      assert subtrees is None and score == 0
+#+end_src
+
+* Appendix 4: Testing the tree evaluation function
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_tree_eval():
+      b = [1, 0, 0, None, 0, None, 1, None, None]
+      print("\nGiven this board, player 1 to play")
+      display_board(b)
+
+      print("\nThis move wins")
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      display_board(b)
+      score = evaluate1(b)
+      assert score == posinf
+
+      print("\nThis move will lose in the next move, so should get a losing score")
+      b = [1, 0, 0, None, 0, 1, 1, None, None]
+      display_board(b)
+      score = evaluate1(b)
+      assert score == neginf
+
+      print("\nThis move will win in the next move, so should get a winning score")
+      b = [1, 0, 0, None, 0, None, 1, 1, None]
+      display_board(b)
+      score = evaluate1(b)
+      assert score == posinf
+#+end_src
+
+* Appendix: Gameplay
+#+begin_src python :noweb yes :tangle ../src/game.py
+  def ai_next_move(board, moves, eval_):
+      """Given a board, return a board with AI's move.
+      Note that AI is always player 1.
+      """
+
+      (_, subtrees) = gametree(moves, board)
+
+      if subtrees is None:
+          return None
+      else:
+          b, s = None, -1000000
+          for next_move in subtrees:
+              next_move_board = next_move[0]
+              next_move_score = eval_(next_move_board)
+              if next_move_score > s:
+                  b, s = next_move_board, next_move_score
+          return b
+
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
+  def play(tree_eval_func):
+      b = init_board()
+
+      finished = False
+      while not finished:
+          b = player_input(b)
+          print()
+          print("you played:")
+          display_board(b)
+          print()
+
+          if won(b, 0):
+              print("You've won!")
+              finished = True
+          else:
+              b = ai_next_move(b, moves, tree_eval_func)
+              if b is None:
+                  print("Draw!")
+                  finished = True
+              elif won(b, 1):
+                  print("computer played: ")
+                  display_board(b)
+                  print("You've lost!")
+                  finished = True
+              else:
+                  print("computer played:")
+
+  def play1():
+      def eval_(board):
+          return evaluate1(board, moves, static_eval(1))
+      play(eval_)
+#+end_src
+
+* Appendix: Imports
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_IMPORTS
-  from typing import List, Iterator
+  from typing import List, Iterator, Union, Callable
   from functools import reduce
   from lazy_utils import maptree
-  from game import gametree, maximize, prune, evaluate1
+  import lazy_utils
+  import game
+  #from game import gametree, maximize, evaluate1, ai_next_move
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
-  from lazy_utils import reptree, mk_tree, decompose_tree, maptree
+  from lazy_utils import reptree, mk_tree, decompose_tree, maptree, prune
 #+end_src
 
 #+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
-  from tic_tac_toe import init_board, moves, static_eval, display_board
-  from game import gametree, prune
+  from tic_tac_toe import init_board, moves, static_eval_0, static_eval, display_board, who_plays, posinf, neginf, gametree, prune, evaluate1
   from lazy_utils import tree_size, tree_depth, maptree, tree_labels
 #+end_src

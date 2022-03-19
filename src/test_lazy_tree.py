@@ -3,11 +3,16 @@ from lazy_utils import *
 
 def mk_tree_(label, lst):
     """A throw-away function just for this example"""
-    return (label, iter(lst))
+    if lst is None:
+        return (label, None)
+    else:
+        return (label, iter(lst))
 
 
 def mk_test_tree():
-    my_tree = mk_tree_(1, [mk_tree_(2, []), mk_tree_(3, [mk_tree_(4, [])])])
+    my_tree = mk_tree_(1,
+                       [mk_tree_(2, None),
+                        mk_tree_(3, [mk_tree_(4, None)])])
     return my_tree
 
 

@@ -1,6 +1,6 @@
 tangle: org/*.org
 	# delete all files except zz.py
-	find src/ ! -name 'zz.py' -type f -maxdepth 1 -exec rm -f {} +
+	find src/ ! -name 'zz*.py' -type f -maxdepth 1 -exec rm -f {} +
 	./tangle.sh org/foldtree.org
 	./tangle.sh org/newton.org
 	./tangle.sh org/diff.org
@@ -22,3 +22,7 @@ html: tangle
 	./org2html.sh org/*.org
 
 all: tangle lint typing test html
+
+zz:
+	./tangle.sh org/tic_tac_toe.org
+	python src/zz.py

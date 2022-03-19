@@ -29,15 +29,15 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
 
   def mk_tree_(label, lst):
       """A throw-away function just for this example"""
-      return (label, iter(lst))
+      if lst is None:
+          return (label, None)
+      else:
+          return (label, iter(lst))
 
   def mk_test_tree():
       my_tree = mk_tree_(1, [
-                             mk_tree_(2, []),
-                             mk_tree_(3, [
-                                          mk_tree_(4, [])
-                                         ]
-                              )
+                             mk_tree_(2, None),
+                             mk_tree_(3, [mk_tree_(4, None)])
                              ])
       return my_tree
 #+end_src
@@ -49,9 +49,10 @@ This version returns an iterator, which visits every label in the tree one by on
   def tree_labels(t):
       label, subtrees = decompose_tree(t)
       yield label
-      for i in subtrees:
-          for j in tree_labels(i):
-              yield j
+      if subtrees is not None:
+          for i in subtrees:
+              for j in tree_labels(i):
+                  yield j
 #+end_src
 
 Let's try it. Note that =tree_labels= is lazy. It returns an iterator. I use =list(t)= to convert it to a regular list.
@@ -67,13 +68,17 @@ This version of =maptree= maps a function =f= to all labels in the input, and re
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def mapforest_(f, forest):
+      assert forest is not None
       for t in forest:
           yield maptree(f, t)
 
   def maptree(f, t):
       label, subtrees = decompose_tree(t)
-      return mk_tree(f(label),
-                     mapforest_(f, subtrees))
+      if subtrees is not None:
+          return mk_tree(f(label),
+                         mapforest_(f, subtrees))
+      else:
+          return mk_tree(f(label), None)
 #+end_src
 
 Let's try it. I use the =tree_labels= function to collect all the labels in the returned lazy tree.
@@ -96,10 +101,10 @@ A couple of more functions that we'll use in the [[tic_tac_toe.org][next chapter
   def tree_size(t):
       label, subtrees = decompose_tree(t)
 
-      count  = 1
-      for t in subtrees:
-          count = count + tree_size(t)
-      return count
+      if subtrees is None:
+          return 1
+      else:
+          return 1 + sum(map(tree_size, subtrees))
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
@@ -114,10 +119,13 @@ A couple of more functions that we'll use in the [[tic_tac_toe.org][next chapter
       def tree_depth_(t, d):
           label, subtrees = decompose_tree(t)
 
-          mx = d
-          for t_ in subtrees:
-              mx = max(mx, tree_depth_(t_, d + 1))
-          return mx
+          if subtrees is None:
+              return d
+          else:
+              try:
+                  return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
+              except ValueError:
+                  print(label, subtrees)
 
       return tree_depth_(t, 1)
 #+end_src
