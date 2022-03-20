@@ -6,7 +6,12 @@
 
 Hughes argued that functional languages provide elegant mechanisms for decomposing complex programming logic into reusable components, in a way that is very difficult or impossible with imperative languages. The two most important "glues" are high-order functions and lazy evaluation.
 
-- [Higher-order functions for trees](foldtree.org): The paper 
+- [Working with trees using higer-order functions](foldtree.org)
+- [Numerical approximation using lazy evaluation](newton.org)
+- [Numerican differentiation using iterators of iterators](diff.org)
+- [Numerical integration using lazy recursion](integration.org)
+- [Lazy trees](lazy_trees.org)
+- [Playing Tic-tac-toe using lazy trees](tic_tac_toe.org)
 
 ## A note on literate programming
 
