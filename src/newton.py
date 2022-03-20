@@ -4,7 +4,6 @@ from lazy_utils import *
 
 def next_sqrt_approx(n: float) -> Callable[[float], float]:
     """Next step in the approximation of sqrt(n) from x"""
-
     def next_approx_(x: float) -> float:
         return (x + n / x) / 2.0
 

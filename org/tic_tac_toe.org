@@ -34,7 +34,7 @@ By applying =moves= repeatedly to a board configuration, we get a tree of all po
 #+begin_src python :noweb yes :tangle ../src/game.py
   <<GAME_IMPORTS>>
 
-  def gametree(moves: Callable[[List]], Union[Iterator, None]) -> Callable[[List], Tuple]:
+  def gametree(moves: Callable[[List], Union[Iterator, None]]) -> Callable[[List], Tuple]:
       """Return a func that builds a gametree from an initial board.
       moves is a function that returns all legal moves given a board.
       """
@@ -145,8 +145,7 @@ This is our first attempt at the tree evaluation function:
       return reduce(max_f, itr, first_item)
     
   def max_next_move(gametree_func: Callable, tree_eval_func: Callable) -> Callable:
-      """Return a function to make the next move.
-      """
+      """Return a function to make the next move."""
       def max_next_move_(board: List) -> Union[List, None]:
           # return a board or None
           (_, subtree) = gametree_func(board)
@@ -301,7 +300,7 @@ Note that the player who plays the next move is encoded in the board. This infor
       assert moves(b) is None
 #+end_src
 
-* Appendix 2: A static evaluation function for Tic-tac-toe
+* Appendix 2: Static evaluation function for Tic-tac-toe
 A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a configuration is. I implemented a very common one.
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_EVAL

@@ -32,32 +32,6 @@ def test_prune2():
     print("size=", s)
 
 
-def test_static_eval2():
-    """Apply static eval to a game tree"""
-    print("\n## test_static_eval2")
-
-    def freq(lst):
-        dict = {}
-        for i in lst:
-            if i in dict:
-                dict[i] = dict[i] + 1
-            else:
-                dict[i] = 1
-        return dict
-
-    def show_freq(dict):
-        k = dict.keys()
-        k = sorted(k)
-        for kk in k:
-            print(f'{kk:10}     {dict[kk]}')
-
-    b0 = init_board()
-    t = prune(gametree(b0))
-    t = maptree(static_eval(0), t)
-    t = list(tree_labels(t))
-    show_freq(freq(t))
-
-
 def test_who_plays():
     b = init_board()
     assert who_plays(b) == 0
@@ -81,6 +55,32 @@ def test_moves():
     # the board is full
     b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
     assert moves(b) is None
+
+
+def test_static_eval():
+    """Apply static eval to a game tree"""
+    print("\n## test_static_eval2")
+
+    def freq(lst):
+        dict = {}
+        for i in lst:
+            if i in dict:
+                dict[i] = dict[i] + 1
+            else:
+                dict[i] = 1
+        return dict
+
+    def show_freq(dict):
+        k = dict.keys()
+        k = sorted(k)
+        for kk in k:
+            print(f'{kk:10}     {dict[kk]}')
+
+    b0 = init_board()
+    t = prune(gametree(b0))
+    t = maptree(static_eval(0), t)
+    t = list(tree_labels(t))
+    show_freq(freq(t))
 
 
 def test_static_eval_winning_condition():

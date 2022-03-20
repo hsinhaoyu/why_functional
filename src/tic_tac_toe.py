@@ -1,10 +1,13 @@
 from typing import List, Iterator, Union, Callable
 from functools import reduce
+from random import shuffle
+
 from lazy_utils import maptree
 import lazy_utils
 import game
-#from game import gametree, maximize, evaluate1, ai_next_move
-### searching
+### gameplay options
+use_player_token = True
+shuffle_moves = False
 max_depth = 5
 
 ### board configuration and geometry
@@ -45,6 +48,15 @@ def won(board: List, player: int) -> bool:
 
 
 ### Moves
+def playerToken(i: int) -> str:
+    assert i in [0, 1]
+
+    if use_player_token:
+        return "X" if i == 0 else "O"
+    else:
+        return "0" if i == 0 else "1"
+
+
 def make_move(board: List, move: int, current_player: int) -> List:
     """Apply a move (0-8) to a board for a player.
     Return a new board.
@@ -59,13 +71,12 @@ def make_move(board: List, move: int, current_player: int) -> List:
 
 
 def who_plays(board: List) -> int:
+    """Which player is playing the next move?"""
     return board.count(0) - board.count(1)
 
 
 def moves(board: List) -> Union[Iterator, None]:
-    """Returns an iterator of boards for all legal next moves.
-    Player 0 (X) always makes the first move in a game.
-    """
+    """Returns an iterator of boards for all legal next moves."""
     next_player = who_plays(board)
     other_player = (next_player + 1) % 2
 
@@ -74,6 +85,10 @@ def moves(board: List) -> Union[Iterator, None]:
         return None
     else:
         candidate_moves = [i for i in range(num_pos) if board[i] is None]
+
+        if shuffle_moves:
+            shuffle(candidate_moves)
+
         if len(candidate_moves) == 0:
             return None
         else:
@@ -81,17 +96,12 @@ def moves(board: List) -> Union[Iterator, None]:
                        candidate_moves)
 
 
-### game I/O
-def display_board(board: List, coordinates=False, displayXO=False) -> None:
+def display_board(board: List, coordinates=False) -> None:
     """Display a board"""
-
     def row(lst):
         return reduce(lambda a, b: a + " " + b, lst, "")
 
-    if displayXO:
-        d = {None: '.', 1: 'O', 0: 'X'}
-    else:
-        d = {None: '.', 1: '1', 0: '0'}
+    d = {None: '.', 1: playerToken(1), 0: playerToken(0)}
 
     zz = list(map(lambda i: d[i], board))
     zz = [zz[i:i + 3] for i in range(0, 9, 3)]
@@ -118,26 +128,6 @@ def display_board(board: List, coordinates=False, displayXO=False) -> None:
             res = res + zz[i] + "\n"
 
     print(res[:-1])
-
-
-def player_input(board: List) -> List:
-    """Display current board, ask player to make the next move.
-    Return a board after the player's move.
-    """
-    display_board(board, coordinates=True)
-    legal_moves = [i for i in range(9) if board[i] is None]
-    ok = False
-    while not ok:
-        m = input("move?")
-        try:
-            i = int(m)
-            if i in legal_moves:
-                ok = True
-        except ValueError:
-            pass
-
-    # the human player is always player 0
-    return make_move(board, i, 0)
 
 
 ### Heuristic evaluation of board configurations
@@ -205,40 +195,68 @@ def prune(tree):
     return lazy_utils.prune(max_depth, tree)
 
 
-evaluate1 = game.evaluate1(gametree, static_eval(1), prune)
+def evaluate1(player: int):
+    """Evaluate tic-tac-toe tree for player i (version 1)"""
+    return game.evaluate1(gametree, static_eval(player), prune)
 
 
-def play(tree_eval_func):
+def max_next_move(tree_eval_func):
+    return game.max_nex_move(gametree, tree_eval_func)
+
+
+def human_next_move(board: List) -> Union[List, None]:
+    """Display current board, ask player to make the next move.
+    Return a board after the player's move.
+    """
+    display_board(board, coordinates=True)
+    legal_moves = [i for i in range(num_pos) if board[i] is None]
+    if legal_moves == []:
+        return None
+    else:
+        player = who_plays(board)
+
+        ok = False
+        while not ok:
+            m = input(f"player {playerToken(player)} move?")
+            try:
+                i = int(m)
+                if i in legal_moves:
+                    ok = True
+            except ValueError:
+                pass
+
+        return make_move(board, i, player)
+
+
+def computer_next_move(board: List) -> Union(List, None):
+    player = who_plays(board)
+    computer_move_function = max_next_move(evaluate1(player))
+    return computer_move_function(board)
+
+
+def player_next_move(board, player_settings: {0: 'human', 1: 'computer'}):
+    player = who_plays(board)
+    if player_settings[player] == 'human':
+        return human_next_move(board)
+    else:
+        return computer_next_move(board)
+
+
+def play(player_settings: {0: 'human', 1: 'computer'}):
     b = init_board()
 
     finished = False
     while not finished:
-        b = player_input(b)
+        b = player_next_move(b, player_settings)
+        player = who_plays(b)
         print()
-        print("you played:")
+        print(f"{player_symbol(player)} played:")
         display_board(b)
         print()
 
-        if won(b, 0):
-            print("You've won!")
+        if b is None:
+            print("Draw!")
             finished = True
-        else:
-            b = ai_next_move(b, moves, tree_eval_func)
-            if b is None:
-                print("Draw!")
-                finished = True
-            elif won(b, 1):
-                print("computer played: ")
-                display_board(b)
-                print("You've lost!")
-                finished = True
-            else:
-                print("computer played:")
-
-
-def play1():
-
-    def eval_(board):
-        return evaluate1(board, moves, static_eval(1))
-
-    play(eval_)
+        elif won(b, player):
+            print(f"{player_symbol(player)} won!")
+            finished = True

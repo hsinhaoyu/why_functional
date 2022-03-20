@@ -30,20 +30,8 @@ def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
         acc = f(i1)
 
 
-def mk_tree(label, subtrees):
-    return (label, subtrees)
-
-
-def decompose_tree(t):
-    try:
-        label, subtrees = t[0], t[1]
-        return label, subtrees
-    except ValueError:
-        raise Exception("Not a tree")
-
-
 def tree_labels(t):
-    label, subtrees = decompose_tree(t)
+    label, subtrees = t
     yield label
     if subtrees is not None:
         for i in subtrees:
@@ -58,15 +46,15 @@ def mapforest_(f, forest):
 
 
 def maptree(f, t):
-    label, subtrees = decompose_tree(t)
-    if subtrees is not None:
-        return mk_tree(f(label), mapforest_(f, subtrees))
+    label, subtrees = t
+    if subtrees is None:
+        return (f(label), None)
     else:
-        return mk_tree(f(label), None)
+        return (f(label), mapforest_(f, subtrees))
 
 
 def tree_size(t):
-    label, subtrees = decompose_tree(t)
+    label, subtrees = t
 
     if subtrees is None:
         return 1
@@ -75,9 +63,8 @@ def tree_size(t):
 
 
 def tree_depth(t):
-
     def tree_depth_(t, d):
-        label, subtrees = decompose_tree(t)
+        label, subtrees = t
 
         if subtrees is None:
             return d
@@ -90,11 +77,10 @@ def tree_depth(t):
     return tree_depth_(t, 1)
 
 
-def reptree(f, label):
+def reptree(f: Callable, label) -> Tuple:
     """Appy a function f to a label repeatedly to create a tree.
     f(label) is a list of labels
     """
-
     def make_children(lst):
         if lst == None:
             # f produces nothing
@@ -103,16 +89,16 @@ def reptree(f, label):
             # else, apply f repeatedly to elements of lst
             return map(lambda b: reptree(f, b), lst)
 
-    return mk_tree(label, make_children(f(label)))
+    return (label, make_children(f(label)))
 
 
-def prune(n: int, tree):
+def prune(n: int, tree: Tuple) -> Tuple:
     """Remove nodes n levels below in the tree"""
 
-    (board, subtrees) = decompose_tree(tree)
+    (board, subtrees) = tree
     if n == 0:
-        return mk_tree(board, None)
+        return (board, None)
     elif subtrees is None:
-        return mk_tree(board, None)
+        return (board, None)
     else:
-        return mk_tree(board, map(lambda t: prune(n - 1, t), subtrees))
+        return (board, map(lambda t: prune(n - 1, t), subtrees))

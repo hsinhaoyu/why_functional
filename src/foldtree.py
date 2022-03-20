@@ -30,7 +30,6 @@ def sumtree(tree):
 
 def tree_labels(tree):
     """Collect all labels of a tree into a list."""
-
     def cons(label, lst):
         return [label] + lst
 
@@ -42,7 +41,6 @@ def tree_labels(tree):
 
 def maptree(f, tree):
     """Map a function to all labels in a tree"""
-
     def mk_node(label, lst):
         return (f(label), lst)
 
