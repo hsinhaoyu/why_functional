@@ -94,10 +94,10 @@ def reptree(f: Callable, label) -> Tuple:
     return (label, make_children(f(label)))
 
 
-def prune(n: int, tree: Tuple) -> Tuple:
+def prune(n: int, tree: Tuple):
     """Remove nodes n levels below in the tree"""
-
     (board, subtrees) = tree
+
     if n == 0:
         return (board, None)
     elif subtrees is None:

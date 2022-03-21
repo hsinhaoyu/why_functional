@@ -189,18 +189,22 @@ def static_eval(i: int) -> Callable[[List], int]:
     return static_eval_
 
 
+# gametree takes a board configuration and returns a tree
 gametree = game.gametree(moves)
 
 
+# prune takes a tree and returns another tree
 def prune(tree):
     return lazy_utils.prune(max_depth, tree)
 
 
+# given a player, returns a tree evlauation function that takes a board configuration and returns a number
 def evaluate1(player: int):
     """Evaluate tic-tac-toe tree for player i (version 1)"""
     return game.evaluate1(gametree, static_eval(player), prune)
 
 
+# given a tree evaluation function, return a function that takes a board and returns a board
 def max_next_move(tree_eval_func):
     return game.max_next_move(gametree, tree_eval_func)
 

@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/tic-tac-toe.html
 #+TITLE: Play Tic-tac-toe using lazy trees
 
-In this section, we're going to apply the ideas developed so far on a more complicated problem: playing Tic-tac-toe. The game itself is not important for our purpose, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
+In this section, we're going to apply the ideas developed so far on a more complicated problem: playing Tic-tac-toe. We'll concentrate on the code structure rather than on game AI, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
@@ -30,7 +30,7 @@ Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly maps a function
       return (label, make_children(f(label)))
 #+end_src
 
-By applying =moves= repeatedly to a board configuration, we get a tree of all possible future configurations of the game! Of course, =reptree= is lazy, so this very large tree has not been created yet at this point. The future configurations will only be computed when they are needed.  
+By applying =moves= repeatedly to a board configuration, we get a tree of all possible future configurations of the game! Of course, =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.  
 #+begin_src python :noweb yes :tangle ../src/game.py
   <<GAME_IMPORTS>>
 
@@ -43,7 +43,7 @@ By applying =moves= repeatedly to a board configuration, we get a tree of all po
       return gametree_
 #+end_src
 
-Here, we generate all possible Tic-tac-toe games! Let's find out how big it is.
+Here, we generate all possible Tic-tac-toe games! Let's find out how big the tree is.
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   <<TEST_TIC_TAC_TOE_IMPORTS>>
 
@@ -62,12 +62,12 @@ Here, we generate all possible Tic-tac-toe games! Let's find out how big it is.
 #+end_src
 
 * Prune the game tree
-We can make a game tree smaller by removing nodes after a certain depth (=n=):
+We can reduce the size of game tree by removing nodes after a certain depth (=n=). I define below a general-purpose version of =prune=. In the Appendix 3, I define another version of =prune= for the specific application of Tic-tac-toe. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def prune(n: int, tree: Tuple) -> Tuple:
+  def prune(n: int, tree: Tuple):
       """Remove nodes n levels below in the tree"""
-
       (board, subtrees) = tree
+
       if n == 0:
           return (board, None)
       elif subtrees is None:
@@ -75,6 +75,8 @@ We can make a game tree smaller by removing nodes after a certain depth (=n=):
       else:
           return (board, map(lambda t: prune(n - 1, t), subtrees))
 #+end_src
+
+The Tic-tac-toe version of =prune= doesn't need the depth in the input, because it uses a pre-defined value. I will use this pattern for the rest of this chapter.
 
 Let's check the size of the pruned tree:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
@@ -95,9 +97,7 @@ Let's check the size of the pruned tree:
 #+end_src
 
 * Apply static evaluation to the game tree
-In the appendix, I defined a pair of functions (=static_eval_0=, =static_eval_1=) to score a board configuration. =static_eval_0= scores the configuration for player 0: a positive score means that the board looks good for player 0; a negative score means that it looks bad. =static_eval_1= changes the sign of this score, so that positive is good for player 1, and negative is bad. 
-
-These are static evaluation functions, meaning that they  don't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
+In Appendix 2, I defined =static_eval(player)= to score a board configuration. For a given =player=, the function evaluates if the configuration looks good. A positive number means that the configuration is good for =player=. A negative number means that it's good for the other player (see Appendix 2 to see example uses). =static_eval(player)= is a static evaluation functions, meaning that it doesn't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
 
 * Implement the Minimax algorithm
 #+begin_src python :noweb yes :tangle ../src/game.py
@@ -409,15 +409,19 @@ It's important that the static evaluation function knows when a player wins the 
 Functions related to game theory (=gametree=, =prune=, =evaluate=) defined in =game.py= are generic, and therefore require a couple of parameters to call. Here, we define Tic-tac-toe specific versions of these functions, to make them easier to use.
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_TREE
+  # gametree takes a board configuration and returns a tree
   gametree = game.gametree(moves)
 
+  # prune takes a tree and returns another tree
   def prune(tree):
       return lazy_utils.prune(max_depth, tree)
 
+  # given a player, returns a tree evlauation function that takes a board configuration and returns a number
   def evaluate1(player: int):
       """Evaluate tic-tac-toe tree for player i (version 1)"""
       return game.evaluate1(gametree, static_eval(player), prune)
 
+  # given a tree evaluation function, return a function that takes a board and returns a board
   def max_next_move(tree_eval_func):
       return game.max_next_move(gametree, tree_eval_func)
 #+end_src
