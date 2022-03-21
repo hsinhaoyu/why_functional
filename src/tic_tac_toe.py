@@ -48,7 +48,7 @@ def won(board: List, player: int) -> bool:
 
 
 ### Moves
-def playerToken(i: int) -> str:
+def player_token(i: int) -> str:
     assert i in [0, 1]
 
     if use_player_token:
@@ -98,10 +98,11 @@ def moves(board: List) -> Union[Iterator, None]:
 
 def display_board(board: List, coordinates=False) -> None:
     """Display a board"""
+
     def row(lst):
         return reduce(lambda a, b: a + " " + b, lst, "")
 
-    d = {None: '.', 1: playerToken(1), 0: playerToken(0)}
+    d = {None: '.', 1: player_token(1), 0: player_token(0)}
 
     zz = list(map(lambda i: d[i], board))
     zz = [zz[i:i + 3] for i in range(0, 9, 3)]
@@ -176,7 +177,7 @@ def static_eval_0(board: List) -> int:
 
 def static_eval(i: int) -> Callable[[List], int]:
     """Static board value for player i"""
-    assert i in [0, 1]
+    assert i in [0, 1], i
 
     def static_eval_(board):
         v = static_eval_0(board)
@@ -201,7 +202,7 @@ def evaluate1(player: int):
 
 
 def max_next_move(tree_eval_func):
-    return game.max_nex_move(gametree, tree_eval_func)
+    return game.max_next_move(gametree, tree_eval_func)
 
 
 def human_next_move(board: List) -> Union[List, None]:
@@ -217,7 +218,7 @@ def human_next_move(board: List) -> Union[List, None]:
 
         ok = False
         while not ok:
-            m = input(f"player {playerToken(player)} move?")
+            m = input(f"player {player_token(player)} move?")
             try:
                 i = int(m)
                 if i in legal_moves:
@@ -228,13 +229,13 @@ def human_next_move(board: List) -> Union[List, None]:
         return make_move(board, i, player)
 
 
-def computer_next_move(board: List) -> Union(List, None):
+def computer_next_move(board: List) -> Union[List, None]:
     player = who_plays(board)
     computer_move_function = max_next_move(evaluate1(player))
     return computer_move_function(board)
 
 
-def player_next_move(board, player_settings: {0: 'human', 1: 'computer'}):
+def player_next_move(board, player_settings={0: 'human', 1: 'computer'}):
     player = who_plays(board)
     if player_settings[player] == 'human':
         return human_next_move(board)
@@ -242,21 +243,22 @@ def player_next_move(board, player_settings: {0: 'human', 1: 'computer'}):
         return computer_next_move(board)
 
 
-def play(player_settings: {0: 'human', 1: 'computer'}):
+def play(player_settings={0: 'human', 1: 'computer'}):
     b = init_board()
 
     finished = False
     while not finished:
         b = player_next_move(b, player_settings)
-        player = who_plays(b)
+        player = (who_plays(b) + 1) % 2
         print()
-        print(f"{player_symbol(player)} played:")
+        print(f"{player_token(player)} played:")
         display_board(b)
         print()
 
-        if b is None:
-            print("Draw!")
+        assert b is not None
+        if won(b, player):
+            print(f"{player_token(player)} won!")
             finished = True
-        elif won(b, player):
-            print(f"{player_symbol(player)} won!")
+        elif len([i for i in range(num_pos) if b[i] is None]) == 0:
+            print("Draw!")
             finished = True

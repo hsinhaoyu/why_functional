@@ -142,14 +142,14 @@ This is our first attempt at the tree evaluation function:
           return new_item if new_item[1] > old_item[1] else old_item
 
       first_item = next(itr)
-      return reduce(max_f, itr, first_item)
+      return reduce(max_f, itr, first_item)[0]
     
   def max_next_move(gametree_func: Callable, tree_eval_func: Callable) -> Callable:
       """Return a function to make the next move."""
       def max_next_move_(board: List) -> Union[List, None]:
           # return a board or None
           (_, subtree) = gametree_func(board)
-          subtrees_evaluated = map(lambda next_move: (next_move[0], tree_eval_func[next_move[0]]), suntrees)
+          subtrees_evaluated = map(lambda next_move: (next_move[0], tree_eval_func(next_move[0])), subtree)
           return max_assoc(subtrees_evaluated)
       return max_next_move_
 #+end_src
@@ -196,7 +196,7 @@ These functions define the Tic-tac-toe game.
           return False
 
   ### Moves
-  def playerToken(i: int) -> str:
+  def player_token(i: int) -> str:
       assert i in [0, 1]
 
       if use_player_token:
@@ -244,7 +244,7 @@ These functions define the Tic-tac-toe game.
       def row(lst):
           return reduce(lambda a, b: a + " "+ b, lst, "")
 
-      d = {None: '.', 1: playerToken(1), 0: playerToken(0)}
+      d = {None: '.', 1: player_token(1), 0: player_token(0)}
 
       zz = list(map(lambda i: d[i], board))
       zz = [zz[i:i+3] for i in range(0, 9, 3)]
@@ -347,7 +347,7 @@ A static evaluation function takes a board configuration and returns a number re
 
   def static_eval(i: int) -> Callable[[List], int]:
       """Static board value for player i"""
-      assert i in [0, 1]
+      assert i in [0, 1], i
     
       def static_eval_(board):
           v = static_eval_0(board)
@@ -419,7 +419,7 @@ Functions related to game theory (=gametree=, =prune=, =evaluate=) defined in =g
       return game.evaluate1(gametree, static_eval(player), prune)
 
   def max_next_move(tree_eval_func):
-      return game.max_nex_move(gametree, tree_eval_func)
+      return game.max_next_move(gametree, tree_eval_func)
 #+end_src
 
 The winning conditions have to be reflected in the game tree. Let's make sure that they are:
@@ -465,24 +465,25 @@ The static evaluation function, when applied to the game tree, should also refle
   def test_tree_eval():
       b = [1, 0, 0, None, 0, None, 1, None, None]
       print("\nGiven this board, player 1 to play")
+      player = 1
       display_board(b)
 
       print("\nThis move wins")
       b = [1, 0, 0, 1, 0, None, 1, None, None]
       display_board(b)
-      score = evaluate1(b)
+      score = evaluate1(player)(b)
       assert score == posinf
 
       print("\nThis move will lose in the next move, so should get a losing score")
       b = [1, 0, 0, None, 0, 1, 1, None, None]
       display_board(b)
-      score = evaluate1(b)
+      score = evaluate1(player)(b)
       assert score == neginf
 
       print("\nThis move will win in the next move, so should get a winning score")
       b = [1, 0, 0, None, 0, None, 1, 1, None]
       display_board(b)
-      score = evaluate1(b)
+      score = evaluate1(player)(b)
       assert score == posinf
 #+end_src
 
@@ -501,7 +502,7 @@ The static evaluation function, when applied to the game tree, should also refle
 
           ok = False
           while not ok:
-              m = input(f"player {playerToken(player)} move?")
+              m = input(f"player {player_token(player)} move?")
               try:
                   i = int(m)
                   if i in legal_moves:
@@ -513,14 +514,14 @@ The static evaluation function, when applied to the game tree, should also refle
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
-  def computer_next_move(board: List) -> Union(List, None):
+  def computer_next_move(board: List) -> Union[List, None]:
       player = who_plays(board)
       computer_move_function = max_next_move(evaluate1(player))
       return computer_move_function(board)
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
-  def player_next_move(board, player_settings: {0: 'human', 1: 'computer'}):
+  def player_next_move(board, player_settings = {0: 'human', 1: 'computer'}):
       player = who_plays(board)
       if player_settings[player] == 'human':
           return human_next_move(board)
@@ -529,24 +530,25 @@ The static evaluation function, when applied to the game tree, should also refle
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
-  def play(player_settings: {0: 'human', 1: 'computer'}):
+  def play(player_settings = {0: 'human', 1: 'computer'}):
       b = init_board()
 
       finished = False
       while not finished:
           b = player_next_move(b, player_settings)
-          player = who_plays(b)
+          player = (who_plays(b) + 1) % 2
           print()
-          print(f"{player_symbol(player)} played:")
+          print(f"{player_token(player)} played:")
           display_board(b)
           print()
 
-          if b is None:
+          assert b is not None
+          if won(b, player):
+              print(f"{player_token(player)} won!")
+              finished = True
+          elif len([i for i in range(num_pos) if b[i] is None]) == 0:
               print("Draw!")
-              finished = True
-          elif won(b, player):
-              print(f"{player_symbol(player)} won!")
-              finished = True
+              finished = True  
 #+end_src
 
 * Appendix 6: Imports
@@ -561,7 +563,9 @@ The static evaluation function, when applied to the game tree, should also refle
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
-  from lazy_utils import reptree, mk_tree, decompose_tree, maptree, prune
+  from functools import reduce
+  from typing import Callable, List, Union, Iterator, Tuple
+  from lazy_utils import reptree, maptree, prune
 #+end_src
 
 #+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS

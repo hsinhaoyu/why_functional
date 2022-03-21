@@ -137,24 +137,25 @@ def test_gametree_evaluation():
 def test_tree_eval():
     b = [1, 0, 0, None, 0, None, 1, None, None]
     print("\nGiven this board, player 1 to play")
+    player = 1
     display_board(b)
 
     print("\nThis move wins")
     b = [1, 0, 0, 1, 0, None, 1, None, None]
     display_board(b)
-    score = evaluate1(b)
+    score = evaluate1(player)(b)
     assert score == posinf
 
     print(
         "\nThis move will lose in the next move, so should get a losing score")
     b = [1, 0, 0, None, 0, 1, 1, None, None]
     display_board(b)
-    score = evaluate1(b)
+    score = evaluate1(player)(b)
     assert score == neginf
 
     print(
         "\nThis move will win in the next move, so should get a winning score")
     b = [1, 0, 0, None, 0, None, 1, 1, None]
     display_board(b)
-    score = evaluate1(b)
+    score = evaluate1(player)(b)
     assert score == posinf

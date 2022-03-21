@@ -10,7 +10,9 @@ def mk_tree_(label, lst):
 
 
 def mk_test_tree():
-    my_tree = mk_tree_(1, [mk_tree_(2, []), mk_tree_(3, [mk_tree_(4, [])])])
+    my_tree = mk_tree_(1,
+                       [mk_tree_(2, None),
+                        mk_tree_(3, [mk_tree_(4, None)])])
     return my_tree
 
 
@@ -21,6 +23,7 @@ def test_tree_labels():
 
 
 def test_maptree():
+
     def f(n):
         return -1 * n
 

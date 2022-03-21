@@ -21,12 +21,9 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
 
   def mk_test_tree():
       my_tree = mk_tree_(1, [
-                             mk_tree_(2, []),
-                             mk_tree_(3, [
-                                          mk_tree_(4, [])
-                                         ]
-                              )
-                             ])
+                             mk_tree_(2, None),
+                             mk_tree_(3, [mk_tree_(4, None)])
+                            ])
       return my_tree
 #+end_src
 

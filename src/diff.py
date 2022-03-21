@@ -8,6 +8,7 @@ esp = 0.0000000001  # a small number that's used to call within()
 
 def easydiff(f: Callable[[float], float],
              x: float) -> Callable[[float], float]:
+
     def easydiff_(h: float) -> float:
         return (f(x + h) - f(x)) / h
 
