@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/tic-tac-toe.html
 #+TITLE: Play Tic-tac-toe using lazy trees
 
-In this section, we're going to apply the ideas developed so far on a more complicated problem: playing Tic-tac-toe. We'll concentrate on the code structure rather than on game AI, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
+In this section, we're going to apply the ideas developed so far on a more complicated problem: playing Tic-tac-toe. We'll concentrate on the code structure rather than on the game AI, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
@@ -30,7 +30,7 @@ Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly maps a function
       return (label, make_children(f(label)))
 #+end_src
 
-By applying =moves= repeatedly to a board configuration, we get a tree of all possible future configurations of the game! Of course, =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.  
+By applying =moves= repeatedly to a board configuration, we get a tree of all possible future configurations of the game! =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
 #+begin_src python :noweb yes :tangle ../src/game.py
   <<GAME_IMPORTS>>
 
@@ -42,6 +42,8 @@ By applying =moves= repeatedly to a board configuration, we get a tree of all po
           return reptree(moves, board)
       return gametree_
 #+end_src
+
+The code above defines =gametree= as "factory function", which receives a =moves= function and returns a closure that only needs the board as its input. It's done this way to make calling =gametree= easier. In Appendix 3, I used the factory function above to define a version of =gametree= specifically for Tic-tac-toe. We'll use the Tic-tac-toe version for the rest of this chapter.
 
 Here, we generate all possible Tic-tac-toe games! Let's find out how big the tree is.
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
@@ -62,7 +64,7 @@ Here, we generate all possible Tic-tac-toe games! Let's find out how big the tre
 #+end_src
 
 * Prune the game tree
-We can reduce the size of game tree by removing nodes after a certain depth (=n=). I define below a general-purpose version of =prune=. In the Appendix 3, I define another version of =prune= for the specific application of Tic-tac-toe. 
+We can reduce the size of game tree by removing nodes after a certain depth (=n=). 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def prune(n: int, tree: Tuple):
       """Remove nodes n levels below in the tree"""
@@ -76,7 +78,7 @@ We can reduce the size of game tree by removing nodes after a certain depth (=n=
           return (board, map(lambda t: prune(n - 1, t), subtrees))
 #+end_src
 
-The Tic-tac-toe version of =prune= doesn't need the depth in the input, because it uses a pre-defined value. I will use this pattern for the rest of this chapter.
+As in the previous section, I defined a Tic-tac-toe version of =prune= in Appendix 3. This version of =prune= doesn't need the depth in the input, because it uses a pre-defined value. 
 
 Let's check the size of the pruned tree:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
@@ -97,7 +99,9 @@ Let's check the size of the pruned tree:
 #+end_src
 
 * Apply static evaluation to the game tree
-In Appendix 2, I defined =static_eval(player)= to score a board configuration. For a given =player=, the function evaluates if the configuration looks good. A positive number means that the configuration is good for =player=. A negative number means that it's good for the other player (see Appendix 2 to see example uses). =static_eval(player)= is a static evaluation functions, meaning that it doesn't take future moves into account. It's not good enough for making the next move, but it's a good starting point.
+To play Tic-tac-toe, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move, but it's a starting point.
+
+In Appendix 2, I defined =static_eval(player)= for this purpose. For a given =player=, the function evaluates if the configuration looks good. A positive number means that the configuration is good for =player=. A negative number means that it's good for the other player (see Appendix 2 to see example uses). 
 
 * Implement the Minimax algorithm
 #+begin_src python :noweb yes :tangle ../src/game.py
