@@ -10,7 +10,7 @@ Hughes argued that functional languages provide elegant mechanisms for decomposi
 - [Numerical approximation using lazy evaluation](org/newton.org)
 - [Numerican differentiation using iterators of iterators](org/diff.org)
 - [Numerical integration using lazy recursion](org/integration.org)
-- [Lazy trees](org/lazy_trees.org)
+- [Lazy trees](org/lazy_tree.org)
 - [Playing Tic-tac-toe using lazy trees](org/tic_tac_toe.org)
 
 ## A note on literate programming

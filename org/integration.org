@@ -7,7 +7,6 @@ For those who don't care about numerical methods, the attraction of this section
 
 * Integration with lazy recursion
 For a linear function, it's easy to calculate the area under the function:
-
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   <<INTEGRATE_IMPORTS>>
 
@@ -17,7 +16,6 @@ For a linear function, it's easy to calculate the area under the function:
 #+end_src
 
 For a nonlinear function, we can divide the interval (a, b) into two intervals, approximate the areas in the two intervals recursively, and then sum the two areas. The =integrate_= function defined below does this, and returns an iterator that gets closer and closer to the real value:
-
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   def addpair(pair: Tuple[float, float]) -> float:
       """(a, b) -> a + b """
@@ -33,10 +31,9 @@ For a nonlinear function, we can divide the interval (a, b) into two intervals, 
           yield i
 #+end_src
 
-Note that =integrate_= doesn't look that much different from a regular (i.e., non-lazy) recursive function. However, by using =yield=, =map= and =zip= in the definition, we've defined a function that recurse lazily: the recursion only goes one depth further when we request the next value in the iterator.
+Note that =integrate_= doesn't look that much different from a regular (i.e., non-lazy) recursive function. However, with the use of =yield=, =map= and =zip=, we've defined a function that recurses lazily: the recursion only goes one depth further when we request the next value in the iterator.
 
-This is the first version of our integration function:
-
+This is the first version of our numerical integration function:
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   def integrate1(f: Callable[[float], float], a: float, b: float) -> float:
       """Calculate the integral of f between a and b."""
@@ -45,7 +42,6 @@ This is the first version of our integration function:
 #+end_src
 
 A simple test:
-
 #+begin_src python :noweb yes :tangle ../src/test_integrate.py
   <<TEST_INTEGRATE_IMPORTS>>
 
@@ -61,7 +57,6 @@ A simple test:
 
 * Avoiding redundant evaluation
 A problem with the code in the previous section is that every time =easyintegrate= is called, the value of =f= is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
-
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   def integ(f: Callable[[float], float], a: float, b: float, fa: float, fb: float) -> Iterator[float]:
       """Like integrate_, but with pre-calculated f(a) and f(b)."""
@@ -88,7 +83,6 @@ Let's test the second version of our numerical integration function:
 
 * Accelerating the convergence
 Remember that in the [[diff.org][previous chapter]], we used the =improve= function to accelerate the convergence of a sequence? We can use it here too:
-
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   def integrate3(f: Callable[[float], float], a: float, b: float) -> float:
       d = within(esp, improve(integ(f, a, b, f(a), f(b))))
