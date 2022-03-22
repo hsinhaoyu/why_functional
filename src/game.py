@@ -1,22 +1,25 @@
 from functools import reduce
-from typing import Callable, List, Union, Iterator, Tuple
-from lazy_utils import reptree, maptree, prune
+from typing import Callable, List, Union, Iterator, Tuple, Optional
+from lazy_utils import reptree, maptree, prune, Node
+
+# Board is a type alias for representing a board configuration. In this example,  it's just a list
+Board = List
 
 
 def gametree(
-        moves: Callable[[List], Union[Iterator,
-                                      None]]) -> Callable[[List], Tuple]:
+    moves: Callable[[Board], Optional[Iterator[Board]]]
+) -> Callable[[Board], Node]:
     """Return a func that builds a gametree from an initial board.
     moves is a function that returns all legal moves given a board.
     """
 
-    def gametree_(board):
+    def gametree_(board: Board) -> Node:
         return reptree(moves, board)
 
     return gametree_
 
 
-def maximize1(gametree: Tuple) -> int:
+def maximize1(gametree: Node) -> int:
     """The max step of Minimax"""
     (score, subtrees) = gametree
 
@@ -27,7 +30,7 @@ def maximize1(gametree: Tuple) -> int:
     return s
 
 
-def minimize1(gametree: Tuple) -> int:
+def minimize1(gametree: Node) -> int:
     """The min step of Minimax.
     A node in gametree is ((board, score), subtrees)
     Returns (board, score) with the minimal score
@@ -41,32 +44,35 @@ def minimize1(gametree: Tuple) -> int:
     return s
 
 
-def evaluate1(gametree_: Callable, eval_: Callable,
-              prune_: Callable) -> Callable:
+def evaluate1(gametree_: Callable[[Board], Node], eval_: Callable[[Board],
+                                                                  int],
+              prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
 
-    def evaluate_(board: Tuple) -> int:
+    def evaluate_(board: Board) -> int:
         return minimize1(maptree(eval_, prune_(gametree_(board))))
 
     return evaluate_
 
 
-def max_assoc(itr):
+def max_assoc(itr: Iterator[Tuple[Board, int]]) -> int:
     """ Return the board with the highest score.
     itr is (board1, score1), (board2, score2)...
     """
 
-    def max_f(new_item, old_item):
+    def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
         return new_item if new_item[1] > old_item[1] else old_item
 
     first_item = next(itr)
     return reduce(max_f, itr, first_item)[0]
 
 
-def max_next_move(gametree_func: Callable,
-                  tree_eval_func: Callable) -> Callable:
+def max_next_move(
+    gametree_func: Callable[[Board], Node],
+    tree_eval_func: Callable[[Board],
+                             int]) -> Callable[[Board], Optional[Board]]:
     """Return a function to make the next move."""
 
-    def max_next_move_(board: List) -> Union[List, None]:
+    def max_next_move_(board: Board) -> Optional[Board]:
         # return a board or None
         (_, subtree) = gametree_func(board)
         subtrees_evaluated = map(

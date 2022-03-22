@@ -4,9 +4,9 @@ from lazy_utils import *
 def mk_tree_(label, lst):
     """A throw-away function just for this example"""
     if lst is None:
-        return (label, None)
+        return Node(label, None)
     else:
-        return (label, iter(lst))
+        return Node(label, iter(lst))
 
 
 def mk_test_tree():

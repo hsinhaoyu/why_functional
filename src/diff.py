@@ -3,7 +3,7 @@ from typing import Callable, Iterator
 from itertools import tee
 from lazy_utils import repeat_f, within, repeat_itr
 
-esp = 0.0000000001  # a small number that's used to call within()
+esp = 0.000000001  # a small number that's used to call within()
 
 
 def easydiff(f: Callable[[float], float],

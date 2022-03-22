@@ -1,4 +1,4 @@
-from typing import Callable, Iterator, Tuple
+from typing import Callable, Iterator, Tuple, NamedTuple, Any, Optional, List
 from itertools import tee
 
 
@@ -30,7 +30,10 @@ def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
         acc = f(i1)
 
 
-def tree_labels(t):
+Node = NamedTuple('Node', [('label', Any), ('subtrees', Optional[Iterator])])
+
+
+def tree_labels(t: Node) -> Iterator[Any]:
     label, subtrees = t
     yield label
     if subtrees is not None:
@@ -39,21 +42,23 @@ def tree_labels(t):
                 yield j
 
 
-def mapforest_(f, forest):
+def mapforest_(f: Callable[[Any], Any],
+               forest: Optional[Iterator]) -> Iterator[Node]:
     assert forest is not None
     for t in forest:
         yield maptree(f, t)
 
 
-def maptree(f, t):
+def maptree(f: Callable[[Any], Any], t: Node) -> Node:
     label, subtrees = t
     if subtrees is None:
-        return (f(label), None)
+        return Node(f(label), None)
     else:
-        return (f(label), mapforest_(f, subtrees))
+        return Node(f(label), mapforest_(f, subtrees))
 
 
-def tree_size(t):
+def tree_size(t: Node) -> int:
+    """The number of labels in a lazy tree"""
     label, subtrees = t
 
     if subtrees is None:
@@ -62,23 +67,21 @@ def tree_size(t):
         return 1 + sum(map(tree_size, subtrees))
 
 
-def tree_depth(t):
+def tree_depth(t: Node) -> int:
+    """The maximum depth of a lazy tree"""
 
-    def tree_depth_(t, d):
+    def tree_depth_(t: Node, d: int) -> int:
         label, subtrees = t
 
         if subtrees is None:
             return d
         else:
-            try:
-                return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
-            except ValueError:
-                print(label, subtrees)
+            return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
 
     return tree_depth_(t, 1)
 
 
-def reptree(f: Callable, label) -> Tuple:
+def reptree(f: Callable[[Any], List[Any]], label: Any) -> Node:
     """Appy a function f to a label repeatedly to create a tree.
     f(label) is a list of labels
     """
@@ -91,16 +94,16 @@ def reptree(f: Callable, label) -> Tuple:
             # else, apply f repeatedly to elements of lst
             return map(lambda b: reptree(f, b), lst)
 
-    return (label, make_children(f(label)))
+    return Node(label, make_children(f(label)))
 
 
-def prune(n: int, tree: Tuple):
+def prune(n: int, tree: Node) -> Node:
     """Remove nodes n levels below in the tree"""
     (board, subtrees) = tree
 
     if n == 0:
-        return (board, None)
+        return Node(board, None)
     elif subtrees is None:
-        return (board, None)
+        return Node(board, None)
     else:
-        return (board, map(lambda t: prune(n - 1, t), subtrees))
+        return Node(board, map(lambda t: prune(n - 1, t), subtrees))

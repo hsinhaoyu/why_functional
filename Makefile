@@ -1,6 +1,7 @@
 tangle: org/*.org
 	# delete all files except zz.py
 	find src/ ! -name 'zz*.py' -type f -maxdepth 1 -exec rm -f {} +
+
 	./tangle.sh org/foldtree.org
 	./tangle.sh org/newton.org
 	./tangle.sh org/diff.org

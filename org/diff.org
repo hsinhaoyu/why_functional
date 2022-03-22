@@ -6,7 +6,6 @@ From a glance, this section of Hughes' paper appears to be all about numerical m
 
 * A first stab at the problem
 For a real function =f=, the first-order approximation of =f'= at =x= can be obtained by displacing =x= by =h=, and then calculating the slope:
-
 #+begin_src python :noweb yes :tangle ../src/diff.py
   <<DIFF_IMPORTS>>
 
@@ -18,7 +17,6 @@ For a real function =f=, the first-order approximation of =f'= at =x= can be obt
 #+end_src
 
 Now we generate an iterator of smaller and smaller =h=, by applying =half= repeatedly with =repeat_f= (defined in =newton.org=). Mapping the slope function to this iterator, =differentiate= returns another iterator that approximates the derivative closer and closer.
-
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def half(x: float) -> float:
       """Half the value"""
@@ -30,7 +28,6 @@ Now we generate an iterator of smaller and smaller =h=, by applying =half= repea
 #+end_src
 
 This is our first version of the numerical differentiation function:
-
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def diff1(h0: float, f: Callable[[float], float], x: float) -> float:
       """Approximate f'(x), with an initial h0."""
@@ -39,7 +36,6 @@ This is our first version of the numerical differentiation function:
 #+end_src
 
 A simple test: differentiate sin(x) at 1.0, starting with a very large gap (=h0=5.0=). We know that the right answer is cos(1.0).
-
 #+begin_src python :noweb yes :tangle ../src/test_diff.py
   <<TEST_DIFF_IMPORTS>>
 
@@ -56,7 +52,6 @@ A simple test: differentiate sin(x) at 1.0, starting with a very large gap (=h0=
 A problem with =differentiate= above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called [[https://en.wikipedia.org/wiki/Richardson_extrapolation][Richardson extrapolation]]. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the next section.
 
 With an appropriately-chosen integer =n=, the convergence of a sequence (represented as an iterator) can improved by the =elimerror= function defined below. What it does is that it slides a =(a, b)= window over the original sequence, and applies a correction based on the two values(=c= below). 
-
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def elimerror(n: int, itr: Iterator[float]) -> Iterator[float]:
       """Reduce the error of sequence approx. derivative, assuming order n."""
@@ -70,7 +65,6 @@ With an appropriately-chosen integer =n=, the convergence of a sequence (represe
 #+end_src
 
 We don't know how to set =n= yet, but let's try the code with an arbitrary number (=n=2=). 
-
 #+begin_src python :noweb yes :tangle ../src/test_diff.py :results output
   def test_elimerror():
       print("\n## test_elimerror:")
@@ -87,7 +81,6 @@ We don't know how to set =n= yet, but let's try the code with an arbitrary numbe
 #+end_src
 
 The appropriate =n= can be estimated by =order=, using the first three values in the sequence. Taking a slow converging iterator as input, =improve= returns a new iterator that converges faster. It does it by estimating the order and calling =elimerror=.
-
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def order(itr: Iterator[float]) -> int:
       """Estimate the order for elimerror()."""
@@ -102,7 +95,6 @@ The appropriate =n= can be estimated by =order=, using the first three values in
 #+end_src
 
 You can compare the two sequences by running =make test=:
-
 #+begin_src python :noweb yes :tangle ../src/test_diff.py
   def test_improve():
       print("\n## test_improve")
@@ -118,8 +110,7 @@ You can compare the two sequences by running =make test=:
       print("seq2:", list(islice(seq2, 20)))
 #+end_src
 
-This is second version of the numerical differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met. 
-
+This is second version of the numerical differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met (=esp= is a small number defined in the Appendix). 
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def diff2(h0: float, f: Callable[[float], float], x: float) -> float:
       """Approximate f'(x), with an initial h0."""
@@ -128,7 +119,6 @@ This is second version of the numerical differentiation function. The logic is v
 #+end_src
 
 A simple test:
-
 #+begin_src python :noweb yes :tangle ../src/test_diff.py
   def test_diff2():
       h0, x = 1.0, 0.3
@@ -142,7 +132,6 @@ Do we actually need any improvements? Not for the simple problems that we've bee
 In Hughes' paper, he used the =improve= function again and again on the same sequence to get better and better convergence. Let =s= be the infinite iterator returned by =differentiate(f0, f x)=. By calling =repeat(improve, s)=, we get =s=, =improve(s)=, =improve(improve(s))=... and so on. It's an infinite iterator of infinite iterators!
 
 The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The =repeat_f= function defined [[newton.org][previously]] doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
-
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
       """[i, f(i), f(f(i))...]"""
@@ -155,7 +144,6 @@ The Miranda code in the paper expresses this idea with a beautiful one-liner. Un
 #+end_src
 
 Let's see if the 5th item in the yielded iterator is the same as applying =improve= 4 times:
-
 #+begin_src python :noweb yes :tangle ../src/test_diff.py
   def test_repeat_improve():
       print("\n## test_repeat_improve():")
@@ -180,7 +168,6 @@ Let's see if the 5th item in the yielded iterator is the same as applying =impro
 #+end_src
 
 I haven't checked a textbook, but the paper says that the second approximation from each of the improved iterator is a good sequence for solving our problem. So, this is the third version of the numerical differentiation function:
-
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def second(itr: Iterator[float]) -> float:
       """Returns the second item in an iterator."""
@@ -198,7 +185,6 @@ I haven't checked a textbook, but the paper says that the second approximation f
 #+end_src
 
 Does it work?
-
 #+begin_src python :noweb yes :tangle ../src/test_diff.py
   def test_diff3():
       h0, x = 1.0, 0.3
@@ -214,7 +200,7 @@ Does it work?
   from lazy_utils import repeat_f, within, repeat_itr
 
 
-  esp = 0.0000000001 # a small number that's used to call within()
+  esp = 0.000000001 # a small number that's used to call within()
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TEST_DIFF_IMPORTS

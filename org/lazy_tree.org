@@ -6,7 +6,10 @@ Recall that [[foldtree.org][previously]], we used a higher-order function =foldt
 Lazy evaluation is not integral to Python, so we have to write some extra codes. I've found it difficult to write a lazy version of the higher-order function =foldtree= in Python, so I will do it less elegantly. Instead of building =treelabels= and =maptree= from a higher-order lazy function, I will just lazify them individually.
 
 * Representing lazy trees
-As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list.
+As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I'll use a named tuple to differentiate a lazy tree from other tuples:
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  Node = NamedTuple('Node', [('label', Any), ('subtrees', Optional[Iterator])])
+#+end_src
 
 Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists with iterators: 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
@@ -15,9 +18,9 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
   def mk_tree_(label, lst):
       """A throw-away function just for this example"""
       if lst is None:
-          return (label, None)
+          return Node(label, None)
       else:
-          return (label, iter(lst))
+          return Node(label, iter(lst))
 
   def mk_test_tree():
       my_tree = mk_tree_(1, [
@@ -29,9 +32,8 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
 
 * Flattening lazy trees
 This version returns an iterator, which visits every label in the tree one by one:
-
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def tree_labels(t):
+  def tree_labels(t: Node) -> Iterator[Any]:
       label, subtrees = t
       yield label
       if subtrees is not None:
@@ -51,17 +53,17 @@ Let's try it. Note that =tree_labels= is lazy. It returns an iterator. I use =li
 * Mapping functions to lazy trees
 This version of =maptree= maps a function =f= to all labels in the input, and returns another lazy tree. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def mapforest_(f, forest):
+  def mapforest_(f: Callable[[Any], Any], forest: Optional[Iterator]) -> Iterator[Node]:
       assert forest is not None
       for t in forest:
           yield maptree(f, t)
 
-  def maptree(f, t):
+  def maptree(f: Callable[[Any], Any], t: Node) -> Node:
       label, subtrees = t
       if subtrees is None:
-          return (f(label), None)
+          return Node(f(label), None)
       else:
-          return (f(label), mapforest_(f, subtrees))
+          return Node(f(label), mapforest_(f, subtrees))
 #+end_src
 
 Let's try it. I use the =tree_labels= function to collect all the labels in the returned lazy tree.
@@ -79,7 +81,8 @@ Let's try it. I use the =tree_labels= function to collect all the labels in the 
 * Other useful functions
 A couple of more functions that we'll use in the [[tic_tac_toe.org][next chapter]].
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def tree_size(t):
+  def tree_size(t: Node) -> int:
+      """The number of labels in a lazy tree"""
       label, subtrees = t
 
       if subtrees is None:
@@ -96,17 +99,15 @@ A couple of more functions that we'll use in the [[tic_tac_toe.org][next chapter
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def tree_depth(t):
-      def tree_depth_(t, d):
+  def tree_depth(t: Node) -> int:
+      """The maximum depth of a lazy tree"""
+      def tree_depth_(t: Node, d: int) -> int:
           label, subtrees = t
 
           if subtrees is None:
               return d
           else:
-              try:
-                  return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
-              except ValueError:
-                  print(label, subtrees)
+              return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
 
       return tree_depth_(t, 1)
 #+end_src

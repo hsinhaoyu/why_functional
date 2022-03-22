@@ -18,25 +18,30 @@ num_pos = 9
 line_idx = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8],
             [0, 4, 8], [2, 4, 6]]
 
+# Cell is a type alias for representing the state of a cell in a board
+Cell = Optional[int]
+# Board is a type alias for representing board configurations
+Board = List[Cell]
 
-def init_board() -> List:
+
+def init_board() -> Board:
     """Creat an empty board.
     An unoccupied position is represented by None"""
     board = [None for i in range(num_pos)]
     return board
 
 
-def board_line(line_idx: List, board: List) -> List:
+def board_line(line_idx: List, board: Board) -> List[Cell]:
     """Return a line (one of line_idx) of a board"""
     return [board[i] for i in line_idx]
 
 
-def board_lines(board: List) -> List:
+def board_lines(board: Board) -> List[Cell]:
     """Return all the lines in a board"""
     return list(map(lambda idx: board_line(idx, board), line_idx))
 
 
-def won(board: List, player: int) -> bool:
+def won(board: Board, player: int) -> bool:
     """Has player won?"""
     assert player in [0, 1]
     lines = board_lines(board)
@@ -50,14 +55,13 @@ def won(board: List, player: int) -> bool:
 ### Moves
 def player_token(i: int) -> str:
     assert i in [0, 1]
-
     if use_player_token:
         return "X" if i == 0 else "O"
     else:
         return "0" if i == 0 else "1"
 
 
-def make_move(board: List, move: int, current_player: int) -> List:
+def make_move(board: Board, move: int, current_player: int) -> Board:
     """Apply a move (0-8) to a board for a player.
     Return a new board.
     """
@@ -70,12 +74,12 @@ def make_move(board: List, move: int, current_player: int) -> List:
     return new_board
 
 
-def who_plays(board: List) -> int:
+def who_plays(board: Board) -> int:
     """Which player is playing the next move?"""
     return board.count(0) - board.count(1)
 
 
-def moves(board: List) -> Union[Iterator, None]:
+def moves(board: Board) -> Optional[Iterator[Board]]:
     """Returns an iterator of boards for all legal next moves."""
     next_player = who_plays(board)
     other_player = (next_player + 1) % 2
@@ -96,7 +100,7 @@ def moves(board: List) -> Union[Iterator, None]:
                        candidate_moves)
 
 
-def display_board(board: List, coordinates=False) -> None:
+def display_board(board: Board, coordinates=False) -> None:
     """Display a board"""
 
     def row(lst):
@@ -132,7 +136,7 @@ def display_board(board: List, coordinates=False) -> None:
 
 
 ### Heuristic evaluation of board configurations
-def is_good_line(n: int, player: int, line: List) -> bool:
+def is_good_line(n: int, player: int, line: List[Cell]) -> bool:
     """A typical way to evaluate if a line is good"""
 
     assert n in [1, 2]
@@ -143,7 +147,7 @@ def is_good_line(n: int, player: int, line: List) -> bool:
     return v1 and v2
 
 
-def count_good_lines(n: int, player: int, lines: List) -> int:
+def count_good_lines(n: int, player: int, lines: List[Cell]) -> int:
     """How many good lines?"""
 
     assert n in [1, 2]
@@ -153,7 +157,7 @@ def count_good_lines(n: int, player: int, lines: List) -> int:
     return zz.count(True)
 
 
-def static_eval_0(board: List) -> int:
+def static_eval_0(board: Board) -> int:
     """Static board value for player 0
     >0: player 0 is doing better
     <0: player 1 is doing better
@@ -175,7 +179,7 @@ def static_eval_0(board: List) -> int:
     return val
 
 
-def static_eval(i: int) -> Callable[[List], int]:
+def static_eval(i: int) -> Callable[[Board], int]:
     """Static board value for player i"""
     assert i in [0, 1], i
 
@@ -190,22 +194,24 @@ def static_eval(i: int) -> Callable[[List], int]:
 
 
 # gametree takes a board configuration and returns a tree
-gametree = game.gametree(moves)
+gametree: Callable[[Board], Node] = game.gametree(moves)
 
 
 # prune takes a tree and returns another tree
-def prune(tree):
+def prune(tree: Node) -> Node:
     return lazy_utils.prune(max_depth, tree)
 
 
 # given a player, returns a tree evlauation function that takes a board configuration and returns a number
-def evaluate1(player: int):
+def evaluate1(player: int) -> Callable[[Board], int]:
     """Evaluate tic-tac-toe tree for player i (version 1)"""
     return game.evaluate1(gametree, static_eval(player), prune)
 
 
 # given a tree evaluation function, return a function that takes a board and returns a board
-def max_next_move(tree_eval_func):
+def max_next_move(
+    tree_eval_func: Callable[[Board],
+                             int]) -> Callable[[Board], Optional[Board]]:
     return game.max_next_move(gametree, tree_eval_func)
 
 
