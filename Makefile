@@ -11,7 +11,7 @@ tangle: org/*.org
 	yapf --in-place --recursive src/
 
 lint: tangle
-	flake8 --ignore F405,F403,E302 src/
+	flake8 --ignore F403,F405,E266,E302 src/
 
 typing: tangle
 	mypy --pretty src/*.py

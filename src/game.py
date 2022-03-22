@@ -1,8 +1,9 @@
 from functools import reduce
-from typing import Callable, List, Union, Iterator, Tuple, Optional
-from lazy_utils import reptree, maptree, prune, Node
+from typing import Callable, List, Iterator, Tuple, Optional
+from lazy_utils import reptree, maptree, Node
 
-# Board is a type alias for representing a board configuration. In this example,  it's just a list
+# Board is a type alias for representing a board configuration.
+# In this example,  it's just a list
 Board = List
 
 
@@ -54,7 +55,7 @@ def evaluate1(gametree_: Callable[[Board], Node], eval_: Callable[[Board],
     return evaluate_
 
 
-def max_assoc(itr: Iterator[Tuple[Board, int]]) -> int:
+def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
     """ Return the board with the highest score.
     itr is (board1, score1), (board2, score2)...
     """
@@ -75,9 +76,12 @@ def max_next_move(
     def max_next_move_(board: Board) -> Optional[Board]:
         # return a board or None
         (_, subtree) = gametree_func(board)
-        subtrees_evaluated = map(
-            lambda next_move: (next_move[0], tree_eval_func(next_move[0])),
-            subtree)
-        return max_assoc(subtrees_evaluated)
+        if subtree is None:
+            return None
+        else:
+            subtrees_evaluated = map(
+                lambda next_move: (next_move[0], tree_eval_func(next_move[0])),
+                subtree)
+            return max_assoc(subtrees_evaluated)
 
     return max_next_move_

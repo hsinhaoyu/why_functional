@@ -1,4 +1,4 @@
-from typing import Callable, Iterator, Tuple, NamedTuple, Any, Optional, List
+from typing import Callable, Iterator, NamedTuple, Any, Optional
 from itertools import tee
 
 
@@ -81,13 +81,13 @@ def tree_depth(t: Node) -> int:
     return tree_depth_(t, 1)
 
 
-def reptree(f: Callable[[Any], List[Any]], label: Any) -> Node:
+def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -> Node:
     """Appy a function f to a label repeatedly to create a tree.
     f(label) is a list of labels
     """
 
     def make_children(lst):
-        if lst == None:
+        if lst is None:
             # f produces nothing
             return None
         else:

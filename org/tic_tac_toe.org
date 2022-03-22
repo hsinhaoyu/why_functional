@@ -13,14 +13,14 @@ In this section, we're going to apply the ideas developed so far on a more compl
 #+end_src
 
 * Build a (lazy) game tree
-Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly maps a function to an initial value to generate a list. =repree= extends the idea to trees. Let =f= be a function that takes a value, and returns a list of values. =reptree= grows a tree out of an initial value by applying =f= repeatedly. The tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
+Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly maps a function to an initial value to generate a list. Let's extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree=, which grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def reptree(f: Callable[[Any], List[Any]], label: Any) -> Node:
+  def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -> Node:
       """Appy a function f to a label repeatedly to create a tree.
       f(label) is a list of labels
       """
       def make_children(lst):
-          if lst == None:
+          if lst is None:
               # f produces nothing
               return None
           else:
@@ -34,7 +34,8 @@ By applying =moves= repeatedly to a board configuration, we get a tree of all po
 #+begin_src python :noweb yes :tangle ../src/game.py
   <<GAME_IMPORTS>>
 
-  # Board is a type alias for representing a board configuration. In this example,  it's just a list
+  # Board is a type alias for representing a board configuration.
+  # In this example,  it's just a list
   Board = List
 
   def gametree(moves: Callable[[Board], Optional[Iterator[Board]]]) -> Callable[[Board], Node]:
@@ -46,7 +47,7 @@ By applying =moves= repeatedly to a board configuration, we get a tree of all po
       return gametree_
 #+end_src
 
-The code above defines =gametree= as "factory function", which receives a =moves= function and returns a closure that only needs the board as its input. It's done this way to make calling =gametree= easier. In Appendix 3, I used the factory function above to define a version of =gametree= specifically for Tic-tac-toe. We'll use the Tic-tac-toe version for the rest of this chapter.
+The code above defines a =gametree= as "factory function", which receives =moves= and returns a closure that only needs the initial board configuration as its input. In Appendix 3, I used the factory function to define a version of =gametree= specifically for Tic-tac-toe. We'll use the Tic-tac-toe version of =gametree= for the rest of this chapter.
 
 Here, we generate all possible Tic-tac-toe games! Let's find out how big the tree is.
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
@@ -81,7 +82,7 @@ We can reduce the size of game tree by removing nodes after a certain depth (=n=
           return Node(board, map(lambda t: prune(n - 1, t), subtrees))
 #+end_src
 
-As in the previous section, I defined a Tic-tac-toe version of =prune= in Appendix 3. This version of =prune= doesn't need the depth in the input, because it uses a pre-defined value. 
+As in the previous section, I defined a Tic-tac-toe version of =prune= in Appendix 3. This version of =prune= doesn't need the depth in the input, because it uses a pre-defined value for Tic-tac-toe.
 
 Let's check the size of the pruned tree:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
@@ -102,9 +103,9 @@ Let's check the size of the pruned tree:
 #+end_src
 
 * Apply static evaluation to the game tree
-To play Tic-tac-toe, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move, but it's a starting point.
+To play Tic-tac-toe, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a starting point.
 
-In Appendix 2, I defined =static_eval(player)= for this purpose. For a given =player=, the function evaluates if the configuration looks good. A positive number means that the configuration is good for =player=. A negative number means that it's good for the other player (see Appendix 2 to see example uses). 
+In Appendix 2, I defined =static_eval(player)= for this purpose. For a given =player=, the function evaluates if the configuration "looks good". A positive number means that the configuration is good for =player=. A negative number means that it's good for the other player (see Appendix 2 to see example uses). 
 
 * Implement the Minimax algorithm
 #+begin_src python :noweb yes :tangle ../src/game.py
@@ -132,7 +133,7 @@ In Appendix 2, I defined =static_eval(player)= for this purpose. For a given =pl
       return s
 #+end_src
 
-This is our first attempt at the tree evaluation function:
+This is our first version of the tree evaluation function:
 #+begin_src python :noweb yes :tangle ../src/game.py
   def evaluate1(gametree_: Callable[[Board], Node], eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
       def evaluate_(board: Board) -> int:
@@ -141,7 +142,7 @@ This is our first attempt at the tree evaluation function:
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/game.py
-  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> int:
+  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
       """ Return the board with the highest score.
       itr is (board1, score1), (board2, score2)...
       """
@@ -150,14 +151,17 @@ This is our first attempt at the tree evaluation function:
 
       first_item = next(itr)
       return reduce(max_f, itr, first_item)[0]
-    
+
   def max_next_move(gametree_func: Callable[[Board], Node], tree_eval_func: Callable[[Board], int]) -> Callable[[Board], Optional[Board]]:
       """Return a function to make the next move."""
       def max_next_move_(board: Board) -> Optional[Board]:
           # return a board or None
           (_, subtree) = gametree_func(board)
-          subtrees_evaluated = map(lambda next_move: (next_move[0], tree_eval_func(next_move[0])), subtree)
-          return max_assoc(subtrees_evaluated)
+          if subtree is None:
+              return None
+          else:
+              subtrees_evaluated = map(lambda next_move: (next_move[0], tree_eval_func(next_move[0])), subtree)
+              return max_assoc(subtrees_evaluated)
       return max_next_move_
 #+end_src
 
@@ -183,18 +187,17 @@ These functions define the Tic-tac-toe game.
   # Board is a type alias for representing board configurations
   Board = List[Cell]
 
-
   def init_board() -> Board:
       """Creat an empty board.
       An unoccupied position is represented by None"""
-      board = [None for i in range(num_pos)]
+      board: List[Optional[int]] = [None for i in range(num_pos)]
       return board
 
-  def board_line(line_idx: List, board: Board) -> List[Cell]:
+  def board_line(line_idx: List[int], board: Board) -> List[Cell]:
       """Return a line (one of line_idx) of a board"""
       return [board[i] for i in line_idx]
 
-  def board_lines(board: Board) -> List[Cell]:
+  def board_lines(board: Board) -> List[List[Cell]]:
       """Return all the lines in a board"""
       return list(map(lambda idx: board_line(idx, board), line_idx))
 
@@ -263,12 +266,12 @@ These functions define the Tic-tac-toe game.
       zz = list(map(row, zz))
 
       if coordinates:
-          def d(i):
+          def d_(i):
               if board[i] is None:
                   return str(i)
               else:
                   return "."
-          zz2 = [d(i) for i in range(9)]
+          zz2 = [d_(i) for i in range(9)]
           zz2 = [zz2[i:i+3] for i in range(0, 9, 3)]
           zz2 = list(map(row, zz2))
 
@@ -313,7 +316,7 @@ Note that the player who plays the next move is encoded in the board. This infor
 #+end_src
 
 * Appendix 2: Static evaluation function for Tic-tac-toe
-A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a configuration is. I implemented a very common one.
+A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a configuration is. I implemented a common one.
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_EVAL
   ### Heuristic evaluation of board configurations
@@ -327,7 +330,7 @@ A static evaluation function takes a board configuration and returns a number re
       v2 = line.count(None) == 3 - n
       return v1 and v2
 
-  def count_good_lines(n: int , player: int, lines: List[Cell]) -> int:
+  def count_good_lines(n: int , player: int, lines: List[List[Cell]]) -> int:
       """How many good lines?"""
 
       assert n in [1, 2]
@@ -418,22 +421,20 @@ It's important that the static evaluation function knows when a player wins the 
 #+end_src
 
 * Appendix 3: Tic-tac-toe gametree
-Functions related to game theory (=gametree=, =prune=, =evaluate=) defined in =game.py= are generic, and therefore require a couple of parameters to call. Here, we define Tic-tac-toe specific versions of these functions, to make them easier to use.
-
+Functions related to game AI (=gametree=, =prune=, =evaluate=) defined previously in the chapter are generic, and therefore require a couple of parameters to call. Here, we define Tic-tac-toe versions of these functions, to make them easier to use.
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_TREE
-  # gametree takes a board configuration and returns a tree
   gametree: Callable[[Board], Node] = game.gametree(moves)
 
-  # prune takes a tree and returns another tree
   def prune(tree: Node) -> Node:
       return lazy_utils.prune(max_depth, tree)
 
-  # given a player, returns a tree evlauation function that takes a board configuration and returns a number
+  # given a player, returns a tree evlauation function
   def evaluate1(player: int) -> Callable[[Board], int]:
       """Evaluate tic-tac-toe tree for player i (version 1)"""
       return game.evaluate1(gametree, static_eval(player), prune)
 
-  # given a tree evaluation function, return a function that takes a board and returns a board
+  # given a tree evaluation function, return a function
+  # which takes a board and returns a board
   def max_next_move(tree_eval_func: Callable[[Board], int]) -> Callable[[Board], Optional[Board]]:
       return game.max_next_move(gametree, tree_eval_func)
 #+end_src
@@ -505,7 +506,7 @@ The static evaluation function, when applied to the game tree, should also refle
 
 * Appendix 5: Gameplay
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
-  def human_next_move(board: List) -> Union[List, None]:
+  def human_next_move(board: Board) -> Optional[Board]:
       """Display current board, ask player to make the next move.
       Return a board after the player's move.
       """
@@ -530,14 +531,14 @@ The static evaluation function, when applied to the game tree, should also refle
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
-  def computer_next_move(board: List) -> Union[List, None]:
+  def computer_next_move(board: Board) -> Optional[Board]:
       player = who_plays(board)
       computer_move_function = max_next_move(evaluate1(player))
       return computer_move_function(board)
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
-  def player_next_move(board, player_settings = {0: 'human', 1: 'computer'}):
+  def player_next_move(board: Board, player_settings = {0: 'human', 1: 'computer'}) -> Optional[Board]:
       player = who_plays(board)
       if player_settings[player] == 'human':
           return human_next_move(board)
@@ -546,7 +547,7 @@ The static evaluation function, when applied to the game tree, should also refle
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
-  def play(player_settings = {0: 'human', 1: 'computer'}):
+  def play(player_settings = {0: 'human', 1: 'computer'}) -> None:
       b = init_board()
 
       finished = False
@@ -569,22 +570,23 @@ The static evaluation function, when applied to the game tree, should also refle
 
 * Appendix 6: Imports
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_IMPORTS
-  from typing import List, Iterator, Union, Callable
+  from typing import List, Iterator, Callable, Optional
   from functools import reduce
   from random import shuffle
 
-  from lazy_utils import maptree
+  from lazy_utils import Node
   import lazy_utils
   import game
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
   from functools import reduce
-  from typing import Callable, List, Union, Iterator, Tuple, Optional
-  from lazy_utils import reptree, maptree, prune, Node
+  from typing import Callable, List, Iterator, Tuple, Optional
+  from lazy_utils import reptree, maptree, Node
 #+end_src
 
 #+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
-  from tic_tac_toe import init_board, moves, static_eval_0, static_eval, display_board, who_plays, posinf, neginf, gametree, prune, evaluate1
+  from tic_tac_toe import init_board, moves, static_eval, display_board
+  from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate1
   from lazy_utils import tree_size, tree_depth, maptree, tree_labels
 #+end_src

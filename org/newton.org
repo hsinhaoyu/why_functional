@@ -111,7 +111,7 @@ A simple test:
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref LAZY_UTILS_IMPORTS
-  from typing import Callable, Iterator, Tuple, NamedTuple, Any, Optional, List
+  from typing import Callable, Iterator, NamedTuple, Any, Optional
   from itertools import tee
 #+end_src
 

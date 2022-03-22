@@ -1,8 +1,8 @@
-from typing import List, Iterator, Union, Callable
+from typing import List, Iterator, Callable, Optional
 from functools import reduce
 from random import shuffle
 
-from lazy_utils import maptree
+from lazy_utils import Node
 import lazy_utils
 import game
 ### gameplay options
@@ -27,16 +27,16 @@ Board = List[Cell]
 def init_board() -> Board:
     """Creat an empty board.
     An unoccupied position is represented by None"""
-    board = [None for i in range(num_pos)]
+    board: List[Optional[int]] = [None for i in range(num_pos)]
     return board
 
 
-def board_line(line_idx: List, board: Board) -> List[Cell]:
+def board_line(line_idx: List[int], board: Board) -> List[Cell]:
     """Return a line (one of line_idx) of a board"""
     return [board[i] for i in line_idx]
 
 
-def board_lines(board: Board) -> List[Cell]:
+def board_lines(board: Board) -> List[List[Cell]]:
     """Return all the lines in a board"""
     return list(map(lambda idx: board_line(idx, board), line_idx))
 
@@ -114,13 +114,13 @@ def display_board(board: Board, coordinates=False) -> None:
 
     if coordinates:
 
-        def d(i):
+        def d_(i):
             if board[i] is None:
                 return str(i)
             else:
                 return "."
 
-        zz2 = [d(i) for i in range(9)]
+        zz2 = [d_(i) for i in range(9)]
         zz2 = [zz2[i:i + 3] for i in range(0, 9, 3)]
         zz2 = list(map(row, zz2))
 
@@ -147,7 +147,7 @@ def is_good_line(n: int, player: int, line: List[Cell]) -> bool:
     return v1 and v2
 
 
-def count_good_lines(n: int, player: int, lines: List[Cell]) -> int:
+def count_good_lines(n: int, player: int, lines: List[List[Cell]]) -> int:
     """How many good lines?"""
 
     assert n in [1, 2]
@@ -202,20 +202,22 @@ def prune(tree: Node) -> Node:
     return lazy_utils.prune(max_depth, tree)
 
 
-# given a player, returns a tree evlauation function that takes a board configuration and returns a number
+# given a player, returns a tree evlauation function
+# which takes a board configuration and returns a number
 def evaluate1(player: int) -> Callable[[Board], int]:
     """Evaluate tic-tac-toe tree for player i (version 1)"""
     return game.evaluate1(gametree, static_eval(player), prune)
 
 
-# given a tree evaluation function, return a function that takes a board and returns a board
+# given a tree evaluation function, return a function
+# which takes a board and returns a board
 def max_next_move(
     tree_eval_func: Callable[[Board],
                              int]) -> Callable[[Board], Optional[Board]]:
     return game.max_next_move(gametree, tree_eval_func)
 
 
-def human_next_move(board: List) -> Union[List, None]:
+def human_next_move(board: Board) -> Optional[Board]:
     """Display current board, ask player to make the next move.
     Return a board after the player's move.
     """
@@ -239,13 +241,18 @@ def human_next_move(board: List) -> Union[List, None]:
         return make_move(board, i, player)
 
 
-def computer_next_move(board: List) -> Union[List, None]:
+def computer_next_move(board: Board) -> Optional[Board]:
     player = who_plays(board)
     computer_move_function = max_next_move(evaluate1(player))
     return computer_move_function(board)
 
 
-def player_next_move(board, player_settings={0: 'human', 1: 'computer'}):
+def player_next_move(
+        board: Board,
+        player_settings={
+            0: 'human',
+            1: 'computer'
+        }) -> Optional[Board]:
     player = who_plays(board)
     if player_settings[player] == 'human':
         return human_next_move(board)
@@ -253,7 +260,7 @@ def player_next_move(board, player_settings={0: 'human', 1: 'computer'}):
         return computer_next_move(board)
 
 
-def play(player_settings={0: 'human', 1: 'computer'}):
+def play(player_settings={0: 'human', 1: 'computer'}) -> None:
     b = init_board()
 
     finished = False
