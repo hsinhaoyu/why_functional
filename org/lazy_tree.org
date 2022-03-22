@@ -1,12 +1,12 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/lazy_tree.html
 #+TITLE: Lazy trees
-Recall that [[foldtree.org][previously]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees, meaning that he could write a function that generates an enormous or even infinite tree, without actually evaluating all the nodes. is very useful for implementing complex algorithms that we will see in the [[tic_tac_toe.org][next chapter]].
+Recall that [[foldtree.org][previously]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees. This means that he could write a function that generates an enormous or even infinite tree, without actually evaluating all the nodes. This is very useful for implementing the algorithms that we will see in the [[tic_tac_toe.org][next chapter]].
 
-Lazy evaluation is not integral to Python, so we have to write some extra codes. I've found it difficult to write a lazy version of the higher-order function =foldtree= in Python, so I will do it less elegantly. Instead of building =treelabels= and =maptree= from a higher-order lazy function, I will just lazify them individually.
+Lazy evaluation is not integral to Python, so we have to write extra codes. I've found it difficult to write a lazy version of the higher-order function =foldtree= in Python, so I will do it less elegantly. Instead of building =treelabels= and =maptree= with a higher-order function, I will just lazify them individually.
 
 * Representing lazy trees
-As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I'll use a named tuple to differentiate a lazy tree from other tuples:
+As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I use a named tuple to differentiate a lazy tree from other uses of tuples:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   Node = NamedTuple('Node', [('label', Any), ('subtrees', Optional[Iterator])])
 #+end_src
@@ -31,7 +31,7 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
 #+end_src
 
 * Flattening lazy trees
-This version returns an iterator, which visits every label in the tree one by one:
+This version of =tree_labels= returns an iterator, which visits every label in the tree one by one:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_labels(t: Node) -> Iterator[Any]:
       label, subtrees = t
@@ -42,7 +42,7 @@ This version returns an iterator, which visits every label in the tree one by on
                   yield j
 #+end_src
 
-Let's try it. Note that =tree_labels= is lazy. It returns an iterator. I use =list(t)= to convert it to a regular list.
+Let's try it. I use =list(t)= to convert the returned iterator to a regular list.
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
   def test_tree_labels():
       t = mk_test_tree()
@@ -51,7 +51,7 @@ Let's try it. Note that =tree_labels= is lazy. It returns an iterator. I use =li
 #+end_src
 
 * Mapping functions to lazy trees
-This version of =maptree= maps a function =f= to all labels in the input, and returns another lazy tree. 
+This version of =maptree= maps a function =f= to all labels in a lazy tree, and returns another lazy tree. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def mapforest_(f: Callable[[Any], Any], forest: Optional[Iterator]) -> Iterator[Node]:
       assert forest is not None
