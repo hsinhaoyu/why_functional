@@ -112,7 +112,7 @@ A simple test:
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref LAZY_UTILS_IMPORTS
-  from typing import Callable, Iterator, NamedTuple, Any, Optional
+  from typing import Callable, Iterator, NamedTuple, Any, Optional, Union
   from itertools import tee
   import operator
 #+end_src

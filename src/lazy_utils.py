@@ -1,4 +1,4 @@
-from typing import Callable, Iterator, NamedTuple, Any, Optional
+from typing import Callable, Iterator, NamedTuple, Any, Optional, Union
 from itertools import tee
 import operator
 
@@ -34,7 +34,7 @@ def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
 Node = NamedTuple('Node', [('label', Any), ('subtrees', Optional[Iterator])])
 
 
-def foldtree(f: Callable, g: Callable, a: Any, t: Optional[Iterator]):
+def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, Iterator, None]):
     """Apply two functions (f and g) of two arguments to transform a lazy tree.
     f: combine the label of a node to its subtrees
     g: combine the subtrees of a node

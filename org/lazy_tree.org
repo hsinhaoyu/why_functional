@@ -34,7 +34,7 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
 * The higher-order function =foldtree= for lazy trees
 This is almost identical to the eager version defined in a [[org/foldtree.org][previous chapter]]. Unfortunately, some modifications are needed, because the functions for lists and iterators are differemy in Python.
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def foldtree(f: Callable, g: Callable, a: Any, t: Optional[Iterator]):
+  def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, Iterator, None]):
       """Apply two functions (f and g) of two arguments to transform a lazy tree.
       f: combine the label of a node to its subtrees
       g: combine the subtrees of a node

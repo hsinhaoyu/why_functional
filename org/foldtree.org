@@ -16,17 +16,6 @@ I'll represent a tree this way: =(label, [subtree...])=. In other words, a node 
                      ]
                   )
                  ])
-
-  my_tree2 = (1, [
-                  (2, [
-                       (3, []),
-                       (4, [
-                            (5, []),
-                            (6, [(7, [])])
-                           ]),
-                       (8, [(9, [])])
-                      ]),
-                   (10, [(11, [])])])
 #+end_src
 
 * Extending =reduce= for trees
@@ -36,7 +25,7 @@ To generalize =reduce= to trees, we need two reduction functions of two argument
 #+begin_src python :noweb no-export :tangle ../src/foldtree.py
   <<FOLDTREE_IMPORTS>>
 
-  def foldtree(f: Callable, g: Callable, a: Any, t: Tuple):
+  def foldtree(f: Callable, g: Callable, a: Any, t: Union[Tuple, List]):
       """Apply two functions (f and g) of two arguments to transform a tree.
       f: combine the label of a node to its subtrees
       g: combine the subtrees of a node
@@ -167,10 +156,21 @@ Map a function =f= to all labels in a tree:
 
 * Appendix: imports
 #+begin_src python :tangle no :noweb-ref FOLDTREE_IMPORTS
-  from typing import Tuple, Callable, Any, List
+  from typing import Tuple, Callable, Any, List, Union
   import operator
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TEST_FOLDTREE_IMPORTS
   from foldtree import *
+
+  my_tree2 = (1, [
+                  (2, [
+                       (3, []),
+                       (4, [
+                            (5, []),
+                            (6, [(7, [])])
+                           ]),
+                       (8, [(9, [])])
+                      ]),
+                   (10, [(11, [])])])
 #+end_src

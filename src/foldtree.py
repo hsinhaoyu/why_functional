@@ -1,8 +1,8 @@
-from typing import Tuple, Callable, Any, List
+from typing import Tuple, Callable, Any, List, Union
 import operator
 
 
-def foldtree(f: Callable, g: Callable, a: Any, t: Tuple):
+def foldtree(f: Callable, g: Callable, a: Any, t: Union[Tuple, List]):
     """Apply two functions (f and g) of two arguments to transform a tree.
     f: combine the label of a node to its subtrees
     g: combine the subtrees of a node
