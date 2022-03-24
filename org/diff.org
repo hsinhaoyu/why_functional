@@ -1,8 +1,8 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/diff.html
 #+OPTIONS: broken-links:t
-#+TITLE: Numerical differentiation using iterators
-From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of [[http://numerical.recipes][Numerical Recipes]]. But do read on. This is where lazy evaluation becomes interesting.
+#+TITLE: Numerical differentiation using generators
+From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of [[http://numerical.recipes][Numerical Recipes]]. But do read on. This chapter demonstrates several interesting tricks that you can use with generators.
 
 * A first stab at the problem
 For a real function =f=, the first-order approximation of =f'= at =x= can be obtained by displacing =x= by =h=, and then calculating the slope:
@@ -49,9 +49,9 @@ A simple test: differentiate sin(x) at 1.0, starting with a very large gap (=h0=
 #+end_src
 
 * Improve convergence with sequence transformation
-A problem with =differentiate= above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called [[https://en.wikipedia.org/wiki/Richardson_extrapolation][Richardson extrapolation]]. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the next section.
+A problem with =differentiate= above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called [[https://en.wikipedia.org/wiki/Richardson_extrapolation][Richardson extrapolation]]. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the [[org/integration.org][next chapter]].
 
-With an appropriately-chosen integer =n=, the convergence of a sequence (represented as an iterator) can improved by the =elimerror= function defined below. What it does is that it slides a =(a, b)= window over the original sequence, and applies a correction based on the two values(=c= below). 
+With an appropriately-chosen integer =n=, the convergence of a sequence (represented as a generator) can improved by the =elimerror= function defined below. What it does is that it slides a length 2 window over the original sequence, and applies a correction based on the two values(=c= below). 
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def elimerror(n: int, itr: Iterator[float]) -> Iterator[float]:
       """Reduce the error of sequence approx. derivative, assuming order n."""
@@ -110,7 +110,7 @@ You can compare the two sequences by running =make test=:
       print("seq2:", list(islice(seq2, 20)))
 #+end_src
 
-This is second version of the numerical differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met (=esp= is a small number defined in the Appendix). 
+This is second version of the numerical differentiation function. The logic is very easy to understand, because the code is written as a chain of simple functions: generate a series of rough calculations, improve them, and stop when the convergence criterion is met (=esp= is a small number defined in the Appendix). 
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def diff2(h0: float, f: Callable[[float], float], x: float) -> float:
       """Approximate f'(x), with an initial h0."""
@@ -127,11 +127,11 @@ A simple test:
 #+end_src
 
 * An iterator of iterators
-Do we actually need any improvements? Not for the simple problems that we've been solving, but this is where the code gets interesting!
+Do we actually need further improvements on the convergence? Not for the simple problems that we've been solving, but this is where the code gets interesting!
 
 In Hughes' paper, he used the =improve= function again and again on the same sequence to get better and better convergence. Let =s= be the infinite iterator returned by =differentiate(f0, f x)=. By calling =repeat(improve, s)=, we get =s=, =improve(s)=, =improve(improve(s))=... and so on. It's an infinite iterator of infinite iterators!
 
-The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The =repeat_f= function defined [[org/newton.org][previously]] doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
+The paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The =repeat_f= function defined [[org/newton.org][previously]] doesn't work on iterators, so we'll need a specialized version:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
       """[i, f(i), f(f(i))...]"""
@@ -167,7 +167,7 @@ Let's see if the 5th item in the yielded iterator is the same as applying =impro
       assert seq1 == seq2
 #+end_src
 
-I haven't checked a textbook, but the paper says that the second approximation from each of the improved iterator is a good sequence for solving our problem. So, this is the third version of the numerical differentiation function:
+I haven't checked a textbook, but the paper says that the second approximation from each of the improved iterator is a good sequence for numerical differentiation. So, this is the third version of the numerical differentiation function:
 #+begin_src python :noweb yes :tangle ../src/diff.py
   def second(itr: Iterator[float]) -> float:
       """Returns the second item in an iterator."""

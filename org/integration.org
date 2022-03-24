@@ -2,8 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/integration.html
 #+OPTIONS: broken-links:t
 #+TITLE:  Numerical integration with lazy recursion
-
-For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
+More numerical methods? I am not too interested in numerical methods either, but this chapter is important, because it's all about writing recursive functions that evaluates lazily. In Python land, it means recursive generators. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I don't think it makes the Python code better. In this chapter though, recursion does matter.
 
 * Integration with lazy recursion
 For a linear function, it's easy to calculate the area under the function:

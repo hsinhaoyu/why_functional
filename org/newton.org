@@ -1,11 +1,11 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/newton.html
 #+OPTIONS: broken-links:t
-#+TITLE: Calculating square roots with lazy evaluation 
+#+TITLE: Calculating square roots with generators
+This chapter shows how to decompose a complex loop into re-usable components, by chaining functions together. This pattern is most powerful when the functions evaluate lazily. In Python, it means that they are generators. 
 
 * The math bit
 To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) / 2.0 repeatedly.
-
 =next_sqrt_approx(n)= returns a closure that brings its input closer to sqrt(n).
 #+begin_src python :noweb no-export :tangle ../src/newton.py
   <<NEWTON_IMPORTS>>
@@ -27,7 +27,7 @@ A example call: approximating sqrt(10.0) from 2.0, in just one iteration:
 #+end_src
 
 * Define a nesting iterator
-=repeat_f(f, a)= applies the function =f= repeatedly to =a=. (The original code is more elegant and more general, but Python is not a lazy functional language).
+=repeat_f(f, a)= applies the function =f= repeatedly to =a=. 
 #+begin_src python :noweb no-export :tangle ../src/lazy_utils.py
   <<LAZY_UTILS_IMPORTS>>
 

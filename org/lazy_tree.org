@@ -2,12 +2,12 @@
 #+EXPORT_FILE_NAME: ../html/lazy_tree.html
 #+OPTIONS: broken-links:t
 #+TITLE: Lazy trees
-Recall that [[foldtree.org][previously]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees. This means that his code can generate an enormous or even infinite tree structure, but the nodes are evaluated only when they are needed. This is very useful for implementing the algorithms that we will see in the [[tic_tac_toe.org][next chapter]].
+Recall that [[foldtree.org][previously]], we used the higher-order function =foldtree= to define functions that operate on trees. My Python code mirrors the code structure in the paper closely, but semantics is different: Because Hughes used a lazy functional language, his code works on lazy trees. With his code, you can generate a tree that is potentially infinite in size, and leave the users of the tree to decide which part of the tree will actually be evaluated. We have seen in the last three chapters that this pattern makes it possible to decompose complex loops into a chain of re-usable components.
 
-Because Python does not normally evaluate lazily, we have to write extra codes to deal with generators. 
+Because Python is not a lazy language, we have to incorporate generators/iterators into =foldtree=.
 
 * Representing lazy trees
-As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I use a named tuple to differentiate a lazy tree from other uses of tuples:
+As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I use a named tuple to differentiate a lazy tree from other tuples:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   Node = NamedTuple('Node', [('label', Any), ('subtrees', Optional[Iterator])])
 #+end_src
@@ -32,7 +32,7 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
 #+end_src
 
 * The higher-order function =foldtree= for lazy trees
-This is almost identical to the eager version defined in a [[org/foldtree.org][previous chapter]]. Unfortunately, some modifications are needed, because the functions for lists and iterators are differemy in Python.
+This is almost identical to the eager version defined in a [[org/foldtree.org][previous chapter]]. Unfortunately, some modifications are needed, because lists and iterators are manipulated differently in Python.
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, Iterator, None]):
       """Apply two functions (f and g) of two arguments to transform a lazy tree.
@@ -56,6 +56,7 @@ This is almost identical to the eager version defined in a [[org/foldtree.org][p
 #+end_src
 
 * Summing all labels in a lazy tree
+As before, a variety of lazy tree operations can be implemented with =foldtree=, by using appropriate =f= and =g=.  
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def sumtree(t: Node) -> int:
       add = operator.add
@@ -135,8 +136,7 @@ Let's try it. I use the =tree_labels= function to collect all the labels in the 
 #+end_src
 
 * Size of lazy trees
-A couple of more functions that we'll use in the [[tic_tac_toe.org][next chapter]].
-
+Here's one more function that we'll use in the [[tic_tac_toe.org][next chapter]]:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_size(t: Node) -> int:
       def f(label, folded_subtrees):
@@ -157,6 +157,7 @@ A couple of more functions that we'll use in the [[tic_tac_toe.org][next chapter
 #+end_src
 
 * Depth of lazy trees
+Another utility function:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_depth(t: Node) -> int:
       def f(label: Any, folded_subtrees: int):
