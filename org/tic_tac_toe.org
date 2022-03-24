@@ -4,14 +4,6 @@
 #+TITLE: Play Tic-tac-toe using lazy trees
 In this chapter, we're going to apply the ideas developed so far to a more complicated problem: playing Tic-tac-toe. We'll concentrate on the code structure rather than on the game AI, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
 
-#+begin_src python :noweb no-export :tangle ../src/tic_tac_toe.py
-  <<TIC_TAC_TOE_IMPORTS>>
-  <<TIC_TAC_TOE_UTILS>>
-  <<TIC_TAC_TOE_EVAL>>
-  <<TIC_TAC_TOE_TREE>>
-  <<TIC_TAC_TOE_PLAY>>
-#+end_src
-
 * Build a (lazy) game tree
 Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a function to an initial value to generate a list. Let's extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree= to grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
@@ -147,7 +139,7 @@ Note that all the functions in the chain are lazy. Although the code reads like 
       return evaluate_
 #+end_src
 
-Again, this version of =evaluate1= is not specific to any game, so it needs many parameters. In the Appendix 3, I defined a version of = evaluate1= that only needs the board configuration to call. 
+Again, this version of =evaluate1= is not specific to any game, so it needs many parameters. In the Appendix 3, I defined a version of =evaluate1= that only takes the board configuration as input.
 
 We apply =evaluate1= to all candidate moves, and pick the one with the highest score. Note that =max_assoc= is an utility function defined near the end of the document. It returns the board associated with the highest score.
 #+begin_src python :noweb yes :tangle ../src/game.py
@@ -170,7 +162,15 @@ As before, the function defined above is generic. I have defined a version (in A
 At this point, you can already play Tic-tac-toe with the computer. Just run =tic_tac_toe.play()=. However, the computer's response is a little slow. Let's speed it up.
 
 * Appendix 1: Tic-tac-toe utilities
-These functions define the Tic-tac-toe game.
+#+begin_src python :noweb no-export :tangle ../src/tic_tac_toe.py
+  <<TIC_TAC_TOE_IMPORTS>>
+  <<TIC_TAC_TOE_UTILS>>
+  <<TIC_TAC_TOE_EVAL>>
+  <<TIC_TAC_TOE_TREE>>
+  <<TIC_TAC_TOE_PLAY>>
+#+end_src
+
+These functions define the Tic-tac-toe game:
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_UTILS
   ### gameplay options
   use_player_token = True
@@ -569,6 +569,17 @@ The main game loop:
 #+end_src
 
 * Appendix 6: Misc
+
+#+begin_src python :tangle no :noweb-ref GAME_UTILS
+  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
+      """Return the board with the highest score."""
+      def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
+          return new_item if new_item[1] > old_item[1] else old_item
+
+      first_item = next(itr)
+      return reduce(max_f, itr, first_item)[0]
+#+end_src
+
 #+begin_src python :noweb yes :tangle ../src/test_game.py
   def test_max_assoc():
       data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
@@ -590,16 +601,6 @@ The main game loop:
   from functools import reduce
   from typing import Callable, List, Iterator, Tuple, Optional
   from lazy_utils import reptree, maptree, Node
-#+end_src
-
-#+begin_src python :tangle no :noweb-ref GAME_UTILS
-  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
-      """Return the board with the highest score."""
-      def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
-          return new_item if new_item[1] > old_item[1] else old_item
-
-      first_item = next(itr)
-      return reduce(max_f, itr, first_item)[0]
 #+end_src
 
 #+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
