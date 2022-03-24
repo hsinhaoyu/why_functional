@@ -1,11 +1,12 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/diff.html
+#+OPTIONS: broken-links:t
 #+TITLE: Numerical differentiation using iterators
 From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of [[http://numerical.recipes][Numerical Recipes]]. But do read on. This is where lazy evaluation becomes interesting.
 
 * A first stab at the problem
 For a real function =f=, the first-order approximation of =f'= at =x= can be obtained by displacing =x= by =h=, and then calculating the slope:
-#+begin_src python :noweb yes :tangle ../src/diff.py
+#+begin_src python :noweb no-export :tangle ../src/diff.py
   <<DIFF_IMPORTS>>
 
   def easydiff(f: Callable[[float], float], x: float) -> Callable[[float], float]:
@@ -35,7 +36,7 @@ This is our first version of the numerical differentiation function:
 #+end_src
 
 A simple test: differentiate sin(x) at 1.0, starting with a very large gap (=h0=5.0=). We know that the right answer is cos(1.0).
-#+begin_src python :noweb yes :tangle ../src/test_diff.py
+#+begin_src python :noweb no-export :tangle ../src/test_diff.py
   <<TEST_DIFF_IMPORTS>>
 
   def f(x: float) -> float:
@@ -130,7 +131,7 @@ Do we actually need any improvements? Not for the simple problems that we've bee
 
 In Hughes' paper, he used the =improve= function again and again on the same sequence to get better and better convergence. Let =s= be the infinite iterator returned by =differentiate(f0, f x)=. By calling =repeat(improve, s)=, we get =s=, =improve(s)=, =improve(improve(s))=... and so on. It's an infinite iterator of infinite iterators!
 
-The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The =repeat_f= function defined [[newton.org][previously]] doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
+The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The =repeat_f= function defined [[org/newton.org][previously]] doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
       """[i, f(i), f(f(i))...]"""

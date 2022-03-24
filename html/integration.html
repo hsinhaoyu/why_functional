@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-16 Wed 21:44 -->
+<!-- 2022-03-24 Thu 09:57 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Numerical integration with lazy recursion</title>
@@ -224,10 +224,10 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org56db104">1. Integration with lazy recursion</a></li>
-<li><a href="#org1a71d02">2. Avoiding redundant evaluation</a></li>
-<li><a href="#org0c7cdb0">3. Accelerating the convergence</a></li>
-<li><a href="#orgff6b996">4. Appendix: imports</a></li>
+<li><a href="#org0351bed">1. Integration with lazy recursion</a></li>
+<li><a href="#orgf056638">2. Avoiding redundant evaluation</a></li>
+<li><a href="#orgf73d7cb">3. Accelerating the convergence</a></li>
+<li><a href="#org5594168">4. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
@@ -235,19 +235,14 @@
 For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
 </p>
 
-<div id="outline-container-org56db104" class="outline-2">
-<h2 id="org56db104"><span class="section-number-2">1</span> Integration with lazy recursion</h2>
+<div id="outline-container-org0351bed" class="outline-2">
+<h2 id="org0351bed"><span class="section-number-2">1</span> Integration with lazy recursion</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a linear function, it's easy to calculate the area under the function:
 </p>
-
 <div class="org-src-container">
-<pre class="src src-python">from typing import Callable, Iterator, Tuple
-from lazy_utils import within
-from diff import improve
-
-esp = 0.0000000001 # a small number that's used to call within()
+<pre class="src src-python">&lt;&lt;INTEGRATE_IMPORTS&gt;&gt;
 
 def easyintegrate(f: Callable[[float], float], a: float, b: float) -&gt; float:
     """Calculate the area under a linear function f between and and b."""
@@ -258,7 +253,6 @@ def easyintegrate(f: Callable[[float], float], a: float, b: float) -&gt; float:
 <p>
 For a nonlinear function, we can divide the interval (a, b) into two intervals, approximate the areas in the two intervals recursively, and then sum the two areas. The <code>integrate_</code> function defined below does this, and returns an iterator that gets closer and closer to the real value:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def addpair(pair: Tuple[float, float]) -&gt; float:
     """(a, b) -&gt; a + b """
@@ -276,13 +270,12 @@ def integrate_(f: Callable[[float], float], a: float, b: float) -&gt; Iterator[f
 </div>
 
 <p>
-Note that <code>integrate_</code> doesn't look that much different from a regular (i.e., non-lazy) recursive function. However, by using <code>yield</code>, <code>map</code> and <code>zip</code> in the definition, we've defined a function that recurse lazily: the recursion only goes one depth further when we request the next value in the iterator.
+Note that <code>integrate_</code> doesn't look that much different from a regular (i.e., non-lazy) recursive function. However, with the use of <code>yield</code>, <code>map</code> and <code>zip</code>, we've defined a function that recurses lazily: the recursion only goes one depth further when we request the next value in the iterator.
 </p>
 
 <p>
-This is the first version of our integration function:
+This is the first version of our numerical integration function:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def integrate1(f: Callable[[float], float], a: float, b: float) -&gt; float:
     """Calculate the integral of f between a and b."""
@@ -294,11 +287,8 @@ This is the first version of our integration function:
 <p>
 A simple test:
 </p>
-
 <div class="org-src-container">
-<pre class="src src-python">from math import sin, pi
-import pytest
-from integrate import *
+<pre class="src src-python">&lt;&lt;TEST_INTEGRATE_IMPORTS&gt;&gt;
 
 def f(x):
     return sin(x)
@@ -313,13 +303,12 @@ def test_integrate1():
 </div>
 </div>
 
-<div id="outline-container-org1a71d02" class="outline-2">
-<h2 id="org1a71d02"><span class="section-number-2">2</span> Avoiding redundant evaluation</h2>
+<div id="outline-container-orgf056638" class="outline-2">
+<h2 id="orgf056638"><span class="section-number-2">2</span> Avoiding redundant evaluation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A problem with the code in the previous section is that every time <code>easyintegrate</code> is called, the value of <code>f</code> is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def integ(f: Callable[[float], float], a: float, b: float, fa: float, fb: float) -&gt; Iterator[float]:
     """Like integrate_, but with pre-calculated f(a) and f(b)."""
@@ -350,13 +339,12 @@ Let's test the second version of our numerical integration function:
 </div>
 </div>
 
-<div id="outline-container-org0c7cdb0" class="outline-2">
-<h2 id="org0c7cdb0"><span class="section-number-2">3</span> Accelerating the convergence</h2>
+<div id="outline-container-orgf73d7cb" class="outline-2">
+<h2 id="orgf73d7cb"><span class="section-number-2">3</span> Accelerating the convergence</h2>
 <div class="outline-text-2" id="text-3">
 <p>
-Remember that in <code>diff.org</code>, we used the <code>improve</code> function to accelerate the convergence of a sequence? We can use it here too:
+Remember that in the , we used the <code>improve</code> function to accelerate the convergence of a sequence? We can use it here too:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def integrate3(f: Callable[[float], float], a: float, b: float) -&gt; float:
     d = within(esp, improve(integ(f, a, b, f(a), f(b))))
@@ -378,8 +366,8 @@ Let's try it (it's much faster):
 </div>
 </div>
 
-<div id="outline-container-orgff6b996" class="outline-2">
-<h2 id="orgff6b996"><span class="section-number-2">4</span> Appendix: imports</h2>
+<div id="outline-container-org5594168" class="outline-2">
+<h2 id="org5594168"><span class="section-number-2">4</span> Appendix: imports</h2>
 <div class="outline-text-2" id="text-4">
 <div class="org-src-container">
 <pre class="src src-python">from typing import Callable, Iterator, Tuple
@@ -401,7 +389,7 @@ from integrate import *
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-16 Wed 21:44</p>
+<p class="date">Created: 2022-03-24 Thu 09:57</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

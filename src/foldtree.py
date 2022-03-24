@@ -1,52 +1,77 @@
+from typing import Tuple, Callable, Any, List
 import operator
 
 
-def foldtree(f, g, a, tree_comp):
+def foldtree(f: Callable, g: Callable, a: Any, t: Tuple):
     """Apply two functions (f and g) of two arguments to transform a tree.
     f: combine the label of a node to its subtrees
     g: combine the subtrees of a node
     a: an initial constant
-    tree_comp: a node, a list of subtrees, or []
+    t: a tree, a list of subtrees, or []
     """
-    if tree_comp == []:
+    if t == []:
         return a
-    elif isinstance(tree_comp, list):
-        # fold multiple subtrees
-        subtree = tree_comp[0]
-        rest = tree_comp[1:]
-        return g(foldtree(f, g, a, subtree), foldtree(f, g, a, rest))
-    else:
-        assert isinstance(tree_comp, tuple)
-        # fold a label with the subtrees
-        (label, subtrees) = tree_comp
+    elif isinstance(t, tuple):
+        (label, subtrees) = t
         return f(label, foldtree(f, g, a, subtrees))
+    else:
+        # fold multiple subtrees
+        subtree = t[0]
+        rest = t[1:]
+        return g(foldtree(f, g, a, subtree), foldtree(f, g, a, rest))
 
 
-def sumtree(tree):
+def sumtree(t: Tuple) -> int:
     """Sum all labels in a tree."""
-    add = operator.add
-    return foldtree(add, add, 0, tree)
+    f = operator.add
+    g = operator.add
+    return foldtree(f, g, 0, t)
 
 
-def tree_labels(tree):
+def tree_labels(t):
     """Collect all labels of a tree into a list."""
 
-    def cons(label, lst):
-        return [label] + lst
+    def f(label: Any, folded_subtrees: List) -> List:
+        return [label] + folded_subtrees
 
-    def append(lst1, lst2):
-        return lst1 + lst2
+    def g(folded_first: List, folded_rest: List) -> List:
+        return folded_first + folded_rest
 
-    return foldtree(cons, append, [], tree)
+    return foldtree(f, g, [], t)
 
 
-def maptree(f, tree):
-    """Map a function to all labels in a tree"""
+def maptree(func: Callable, t: Tuple) -> Tuple:
+    """Map a function to all labels in a tree.
+    Return a new tree.
+    """
 
-    def mk_node(label, lst):
-        return (f(label), lst)
+    def f(label: Any, folded_subtrees: List) -> Tuple:
+        return (func(label), folded_subtrees)
 
-    def cons(label, lst):
-        return [label] + lst
+    def g(folded_first: Any, folded_rest: List) -> List:
+        return [folded_first] + folded_rest
 
-    return foldtree(mk_node, cons, [], tree)
+    return foldtree(f, g, [], t)
+
+
+def tree_size(t: Tuple) -> int:
+    """Return the number of nodes in a tree"""
+
+    def f(label, folded_subtrees: int):
+        return 1 + folded_subtrees
+
+    def g(folded_first: int, folded_rest: int) -> int:
+        return folded_first + folded_rest
+
+    return foldtree(f, g, 0, t)
+
+
+def tree_depth(t: Tuple) -> int:
+
+    def f(label: Any, folded_subtrees: int):
+        return 1 + folded_subtrees
+
+    def g(folded_first: int, folded_rest: int) -> int:
+        return max(folded_first, folded_rest)
+
+    return foldtree(f, g, 0, t)

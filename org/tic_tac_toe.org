@@ -1,10 +1,11 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/tic-tac-toe.html
+#+OPTIONS: broken-links:t
 #+TITLE: Play Tic-tac-toe using lazy trees
 
 In this section, we're going to apply the ideas developed so far on a more complicated problem: playing Tic-tac-toe. We'll concentrate on the code structure rather than on the game AI, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
 
-#+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
+#+begin_src python :noweb no-export :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
   <<TIC_TAC_TOE_UTILS>>
   <<TIC_TAC_TOE_EVAL>>
@@ -31,7 +32,7 @@ Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly maps a function
 #+end_src
 
 By applying =moves= repeatedly to a board configuration, we get a tree of all possible future configurations of the game! =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
-#+begin_src python :noweb yes :tangle ../src/game.py
+#+begin_src python :noweb no-export :tangle ../src/game.py
   <<GAME_IMPORTS>>
 
   # Board is a type alias for representing a board configuration.
@@ -50,7 +51,7 @@ By applying =moves= repeatedly to a board configuration, we get a tree of all po
 The code above defines a =gametree= as "factory function", which receives =moves= and returns a closure that only needs the initial board configuration as its input. In Appendix 3, I used the factory function to define a version of =gametree= specifically for Tic-tac-toe. We'll use the Tic-tac-toe version of =gametree= for the rest of this chapter.
 
 Here, we generate all possible Tic-tac-toe games! Let's find out how big the tree is.
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+#+begin_src python :noweb no-export :tangle ../src/test_tic_tac_toe.py
   <<TEST_TIC_TAC_TOE_IMPORTS>>
 
   def test_gametree():

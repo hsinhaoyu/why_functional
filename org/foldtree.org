@@ -1,13 +1,12 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/foldtree.html
+#+OPTIONS: broken-links:t
 #+TITLE: Higher-order functions for trees
-
-Hughes' paper begins with /list folding/, a powerful higher-order function that can be used to implement a variety of useful operations on list. In Python, it's the job of =functools.reduce=. Since it's easy to find a tutorial on =reduce=, I will skip this part, and directly jump to an extension of =reduce= that operates on trees. Hughes' code is more general than the Python versions given below. We'll return to this topic in a later [[lazy_tree.org][chapter]].
+Hughes' paper begins with /list folding/, which is the job of =functools.reduce= in Python. It is powerful higher-order function that can be used to implement a wide range of operations on lists. Hughes argued that replacing loops with =reduce= makes loops more modular and more extensible. Since it's easy to find a tutorial on =reduce=, I will skip this part, and directly jump to the part where the concept of =reduce= is generalized to a more complex structure: trees. 
 
 * Representing trees
-I'll represent a tree this way: =(label, [subtree...])=: it's a tuple with a label and a list of subtrees. I'll call this structure a node. Note that this is not a binary tree, because a node can have many subtrees. 
-
-#+begin_src python :noweb yes :tangle ../src/test_foldtree.py
+I'll represent a tree this way: =(label, [subtree...])=. In other words, a node in a tree is tuple with a label and a list of subtrees. Note that this is not a binary tree.
+#+begin_src python :noweb no-export :tangle ../src/test_foldtree.py
   <<TEST_FOLDTREE_IMPORTS>>
 
   my_tree = (1, [
@@ -17,87 +16,97 @@ I'll represent a tree this way: =(label, [subtree...])=: it's a tuple with a lab
                      ]
                   )
                  ])
+
+  my_tree2 = (1, [
+                  (2, [
+                       (3, []),
+                       (4, [
+                            (5, []),
+                            (6, [(7, [])])
+                           ]),
+                       (8, [(9, [])])
+                      ]),
+                   (10, [(11, [])])])
 #+end_src
 
 * Extending =reduce= for trees
-
 =reduce= uses a reduction function of two arguments to fold a list. For example, using =operator.add= as the reduction function, =reduce(operator.add, [1, 2, 3, 4], 0)= sums the numbers in [1, 2, 3, 4].
 
 To generalize =reduce= to trees, we need two reduction functions of two arguments: =f= and =g=. Given a node, =g= reduces the subtrees to a value which can be further combined with the label using =f=. As in =reduce=, an initializing constant =a= is also needed.
+#+begin_src python :noweb no-export :tangle ../src/foldtree.py
+  <<FOLDTREE_IMPORTS>>
 
-#+begin_src python :noweb yes :tangle ../src/foldtree.py
-  import operator
-
-  def foldtree(f, g, a, tree_comp):
+  def foldtree(f: Callable, g: Callable, a: Any, t: Tuple):
       """Apply two functions (f and g) of two arguments to transform a tree.
       f: combine the label of a node to its subtrees
       g: combine the subtrees of a node
       a: an initial constant
-      tree_comp: a node, a list of subtrees, or []
+      t: a tree, a list of subtrees, or []
       """
-      if tree_comp == []:
+      if t == []:
           return a
-      elif isinstance(tree_comp, list):
+      elif isinstance(t, tuple):
+          (label, subtrees) = t
+          return f(label, foldtree(f, g, a, subtrees))  
+      else:
           # fold multiple subtrees
-          subtree = tree_comp[0]
-          rest = tree_comp[1:]
+          subtree = t[0]
+          rest = t[1:]
           return g(
                    foldtree(f, g, a, subtree),
                    foldtree(f, g, a, rest))
-      else:
-          assert isinstance(tree_comp, tuple)
-          # fold a label with the subtrees
-          (label, subtrees) = tree_comp
-          return f(label, foldtree(f, g, a, subtrees))
 #+end_src
 
 * Summing all labels in a tree
 Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to sum the labels in a tree:
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
-  def sumtree(tree):
+  def sumtree(t: Tuple) -> int:
       """Sum all labels in a tree."""
-      add = operator.add
-      return foldtree(add, add, 0, tree)
+      f = operator.add
+      g = operator.add
+      return foldtree(f, g, 0, t)
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_sumtree():
       assert sumtree(my_tree) == 10
+      assert sumtree(my_tree2) == sum(range(1, 12))
 #+end_src
 
 * Flattening trees
 =tree_labels= collects all labels of a tree into a list.
-
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
-  def tree_labels(tree):
+  def tree_labels(t):
       """Collect all labels of a tree into a list."""
-      def cons(label, lst):
-          return [label] + lst
+      def f(label: Any, folded_subtrees: List) -> List:
+          return [label] + folded_subtrees
 
-      def append(lst1, lst2):
-          return lst1 + lst2
+      def g(folded_first: List, folded_rest: List) -> List:
+          return folded_first + folded_rest
       
-      return foldtree(cons, append, [], tree)
+      return foldtree(f, g, [], t)
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_tree_labels():
       assert tree_labels(my_tree) == [1, 2, 3, 4]
+      assert tree_labels(my_tree2) == list(range(1, 12))
 #+end_src
 
 * Mapping functions to trees
 Map a function =f= to all labels in a tree:
-
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
-  def maptree(f, tree):
-      """Map a function to all labels in a tree"""
-      def mk_node(label, lst):
-          return (f(label), lst)
-      
-      def cons(label, lst):
-          return [label] + lst
+  def maptree(func: Callable, t: Tuple) -> Tuple:
+      """Map a function to all labels in a tree.
+      Return a new tree.
+      """
+      def f(label: Any, folded_subtrees: List) -> Tuple:
+          return (func(label), folded_subtrees)
 
-      return foldtree(mk_node, cons, [], tree)
+      def g(folded_first: Any, folded_rest: List) -> List:
+          return [folded_first] + folded_rest
+
+      return foldtree(f, g, [], t)
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
@@ -105,9 +114,63 @@ Map a function =f= to all labels in a tree:
       res = maptree(lambda x: -1 * x, my_tree)
       res = tree_labels(res)
       assert res == [-1, -2, -3, -4]
+
+      res = maptree(lambda x: -1 * x, my_tree2)
+      res = tree_labels(res)
+      assert res == [-1 * i for i in range(1, 12)]
+#+end_src
+
+* Size of trees
+#+begin_src python :noweb yes :tangle ../src/foldtree.py
+  def tree_size(t: Tuple) -> int:
+      """Return the number of nodes in a tree"""
+      def f(label, folded_subtrees: int):
+          return 1 + folded_subtrees
+
+      def g(folded_first: int, folded_rest: int) -> int:
+          return folded_first + folded_rest
+
+      return foldtree(f, g, 0, t)
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/test_foldtree.py
+  def test_tree_size():
+      assert tree_size(my_tree) == 4
+      assert tree_size((1, [])) == 1
+      assert tree_size(my_tree2) == 11
+#+end_src
+
+* Depth of trees
+#+begin_src python :noweb yes :tangle ../src/foldtree.py
+  def tree_depth(t: Tuple) -> int:
+      def f(label: Any, folded_subtrees: int):
+          return 1 + folded_subtrees
+    
+      def g(folded_first: int, folded_rest: int) -> int:
+          return max(folded_first, folded_rest)
+    
+      return foldtree(f, g, 0, t)
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/test_foldtree.py
+  def test_tree_depth():
+      t = (1, [])
+      assert tree_depth(t) == 1
+
+      t = (1, [(2, [])])
+      assert tree_depth(t) == 2
+
+      assert tree_depth(my_tree) == 3
+
+      assert tree_depth(my_tree2) == 5
 #+end_src
 
 * Appendix: imports
+#+begin_src python :tangle no :noweb-ref FOLDTREE_IMPORTS
+  from typing import Tuple, Callable, Any, List
+  import operator
+#+end_src
+
 #+begin_src python :tangle no :noweb-ref TEST_FOLDTREE_IMPORTS
   from foldtree import *
 #+end_src

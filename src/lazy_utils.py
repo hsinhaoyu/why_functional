@@ -1,5 +1,6 @@
 from typing import Callable, Iterator, NamedTuple, Any, Optional
 from itertools import tee
+import operator
 
 
 def repeat_f(f: Callable[[float], float], a: float) -> Iterator[float]:
@@ -33,52 +34,62 @@ def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
 Node = NamedTuple('Node', [('label', Any), ('subtrees', Optional[Iterator])])
 
 
-def tree_labels(t: Node) -> Iterator[Any]:
-    label, subtrees = t
-    yield label
-    if subtrees is not None:
-        for i in subtrees:
-            for j in tree_labels(i):
-                yield j
-
-
-def mapforest_(f: Callable[[Any], Any],
-               forest: Optional[Iterator]) -> Iterator[Node]:
-    assert forest is not None
-    for t in forest:
-        yield maptree(f, t)
-
-
-def maptree(f: Callable[[Any], Any], t: Node) -> Node:
-    label, subtrees = t
-    if subtrees is None:
-        return Node(f(label), None)
+def foldtree(f: Callable, g: Callable, a: Any, t: Optional[Iterator]):
+    """Apply two functions (f and g) of two arguments to transform a lazy tree.
+    f: combine the label of a node to its subtrees
+    g: combine the subtrees of a node
+    a: an initial constant
+    t: a tree, a list of subtrees, or []
+    """
+    if t is None:
+        return a
+    elif isinstance(t, tuple):
+        (label, subtrees) = t
+        return f(label, foldtree(f, g, a, subtrees))
     else:
-        return Node(f(label), mapforest_(f, subtrees))
+        try:
+            subtree = next(t)
+            return g(foldtree(f, g, a, subtree), foldtree(f, g, a, t))
+        except StopIteration:
+            return a
+
+
+def sumtree(t: Node) -> int:
+    add = operator.add
+    return foldtree(add, add, 0, t)
+
+
+def maptree(func: Callable, t: Node) -> Node:
+
+    def f(label: Any, folded_subtrees: Optional[Iterator]):
+        return Node(func(label), folded_subtrees)
+
+    def g(folded_first: Node, folded_rest: Optional[Iterator]) -> Iterator:
+        yield folded_first
+        if folded_rest is not None:
+            for item in folded_rest:
+                yield item
+
+    return foldtree(f, g, None, t)
 
 
 def tree_size(t: Node) -> int:
-    """The number of labels in a lazy tree"""
-    label, subtrees = t
 
-    if subtrees is None:
-        return 1
-    else:
-        return 1 + sum(map(tree_size, subtrees))
+    def f(label, folded_subtrees):
+        return 1 + folded_subtrees
+
+    return foldtree(f, operator.add, 0, t)
 
 
 def tree_depth(t: Node) -> int:
-    """The maximum depth of a lazy tree"""
 
-    def tree_depth_(t: Node, d: int) -> int:
-        label, subtrees = t
+    def f(label: Any, folded_subtrees: int):
+        return 1 + folded_subtrees
 
-        if subtrees is None:
-            return d
-        else:
-            return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
+    def g(folded_first: int, folded_rest: int) -> int:
+        return max(folded_first, folded_rest)
 
-    return tree_depth_(t, 1)
+    return foldtree(f, g, 0, t)
 
 
 def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -> Node:

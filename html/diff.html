@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-16 Wed 21:44 -->
+<!-- 2022-03-24 Thu 09:57 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Numerical differentiation using iterators</title>
@@ -224,32 +224,25 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org2388103">1. A first stab at the problem</a></li>
-<li><a href="#org6806739">2. Improve convergence with sequence transformation</a></li>
-<li><a href="#org9687d21">3. An iterator of iterators</a></li>
-<li><a href="#orga10e231">4. Appendix: imports</a></li>
+<li><a href="#org0cf451b">1. A first stab at the problem</a></li>
+<li><a href="#org3dc64b6">2. Improve convergence with sequence transformation</a></li>
+<li><a href="#orgf654aec">3. An iterator of iterators</a></li>
+<li><a href="#orgea4051f">4. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
 <p>
-From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation starts to be interesting.
+From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation becomes interesting.
 </p>
 
-<div id="outline-container-org2388103" class="outline-2">
-<h2 id="org2388103"><span class="section-number-2">1</span> A first stab at the problem</h2>
+<div id="outline-container-org0cf451b" class="outline-2">
+<h2 id="org0cf451b"><span class="section-number-2">1</span> A first stab at the problem</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculating the slope:
 </p>
-
 <div class="org-src-container">
-<pre class="src src-python">from math import log2
-from typing import Callable, Iterator
-from itertools import tee 
-from lazy_utils import repeat_f, within, repeat_itr
-
-
-esp = 0.0000000001 # a small number that's used to call within()
+<pre class="src src-python">&lt;&lt;DIFF_IMPORTS&gt;&gt;
 
 def easydiff(f: Callable[[float], float], x: float) -&gt; Callable[[float], float]:
     def easydiff_(h: float) -&gt; float:
@@ -260,15 +253,14 @@ def easydiff(f: Callable[[float], float], x: float) -&gt; Callable[[float], floa
 </div>
 
 <p>
-Now we generate an iterator of smaller and smaller <code>h</code>, by applying <code>half</code> repeatedly with (<code>repeat_f</code> defined in <code>newton.org</code>). Mapping the slope function to this iterator, <code>differentiate</code> returns another iterator that approximates the derivative closer and closer.
+Now we generate an iterator of smaller and smaller <code>h</code>, by applying <code>half</code> repeatedly with <code>repeat_f</code> (defined in <code>newton.org</code>). Mapping the slope function to this iterator, <code>differentiate</code> returns another iterator that approximates the derivative closer and closer.
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def half(x: float) -&gt; float:
     """Half the value"""
     return x / 2.0
 
-def differentiate(h0: float, f: Callable[[float], float], x: float) -&gt; Iterator:
+def differentiate(h0: float, f: Callable[[float], float], x: float) -&gt; Iterator[float]:
     """An interator of 1st-order approximation of f'(x) with initial h0"""
     return map(easydiff(f, x), repeat_f(half, h0))
 </pre>
@@ -277,7 +269,6 @@ def differentiate(h0: float, f: Callable[[float], float], x: float) -&gt; Iterat
 <p>
 This is our first version of the numerical differentiation function:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def diff1(h0: float, f: Callable[[float], float], x: float) -&gt; float:
     """Approximate f'(x), with an initial h0."""
@@ -289,14 +280,8 @@ This is our first version of the numerical differentiation function:
 <p>
 A simple test: differentiate sin(x) at 1.0, starting with a very large gap (<code>h0=5.0</code>). We know that the right answer is cos(1.0).
 </p>
-
 <div class="org-src-container">
-<pre class="src src-python">import pytest
-from itertools import *
-from math import cos, sin
-
-from lazy_utils import *
-from diff import *
+<pre class="src src-python">&lt;&lt;TEST_DIFF_IMPORTS&gt;&gt;
 
 def f(x: float) -&gt; float:
     return sin(x)
@@ -310,8 +295,8 @@ def test_diff1():
 </div>
 </div>
 
-<div id="outline-container-org6806739" class="outline-2">
-<h2 id="org6806739"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
+<div id="outline-container-org3dc64b6" class="outline-2">
+<h2 id="org3dc64b6"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called <a href="https://en.wikipedia.org/wiki/Richardson_extrapolation">Richardson extrapolation</a>. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the next section.
@@ -320,7 +305,6 @@ A problem with <code>differentiate</code> above is that the sequence converges s
 <p>
 With an appropriately-chosen integer <code>n</code>, the convergence of a sequence (represented as an iterator) can improved by the <code>elimerror</code> function defined below. What it does is that it slides a <code>(a, b)</code> window over the original sequence, and applies a correction based on the two values(<code>c</code> below). 
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def elimerror(n: int, itr: Iterator[float]) -&gt; Iterator[float]:
     """Reduce the error of sequence approx. derivative, assuming order n."""
@@ -337,7 +321,6 @@ With an appropriately-chosen integer <code>n</code>, the convergence of a sequen
 <p>
 We don't know how to set <code>n</code> yet, but let's try the code with an arbitrary number (<code>n=2</code>). 
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def test_elimerror():
     print("\n## test_elimerror:")
@@ -357,7 +340,6 @@ We don't know how to set <code>n</code> yet, but let's try the code with an arbi
 <p>
 The appropriate <code>n</code> can be estimated by <code>order</code>, using the first three values in the sequence. Taking a slow converging iterator as input, <code>improve</code> returns a new iterator that converges faster. It does it by estimating the order and calling <code>elimerror</code>.
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def order(itr: Iterator[float]) -&gt; int:
     """Estimate the order for elimerror()."""
@@ -375,7 +357,6 @@ def improve(itr: Iterator[float]) -&gt; Iterator[float]:
 <p>
 You can compare the two sequences by running <code>make test</code>:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def test_improve():
     print("\n## test_improve")
@@ -393,9 +374,8 @@ You can compare the two sequences by running <code>make test</code>:
 </div>
 
 <p>
-This is second version of the numerical differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met. 
+This is second version of the numerical differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met (<code>esp</code> is a small number defined in the Appendix). 
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def diff2(h0: float, f: Callable[[float], float], x: float) -&gt; float:
     """Approximate f'(x), with an initial h0."""
@@ -407,7 +387,6 @@ This is second version of the numerical differentiation function. The logic is v
 <p>
 A simple test:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def test_diff2():
     h0, x = 1.0, 0.3
@@ -418,8 +397,8 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-org9687d21" class="outline-2">
-<h2 id="org9687d21"><span class="section-number-2">3</span> An iterator of iterators</h2>
+<div id="outline-container-orgf654aec" class="outline-2">
+<h2 id="orgf654aec"><span class="section-number-2">3</span> An iterator of iterators</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Do we actually need any improvements? Not for the simple problems that we've been solving, but this is where the code gets interesting!
@@ -430,9 +409,8 @@ In Hughes' paper, he used the <code>improve</code> function again and again on t
 </p>
 
 <p>
-The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The <code>repeat_f</code> function defined previously (in <code>newton.org</code>) doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
+The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The <code>repeat_f</code> function defined doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -&gt; Iterator:
     """[i, f(i), f(f(i))...]"""
@@ -448,7 +426,6 @@ The Miranda code in the paper expresses this idea with a beautiful one-liner. Un
 <p>
 Let's see if the 5th item in the yielded iterator is the same as applying <code>improve</code> 4 times:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def test_repeat_improve():
     print("\n## test_repeat_improve():")
@@ -476,7 +453,6 @@ Let's see if the 5th item in the yielded iterator is the same as applying <code>
 <p>
 I haven't checked a textbook, but the paper says that the second approximation from each of the improved iterator is a good sequence for solving our problem. So, this is the third version of the numerical differentiation function:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def second(itr: Iterator[float]) -&gt; float:
     """Returns the second item in an iterator."""
@@ -497,7 +473,6 @@ def diff3(h0: float, f: Callable[[float], float], x: float) -&gt; float:
 <p>
 Does it work?
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def test_diff3():
     h0, x = 1.0, 0.3
@@ -508,8 +483,8 @@ Does it work?
 </div>
 </div>
 
-<div id="outline-container-orga10e231" class="outline-2">
-<h2 id="orga10e231"><span class="section-number-2">4</span> Appendix: imports</h2>
+<div id="outline-container-orgea4051f" class="outline-2">
+<h2 id="orgea4051f"><span class="section-number-2">4</span> Appendix: imports</h2>
 <div class="outline-text-2" id="text-4">
 <div class="org-src-container">
 <pre class="src src-python">from math import log2
@@ -517,8 +492,7 @@ from typing import Callable, Iterator
 from itertools import tee 
 from lazy_utils import repeat_f, within, repeat_itr
 
-
-esp = 0.0000000001 # a small number that's used to call within()
+esp = 0.000000001 # a small number that's used to call within()
 </pre>
 </div>
 
@@ -536,7 +510,7 @@ from diff import *
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-16 Wed 21:44</p>
+<p class="date">Created: 2022-03-24 Thu 09:57</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

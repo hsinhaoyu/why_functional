@@ -1,13 +1,13 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/integration.html
-
+#+OPTIONS: broken-links:t
 #+TITLE:  Numerical integration with lazy recursion
 
 For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
 
 * Integration with lazy recursion
 For a linear function, it's easy to calculate the area under the function:
-#+begin_src python :noweb yes :tangle ../src/integrate.py
+#+begin_src python :noweb no-export :tangle ../src/integrate.py
   <<INTEGRATE_IMPORTS>>
 
   def easyintegrate(f: Callable[[float], float], a: float, b: float) -> float:
@@ -42,7 +42,7 @@ This is the first version of our numerical integration function:
 #+end_src
 
 A simple test:
-#+begin_src python :noweb yes :tangle ../src/test_integrate.py
+#+begin_src python :noweb no-export :tangle ../src/test_integrate.py
   <<TEST_INTEGRATE_IMPORTS>>
 
   def f(x):

@@ -21,7 +21,7 @@ def half(x: float) -> float:
 
 
 def differentiate(h0: float, f: Callable[[float], float],
-                  x: float) -> Iterator:
+                  x: float) -> Iterator[float]:
     """An interator of 1st-order approximation of f'(x) with initial h0"""
     return map(easydiff(f, x), repeat_f(half, h0))
 

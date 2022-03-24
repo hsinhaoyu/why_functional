@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-16 Wed 21:44 -->
+<!-- 2022-03-24 Thu 09:57 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Calculating square roots with lazy evaluation</title>
@@ -224,17 +224,17 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org0af1014">1. The math bit</a></li>
-<li><a href="#orgc273377">2. Define a nesting iterator</a></li>
-<li><a href="#org0bb85d8">3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
-<li><a href="#org20df9df">4. Add a stopping condition</a></li>
-<li><a href="#org750a8e2">5. Appendix: Imports</a></li>
+<li><a href="#org48fb99f">1. The math bit</a></li>
+<li><a href="#org9ce3a9d">2. Define a nesting iterator</a></li>
+<li><a href="#org9feb8d5">3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
+<li><a href="#org9f772ce">4. Add a stopping condition</a></li>
+<li><a href="#org22576c3">5. Appendix: Imports</a></li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org0af1014" class="outline-2">
-<h2 id="org0af1014"><span class="section-number-2">1</span> The math bit</h2>
+<div id="outline-container-org48fb99f" class="outline-2">
+<h2 id="org48fb99f"><span class="section-number-2">1</span> The math bit</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 To approximate sqrt(n), we start with an initial value <code>x</code>, and apply (x + n/x) / 2.0 repeatedly.
@@ -243,10 +243,8 @@ To approximate sqrt(n), we start with an initial value <code>x</code>, and apply
 <p>
 <code>next_sqrt_approx(n)</code> returns a closure that brings its input closer to sqrt(n).
 </p>
-
 <div class="org-src-container">
-<pre class="src src-python">from typing import Callable, Iterator
-from lazy_utils import *
+<pre class="src src-python">&lt;&lt;NEWTON_IMPORTS&gt;&gt;
 
 def next_sqrt_approx(n: float) -&gt; Callable[[float], float]:
     """Next step in the approximation of sqrt(n) from x"""
@@ -257,13 +255,10 @@ def next_sqrt_approx(n: float) -&gt; Callable[[float], float]:
 </div>
 
 <p>
-Approximating sqrt(10.0) from 2.0, in just one iteration:
+A example call: approximating sqrt(10.0) from 2.0, in just one iteration:
 </p>
-
 <div class="org-src-container">
-<pre class="src src-python">import math
-import pytest
-from newton import *
+<pre class="src src-python">&lt;&lt;TEST_NEWTON_IMPORTS&gt;&gt;
 
 def test_next_sqrt_approx():
     f = next_sqrt_approx(10.0)
@@ -273,16 +268,14 @@ def test_next_sqrt_approx():
 </div>
 </div>
 
-<div id="outline-container-orgc273377" class="outline-2">
-<h2 id="orgc273377"><span class="section-number-2">2</span> Define a nesting iterator</h2>
+<div id="outline-container-org9ce3a9d" class="outline-2">
+<h2 id="org9ce3a9d"><span class="section-number-2">2</span> Define a nesting iterator</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 <code>repeat_f(f, a)</code> applies the function <code>f</code> repeatedly to <code>a</code>. (The original code is more elegant and more general, but Python is not a lazy functional language).
 </p>
-
 <div class="org-src-container">
-<pre class="src src-python">from typing import Callable, Iterator
-from itertools import tee
+<pre class="src src-python">&lt;&lt;LAZY_UTILS_IMPORTS&gt;&gt;
 
 def repeat_f(f: Callable[[float], float], a: float) -&gt; Iterator[float]:
     """Infinite iterator: [a, f(a), f(f(a)), f(f(f(a))) ...]"""
@@ -297,9 +290,8 @@ def repeat_f(f: Callable[[float], float], a: float) -&gt; Iterator[float]:
 <p>
 A simple test: an iterator that yields 0, 1, 2, 3&#x2026;
 </p>
-
 <div class="org-src-container">
-<pre class="src src-python">from lazy_utils import *
+<pre class="src src-python">&lt;&lt;TEST_LAZY_UTILS_IMPORTS&gt;&gt;
 
 def test_repeat_f():
     r = repeat_f(lambda n: n + 1, 0)
@@ -312,8 +304,8 @@ def test_repeat_f():
 </div>
 </div>
 
-<div id="outline-container-org0bb85d8" class="outline-2">
-<h2 id="org0bb85d8"><span class="section-number-2">3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h2>
+<div id="outline-container-org9feb8d5" class="outline-2">
+<h2 id="org9feb8d5"><span class="section-number-2">3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h2>
 <div class="outline-text-2" id="text-3">
 <p>
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain <code>next_sqrt_approx</code> and <code>repeat_f</code> together:
@@ -329,7 +321,6 @@ At this stage, we can create an iterator that takes us closer and closer to sqrt
 <p>
 Again, approximating sqrt(10.0) from 2.0:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def test_newton_sqrt_():
     r = newton_sqrt_(10.0, 2.0)
@@ -342,8 +333,8 @@ Again, approximating sqrt(10.0) from 2.0:
 </div>
 </div>
 
-<div id="outline-container-org20df9df" class="outline-2">
-<h2 id="org20df9df"><span class="section-number-2">4</span> Add a stopping condition</h2>
+<div id="outline-container-org9f772ce" class="outline-2">
+<h2 id="org9f772ce"><span class="section-number-2">4</span> Add a stopping condition</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 We add a <code>within</code> function to stop the iteration when the difference between two successive iterations is smaller than <code>esp</code>.
@@ -363,7 +354,6 @@ We add a <code>within</code> function to stop the iteration when the difference 
 <p>
 Now we can solve our numerical problem:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def newton_sqrt(n: float, a: float) -&gt; float:
     """Approximate sqrt(n) starting from a, using the Newton-Raphson method."""
@@ -375,7 +365,6 @@ Now we can solve our numerical problem:
 <p>
 A simple test:
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def test_newton_sqrt():
     res = newton_sqrt(10.0, 2.0)
@@ -385,8 +374,8 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-org750a8e2" class="outline-2">
-<h2 id="org750a8e2"><span class="section-number-2">5</span> Appendix: Imports</h2>
+<div id="outline-container-org22576c3" class="outline-2">
+<h2 id="org22576c3"><span class="section-number-2">5</span> Appendix: Imports</h2>
 <div class="outline-text-2" id="text-5">
 <div class="org-src-container">
 <pre class="src src-python">from typing import Callable, Iterator
@@ -402,7 +391,7 @@ from newton import *
 </div>
 
 <div class="org-src-container">
-<pre class="src src-python">from typing import Callable, Iterator
+<pre class="src src-python">from typing import Callable, Iterator, NamedTuple, Any, Optional
 from itertools import tee
 </pre>
 </div>
@@ -416,7 +405,7 @@ from itertools import tee
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-16 Wed 21:44</p>
+<p class="date">Created: 2022-03-24 Thu 09:57</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

@@ -1,9 +1,10 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/lazy_tree.html
+#+OPTIONS: broken-links:t
 #+TITLE: Lazy trees
-Recall that [[foldtree.org][previously]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees. This means that he could write a function that generates an enormous or even infinite tree, without actually evaluating all the nodes. This is very useful for implementing the algorithms that we will see in the [[tic_tac_toe.org][next chapter]].
+Recall that [[foldtree.org][previously]], we used a higher-order function =foldtree= to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees. This means that his code can generate an enormous or even infinite tree structure, but the nodes are evaluated only when they are needed. This is very useful for implementing the algorithms that we will see in the [[tic_tac_toe.org][next chapter]].
 
-Lazy evaluation is not integral to Python, so we have to write extra codes. I've found it difficult to write a lazy version of the higher-order function =foldtree= in Python, so I will do it less elegantly. Instead of building =treelabels= and =maptree= with a higher-order function, I will just lazify them individually.
+Because Python does not normally evaluate lazily, we have to write extra codes to deal with generators. 
 
 * Representing lazy trees
 As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I use a named tuple to differentiate a lazy tree from other uses of tuples:
@@ -12,7 +13,7 @@ As in [[foldtree.org][foldtree.org]], a lazy tree is a tuple with a label and a 
 #+end_src
 
 Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists with iterators: 
-#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+#+begin_src python :noweb no-export :tangle ../src/test_lazy_tree.py
   <<TEST_LAZY_TREE_IMPORTS>>
 
   def mk_tree_(label, lst):
@@ -30,16 +31,62 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
       return my_tree
 #+end_src
 
+* The higher-order function =foldtree= for lazy trees
+This is almost identical to the eager version defined in a [[org/foldtree.org][previous chapter]]. Unfortunately, some modifications are needed, because the functions for lists and iterators are differemy in Python.
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def foldtree(f: Callable, g: Callable, a: Any, t: Optional[Iterator]):
+      """Apply two functions (f and g) of two arguments to transform a lazy tree.
+      f: combine the label of a node to its subtrees
+      g: combine the subtrees of a node
+      a: an initial constant
+      t: a tree, a list of subtrees, or []
+      """    
+      if t is None:
+          return a
+      elif isinstance(t, tuple):
+          (label, subtrees) = t
+          return f(label, foldtree(f, g, a, subtrees))
+      else:
+          try:
+              subtree = next(t)
+              return g(foldtree(f, g, a, subtree),
+                       foldtree(f, g, a, t))
+          except StopIteration:
+              return a
+#+end_src
+
+* Summing all labels in a lazy tree
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def sumtree(t: Node) -> int:
+      add = operator.add
+      return foldtree(add, add, 0, t)
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  def test_sumtree():
+      t = mk_test_tree()
+      assert sumtree(t) == 10
+
+      t = mk_test_tree2()
+      assert sumtree(t) == sum(range(1, 12))
+#+end_src
+
 * Flattening lazy trees
 This version of =tree_labels= returns an iterator, which visits every label in the tree one by one:
-#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def tree_labels(t: Node) -> Iterator[Any]:
-      label, subtrees = t
-      yield label
-      if subtrees is not None:
-          for i in subtrees:
-              for j in tree_labels(i):
-                  yield j
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  def tree_labels(t: Node) -> Iterator:
+      def f(label: Any, folded_subtrees: Iterator) -> Iterator:
+          yield label
+          for item in folded_subtrees:
+              yield item
+
+      def g(folded_first: Iterator, folded_rest: Iterator) -> Iterator:
+          for item in folded_first:
+              yield item
+          for item in folded_rest:
+              yield item
+
+      return foldtree(f, g, [], t)
 #+end_src
 
 Let's try it. I use =list(t)= to convert the returned iterator to a regular list.
@@ -48,22 +95,26 @@ Let's try it. I use =list(t)= to convert the returned iterator to a regular list
       t = mk_test_tree()
       i = tree_labels(t)
       assert list(i) == [1, 2, 3, 4]
+
+      t = mk_test_tree2()
+      i = tree_labels(t)
+      assert list(i) == list(range(1, 12))
 #+end_src
 
 * Mapping functions to lazy trees
 This version of =maptree= maps a function =f= to all labels in a lazy tree, and returns another lazy tree. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def mapforest_(f: Callable[[Any], Any], forest: Optional[Iterator]) -> Iterator[Node]:
-      assert forest is not None
-      for t in forest:
-          yield maptree(f, t)
+  def maptree(func: Callable, t: Node) -> Node:
+      def f(label: Any, folded_subtrees: Optional[Iterator]):
+          return Node(func(label), folded_subtrees)
 
-  def maptree(f: Callable[[Any], Any], t: Node) -> Node:
-      label, subtrees = t
-      if subtrees is None:
-          return Node(f(label), None)
-      else:
-          return Node(f(label), mapforest_(f, subtrees))
+      def g(folded_first: Node, folded_rest: Optional[Iterator]) -> Iterator:
+          yield folded_first
+          if folded_rest is not None:
+              for item in folded_rest:
+                  yield item
+
+      return foldtree(f, g, None, t)
 #+end_src
 
 Let's try it. I use the =tree_labels= function to collect all the labels in the returned lazy tree.
@@ -76,50 +127,78 @@ Let's try it. I use the =tree_labels= function to collect all the labels in the 
       t = maptree(f, t)
       t = tree_labels(t)
       assert list(t) == [-1, -2, -3, -4]
+
+      t = mk_test_tree2()
+      res = maptree(lambda x: -1 * x, t)
+      res = tree_labels(res)
+      assert list(res) == [-1 * i for i in range(1, 12)]
 #+end_src
 
-* Other useful functions
+* Size of lazy trees
 A couple of more functions that we'll use in the [[tic_tac_toe.org][next chapter]].
+
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_size(t: Node) -> int:
-      """The number of labels in a lazy tree"""
-      label, subtrees = t
-
-      if subtrees is None:
-          return 1
-      else:
-          return 1 + sum(map(tree_size, subtrees))
+      def f(label, folded_subtrees):
+          return 1 + folded_subtrees
+      return foldtree(f, operator.add, 0, t)
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
   def test_tree_size():
+      t = mk_tree_(1, None)
+      assert tree_size(t) == 1
+
       t = mk_test_tree()
-      s = tree_size(t)
-      assert s == 4
+      assert tree_size(t) == 4
+
+      t = mk_test_tree2()
+      assert tree_size(t) == 11
 #+end_src
 
+* Depth of lazy trees
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_depth(t: Node) -> int:
-      """The maximum depth of a lazy tree"""
-      def tree_depth_(t: Node, d: int) -> int:
-          label, subtrees = t
+      def f(label: Any, folded_subtrees: int):
+          return 1 + folded_subtrees
+      
+      def g(folded_first: int, folded_rest: int) -> int:
+          return max(folded_first, folded_rest)
 
-          if subtrees is None:
-              return d
-          else:
-              return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
-
-      return tree_depth_(t, 1)
+      return foldtree(f, g, 0, t)
 #+end_src
 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
   def test_tree_depth():
+      t = mk_tree_(1, None)
+      assert tree_depth(t) == 1
+
+      t = mk_tree_(1, [mk_tree_(2, None)])
+      assert tree_depth(t) == 2
+    
       t = mk_test_tree()
-      d = tree_depth(t)
-      assert d == 3
+      assert tree_depth(t) == 3
+
+      t = mk_test_tree2()
+      assert tree_depth(t) == 5
 #+end_src
 
 * Appendix: imports
 #+begin_src python :tangle no :noweb-ref TEST_LAZY_TREE_IMPORTS
   from lazy_utils import *
+
+  def mk_test_tree2():
+      my_tree = mk_tree_(1, [
+                             mk_tree_(2, [
+                                          mk_tree_(3, None),
+                                          mk_tree_(4, [
+                                                       mk_tree_(5, None),
+                                                       mk_tree_(6, [
+                                                                    mk_tree_(7, None)
+                                                                   ])]),
+                                          mk_tree_(8, [mk_tree_(9, None)])
+                                         ]),
+                             mk_tree_(10, [mk_tree_(11, None)])
+                            ])
+      return my_tree
 #+end_src

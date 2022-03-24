@@ -1,12 +1,13 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/newton.html
+#+OPTIONS: broken-links:t
 #+TITLE: Calculating square roots with lazy evaluation 
 
 * The math bit
 To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) / 2.0 repeatedly.
 
 =next_sqrt_approx(n)= returns a closure that brings its input closer to sqrt(n).
-#+begin_src python :noweb yes :tangle ../src/newton.py
+#+begin_src python :noweb no-export :tangle ../src/newton.py
   <<NEWTON_IMPORTS>>
 
   def next_sqrt_approx(n: float) -> Callable[[float], float]:
@@ -17,7 +18,7 @@ To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) 
 #+end_src
 
 A example call: approximating sqrt(10.0) from 2.0, in just one iteration:
-#+begin_src python :noweb yes :tangle ../src/test_newton.py
+#+begin_src python :noweb no-export :tangle ../src/test_newton.py
   <<TEST_NEWTON_IMPORTS>>
 
   def test_next_sqrt_approx():
@@ -27,7 +28,7 @@ A example call: approximating sqrt(10.0) from 2.0, in just one iteration:
 
 * Define a nesting iterator
 =repeat_f(f, a)= applies the function =f= repeatedly to =a=. (The original code is more elegant and more general, but Python is not a lazy functional language).
-#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+#+begin_src python :noweb no-export :tangle ../src/lazy_utils.py
   <<LAZY_UTILS_IMPORTS>>
 
   def repeat_f(f: Callable[[float], float], a: float) -> Iterator[float]:
@@ -40,7 +41,7 @@ A example call: approximating sqrt(10.0) from 2.0, in just one iteration:
 #+end_src
 
 A simple test: an iterator that yields 0, 1, 2, 3...
-#+begin_src python :noweb yes :tangle ../src/test_lazy_utils.py
+#+begin_src python :noweb no-export :tangle ../src/test_lazy_utils.py
   <<TEST_LAZY_UTILS_IMPORTS>>
 
   def test_repeat_f():
@@ -113,6 +114,7 @@ A simple test:
 #+begin_src python :tangle no :noweb-ref LAZY_UTILS_IMPORTS
   from typing import Callable, Iterator, NamedTuple, Any, Optional
   from itertools import tee
+  import operator
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TEST_LAZY_UTILS_IMPORTS
