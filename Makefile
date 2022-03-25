@@ -8,6 +8,7 @@ tangle: org/*.org
 	./tangle.sh org/integration.org
 	./tangle.sh org/lazy_tree.org
 	./tangle.sh org/tic_tac_toe.org
+	./tangle.sh org/tests.org
 	yapf --in-place --recursive src/
 
 lint: tangle
@@ -17,7 +18,7 @@ typing: tangle
 	mypy --pretty src/*.py
 
 test: tangle
-	pytest -s src/
+	pytest -s --cov src/
 
 html: tangle
 	./org2html.sh org/*.org

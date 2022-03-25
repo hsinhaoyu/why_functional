@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-24 Thu 09:57 -->
+<!-- 2022-03-25 Fri 08:35 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Lazy trees</title>
@@ -224,29 +224,30 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org0c94a16">1. Representing lazy trees</a></li>
-<li><a href="#org72bb277">2. The higher-order function <code>foldtree</code> for lazy trees</a></li>
-<li><a href="#orge3886b4">3. Summing all labels in a lazy tree</a></li>
-<li><a href="#org298f7e3">4. Flattening lazy trees</a></li>
-<li><a href="#org479bded">5. Mapping functions to lazy trees</a></li>
-<li><a href="#org18651d3">6. Other useful functions</a></li>
-<li><a href="#org693a548">7. Appendix: imports</a></li>
+<li><a href="#org0d6620a">1. Representing lazy trees</a></li>
+<li><a href="#orgcf1fe92">2. The higher-order function <code>foldtree</code> for lazy trees</a></li>
+<li><a href="#org07bb675">3. Summing all labels in a lazy tree</a></li>
+<li><a href="#orgede1379">4. Flattening lazy trees</a></li>
+<li><a href="#orge47f18f">5. Mapping functions to lazy trees</a></li>
+<li><a href="#org3927364">6. Size of lazy trees</a></li>
+<li><a href="#org12ee5f5">7. Depth of lazy trees</a></li>
+<li><a href="#org66b0cd7">8. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
 <p>
-Recall that , we used a higher-order function <code>foldtree</code> to define functions that operate on trees. My Python codes seem to translate the logic well, but there is a big difference: Because Hughes used a lazy functional language, his code operates on lazy trees. This means that his code can generate an enormous or even infinite tree structure, but the nodes are evaluated only when they are needed. This is very useful for implementing the algorithms that we will see in the .
+Recall that , we used the higher-order function <code>foldtree</code> to define functions that operate on trees. My Python code mirrors the code structure in the paper closely, but semantics is different: Because Hughes used a lazy functional language, his code works on lazy trees. With his code, you can generate a tree that is potentially infinite in size, and leave the users of the tree to decide which part of the tree will actually be evaluated. We have seen in the last three chapters that this pattern makes it possible to decompose complex loops into a chain of re-usable components.
 </p>
 
 <p>
-Because Python does not normally evaluate lazily, we have to write extra codes to deal with generators. 
+Because Python is not a lazy language, we have to incorporate generators/iterators into <code>foldtree</code>.
 </p>
 
-<div id="outline-container-org0c94a16" class="outline-2">
-<h2 id="org0c94a16"><span class="section-number-2">1</span> Representing lazy trees</h2>
+<div id="outline-container-org0d6620a" class="outline-2">
+<h2 id="org0d6620a"><span class="section-number-2">1</span> Representing lazy trees</h2>
 <div class="outline-text-2" id="text-1">
 <p>
-As in , a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I use a named tuple to differentiate a lazy tree from other uses of tuples:
+As in , a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I use a named tuple to differentiate a lazy tree from other tuples:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">Node = NamedTuple('Node', [('label', Any), ('subtrees', Optional[Iterator])])
@@ -277,14 +278,14 @@ def mk_test_tree():
 </div>
 </div>
 
-<div id="outline-container-org72bb277" class="outline-2">
-<h2 id="org72bb277"><span class="section-number-2">2</span> The higher-order function <code>foldtree</code> for lazy trees</h2>
+<div id="outline-container-orgcf1fe92" class="outline-2">
+<h2 id="orgcf1fe92"><span class="section-number-2">2</span> The higher-order function <code>foldtree</code> for lazy trees</h2>
 <div class="outline-text-2" id="text-2">
 <p>
-This is almost identical to the eager version defined in a . Unfortunately, some modifications are needed, because the functions for lists and iterators are differemy in Python.
+This is almost identical to the eager version defined in a . Unfortunately, some modifications are needed, because lists and iterators are manipulated differently in Python.
 </p>
 <div class="org-src-container">
-<pre class="src src-python">def foldtree(f: Callable, g: Callable, a: Any, t: Optional[Node]):
+<pre class="src src-python">def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, Iterator, None]):
     """Apply two functions (f and g) of two arguments to transform a lazy tree.
     f: combine the label of a node to its subtrees
     g: combine the subtrees of a node
@@ -308,9 +309,12 @@ This is almost identical to the eager version defined in a . Unfortunately, some
 </div>
 </div>
 
-<div id="outline-container-orge3886b4" class="outline-2">
-<h2 id="orge3886b4"><span class="section-number-2">3</span> Summing all labels in a lazy tree</h2>
+<div id="outline-container-org07bb675" class="outline-2">
+<h2 id="org07bb675"><span class="section-number-2">3</span> Summing all labels in a lazy tree</h2>
 <div class="outline-text-2" id="text-3">
+<p>
+As before, a variety of lazy tree operations can be implemented with <code>foldtree</code>, by using appropriate <code>f</code> and <code>g</code>.  
+</p>
 <div class="org-src-container">
 <pre class="src src-python">def sumtree(t: Node) -&gt; int:
     add = operator.add
@@ -322,28 +326,31 @@ This is almost identical to the eager version defined in a . Unfortunately, some
 <pre class="src src-python">def test_sumtree():
     t = mk_test_tree()
     assert sumtree(t) == 10
+
+    t = mk_test_tree2()
+    assert sumtree(t) == sum(range(1, 12))
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org298f7e3" class="outline-2">
-<h2 id="org298f7e3"><span class="section-number-2">4</span> Flattening lazy trees</h2>
+<div id="outline-container-orgede1379" class="outline-2">
+<h2 id="orgede1379"><span class="section-number-2">4</span> Flattening lazy trees</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 This version of <code>tree_labels</code> returns an iterator, which visits every label in the tree one by one:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def tree_labels(t: Node) -&gt; Iterator:
-    def f(label: Any, reduced_subtrees: Iterator) -&gt; Iterator:
+    def f(label: Any, folded_subtrees: Iterator) -&gt; Iterator:
 	yield label
-	for item in g_reduced_subtrees:
+	for item in folded_subtrees:
 	    yield item
 
-    def g(reduced_first: Iterator, reduced_rest: Iterator) -&gt; Iterator:
-	for item in reduced_first:
+    def g(folded_first: Iterator, folded_rest: Iterator) -&gt; Iterator:
+	for item in folded_first:
 	    yield item
-	for item in reduced_rest:
+	for item in folded_rest:
 	    yield item
 
     return foldtree(f, g, [], t)
@@ -358,26 +365,30 @@ Let's try it. I use <code>list(t)</code> to convert the returned iterator to a r
     t = mk_test_tree()
     i = tree_labels(t)
     assert list(i) == [1, 2, 3, 4]
+
+    t = mk_test_tree2()
+    i = tree_labels(t)
+    assert list(i) == list(range(1, 12))
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org479bded" class="outline-2">
-<h2 id="org479bded"><span class="section-number-2">5</span> Mapping functions to lazy trees</h2>
+<div id="outline-container-orge47f18f" class="outline-2">
+<h2 id="orge47f18f"><span class="section-number-2">5</span> Mapping functions to lazy trees</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 This version of <code>maptree</code> maps a function <code>f</code> to all labels in a lazy tree, and returns another lazy tree. 
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def maptree(func: Callable, t: Node) -&gt; Node:
-    def f(label: Any, reduced_subtrees: Optional[Iterator]):
-	return Node(func(label), reduced_subtrees)
+    def f(label: Any, folded_subtrees: Optional[Iterator]):
+	return Node(func(label), folded_subtrees)
 
-    def g(reduced_first: Node, reduced_rest: Optional[Iterator]) -&gt; Iterator:
-	yield reduced_first
-	if reduced_rest is not None:
-	    for item in reduced_rest:
+    def g(folded_first: Node, folded_rest: Optional[Iterator]) -&gt; Iterator:
+	yield folded_first
+	if folded_rest is not None:
+	    for item in folded_rest:
 		yield item
 
     return foldtree(f, g, None, t)
@@ -396,75 +407,101 @@ Let's try it. I use the <code>tree_labels</code> function to collect all the lab
     t = maptree(f, t)
     t = tree_labels(t)
     assert list(t) == [-1, -2, -3, -4]
+
+    t = mk_test_tree2()
+    res = maptree(lambda x: -1 * x, t)
+    res = tree_labels(res)
+    assert list(res) == [-1 * i for i in range(1, 12)]
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org18651d3" class="outline-2">
-<h2 id="org18651d3"><span class="section-number-2">6</span> Other useful functions</h2>
+<div id="outline-container-org3927364" class="outline-2">
+<h2 id="org3927364"><span class="section-number-2">6</span> Size of lazy trees</h2>
 <div class="outline-text-2" id="text-6">
 <p>
-A couple of more functions that we'll use in the .
+Here's one more function that we'll use in the :
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">def tree_size(t: Node) -&gt; int:
-    def f(label, reduced_subtrees):
-	return 1 + reduced_subtrees
+    def f(label, folded_subtrees):
+	return 1 + folded_subtrees
     return foldtree(f, operator.add, 0, t)
 </pre>
 </div>
 
 <div class="org-src-container">
 <pre class="src src-python">def test_tree_size():
+    t = mk_tree_(1, None)
+    assert tree_size(t) == 1
+
     t = mk_test_tree()
-    s = tree_size(t)
-    assert s == 4
+    assert tree_size(t) == 4
+
+    t = mk_test_tree2()
+    assert tree_size(t) == 11
 </pre>
 </div>
-
-<div class="org-src-container">
-<pre class="src src-python">def tree_depth(t: Node) -&gt; int:
-    def f(label, reduce_subtrees):
-	return 1 + max(reduced_subtrees)
-    def g(reduced_first, reduce_rest):
-	return [reduced_first] + reduced_rest
-
-    return foldtree(f, g, 1, t)
-</pre>
+</div>
 </div>
 
+<div id="outline-container-org12ee5f5" class="outline-2">
+<h2 id="org12ee5f5"><span class="section-number-2">7</span> Depth of lazy trees</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+Another utility function:
+</p>
 <div class="org-src-container">
 <pre class="src src-python">def tree_depth(t: Node) -&gt; int:
-    """The maximum depth of a lazy tree"""
-    def tree_depth_(t: Node, d: int) -&gt; int:
-	label, subtrees = t
+    def f(label: Any, folded_subtrees: int):
+	return 1 + folded_subtrees
 
-	if subtrees is None:
-	    return d
-	else:
-	    return max(map(lambda t: tree_depth_(t, d + 1), subtrees))
+    def g(folded_first: int, folded_rest: int) -&gt; int:
+	return max(folded_first, folded_rest)
 
-    return tree_depth_(t, 1)
+    return foldtree(f, g, 0, t)
 </pre>
 </div>
 
 <div class="org-src-container">
 <pre class="src src-python">def test_tree_depth():
+    t = mk_tree_(1, None)
+    assert tree_depth(t) == 1
+
+    t = mk_tree_(1, [mk_tree_(2, None)])
+    assert tree_depth(t) == 2
+
     t = mk_test_tree()
-    d = tree_depth(t)
-    assert d == 3
+    assert tree_depth(t) == 3
+
+    t = mk_test_tree2()
+    assert tree_depth(t) == 5
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org693a548" class="outline-2">
-<h2 id="org693a548"><span class="section-number-2">7</span> Appendix: imports</h2>
-<div class="outline-text-2" id="text-7">
+<div id="outline-container-org66b0cd7" class="outline-2">
+<h2 id="org66b0cd7"><span class="section-number-2">8</span> Appendix: imports</h2>
+<div class="outline-text-2" id="text-8">
 <div class="org-src-container">
 <pre class="src src-python">from lazy_utils import *
+
+def mk_test_tree2():
+    my_tree = mk_tree_(1, [
+			   mk_tree_(2, [
+					mk_tree_(3, None),
+					mk_tree_(4, [
+						     mk_tree_(5, None),
+						     mk_tree_(6, [
+								  mk_tree_(7, None)
+								 ])]),
+					mk_tree_(8, [mk_tree_(9, None)])
+				       ]),
+			   mk_tree_(10, [mk_tree_(11, None)])
+			  ])
+    return my_tree
 </pre>
 </div>
 </div>
@@ -472,7 +509,7 @@ A couple of more functions that we'll use in the .
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-24 Thu 09:57</p>
+<p class="date">Created: 2022-03-25 Fri 08:35</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

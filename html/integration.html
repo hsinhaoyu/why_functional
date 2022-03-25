@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-24 Thu 09:57 -->
+<!-- 2022-03-25 Fri 08:35 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Numerical integration with lazy recursion</title>
@@ -224,19 +224,19 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org0351bed">1. Integration with lazy recursion</a></li>
-<li><a href="#orgf056638">2. Avoiding redundant evaluation</a></li>
-<li><a href="#orgf73d7cb">3. Accelerating the convergence</a></li>
-<li><a href="#org5594168">4. Appendix: imports</a></li>
+<li><a href="#org30ab696">1. Integration with lazy recursion</a></li>
+<li><a href="#orgc14bce6">2. Avoiding redundant evaluation</a></li>
+<li><a href="#org209b314">3. Accelerating the convergence</a></li>
+<li><a href="#orgda17172">4. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
 <p>
-For those who don't care about numerical methods, the attraction of this section is recursion. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I didn't think it makes the Python code better. In this section, though, recursion is clearly the most natural way to implement the algorithm for numerical integration. 
+More numerical methods? I am not too interested in numerical methods either, but this chapter is important, because it's all about writing recursive functions that evaluate lazily. In Python land, it means recursive generators. Hughes' paper uses recursion throughout, but I have avoided recursion so far, because I don't think it makes the Python code better. In this chapter though, recursion does matter.
 </p>
 
-<div id="outline-container-org0351bed" class="outline-2">
-<h2 id="org0351bed"><span class="section-number-2">1</span> Integration with lazy recursion</h2>
+<div id="outline-container-org30ab696" class="outline-2">
+<h2 id="org30ab696"><span class="section-number-2">1</span> Integration with lazy recursion</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a linear function, it's easy to calculate the area under the function:
@@ -303,8 +303,8 @@ def test_integrate1():
 </div>
 </div>
 
-<div id="outline-container-orgf056638" class="outline-2">
-<h2 id="orgf056638"><span class="section-number-2">2</span> Avoiding redundant evaluation</h2>
+<div id="outline-container-orgc14bce6" class="outline-2">
+<h2 id="orgc14bce6"><span class="section-number-2">2</span> Avoiding redundant evaluation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A problem with the code in the previous section is that every time <code>easyintegrate</code> is called, the value of <code>f</code> is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
@@ -339,8 +339,8 @@ Let's test the second version of our numerical integration function:
 </div>
 </div>
 
-<div id="outline-container-orgf73d7cb" class="outline-2">
-<h2 id="orgf73d7cb"><span class="section-number-2">3</span> Accelerating the convergence</h2>
+<div id="outline-container-org209b314" class="outline-2">
+<h2 id="org209b314"><span class="section-number-2">3</span> Accelerating the convergence</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Remember that in the , we used the <code>improve</code> function to accelerate the convergence of a sequence? We can use it here too:
@@ -366,8 +366,8 @@ Let's try it (it's much faster):
 </div>
 </div>
 
-<div id="outline-container-org5594168" class="outline-2">
-<h2 id="org5594168"><span class="section-number-2">4</span> Appendix: imports</h2>
+<div id="outline-container-orgda17172" class="outline-2">
+<h2 id="orgda17172"><span class="section-number-2">4</span> Appendix: imports</h2>
 <div class="outline-text-2" id="text-4">
 <div class="org-src-container">
 <pre class="src src-python">from typing import Callable, Iterator, Tuple
@@ -389,7 +389,7 @@ from integrate import *
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-24 Thu 09:57</p>
+<p class="date">Created: 2022-03-25 Fri 08:35</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

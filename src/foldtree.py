@@ -67,6 +67,7 @@ def tree_size(t: Tuple) -> int:
 
 
 def tree_depth(t: Tuple) -> int:
+    """Returns the maximal depth of nodes in the tree"""
 
     def f(label: Any, folded_subtrees: int):
         return 1 + folded_subtrees

@@ -3,10 +3,10 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-24 Thu 09:57 -->
+<!-- 2022-03-25 Fri 08:35 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Numerical differentiation using iterators</title>
+<title>Numerical differentiation using generators</title>
 <meta name="generator" content="Org mode" />
 <meta name="author" content="Hsin-Hao Yu" />
 <style type="text/css">
@@ -219,24 +219,24 @@
 </head>
 <body>
 <div id="content">
-<h1 class="title">Numerical differentiation using iterators</h1>
+<h1 class="title">Numerical differentiation using generators</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org0cf451b">1. A first stab at the problem</a></li>
-<li><a href="#org3dc64b6">2. Improve convergence with sequence transformation</a></li>
-<li><a href="#orgf654aec">3. An iterator of iterators</a></li>
-<li><a href="#orgea4051f">4. Appendix: imports</a></li>
+<li><a href="#org0d812dc">1. A first stab at the problem</a></li>
+<li><a href="#org7371c84">2. Improve convergence with sequence transformation</a></li>
+<li><a href="#orgebdc292">3. An iterator of iterators</a></li>
+<li><a href="#org0dada9f">4. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
 <p>
-From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This is where lazy evaluation becomes interesting.
+From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This chapter demonstrates several interesting tricks that you can use with generators.
 </p>
 
-<div id="outline-container-org0cf451b" class="outline-2">
-<h2 id="org0cf451b"><span class="section-number-2">1</span> A first stab at the problem</h2>
+<div id="outline-container-org0d812dc" class="outline-2">
+<h2 id="org0d812dc"><span class="section-number-2">1</span> A first stab at the problem</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculating the slope:
@@ -295,15 +295,15 @@ def test_diff1():
 </div>
 </div>
 
-<div id="outline-container-org3dc64b6" class="outline-2">
-<h2 id="org3dc64b6"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
+<div id="outline-container-org7371c84" class="outline-2">
+<h2 id="org7371c84"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
-A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called <a href="https://en.wikipedia.org/wiki/Richardson_extrapolation">Richardson extrapolation</a>. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the next section.
+A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called <a href="https://en.wikipedia.org/wiki/Richardson_extrapolation">Richardson extrapolation</a>. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the .
 </p>
 
 <p>
-With an appropriately-chosen integer <code>n</code>, the convergence of a sequence (represented as an iterator) can improved by the <code>elimerror</code> function defined below. What it does is that it slides a <code>(a, b)</code> window over the original sequence, and applies a correction based on the two values(<code>c</code> below). 
+With an appropriately-chosen integer <code>n</code>, the convergence of a sequence (represented as a generator) can improved by the <code>elimerror</code> function defined below. What it does is that it slides a length 2 window over the original sequence, and applies a correction based on the two values(<code>c</code> below). 
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def elimerror(n: int, itr: Iterator[float]) -&gt; Iterator[float]:
@@ -374,7 +374,7 @@ You can compare the two sequences by running <code>make test</code>:
 </div>
 
 <p>
-This is second version of the numerical differentiation function. The logic is very clear: generate a series of rough calculations, improve the them, and stop when the convergence criterion is met (<code>esp</code> is a small number defined in the Appendix). 
+This is second version of the numerical differentiation function. The logic is very easy to understand, because the code is written as a chain of simple functions: generate a series of rough calculations, improve them, and stop when the convergence criterion is met (<code>esp</code> is a small number defined in the Appendix). 
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def diff2(h0: float, f: Callable[[float], float], x: float) -&gt; float:
@@ -397,11 +397,11 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-orgf654aec" class="outline-2">
-<h2 id="orgf654aec"><span class="section-number-2">3</span> An iterator of iterators</h2>
+<div id="outline-container-orgebdc292" class="outline-2">
+<h2 id="orgebdc292"><span class="section-number-2">3</span> An iterator of iterators</h2>
 <div class="outline-text-2" id="text-3">
 <p>
-Do we actually need any improvements? Not for the simple problems that we've been solving, but this is where the code gets interesting!
+Do we actually need further improvements on the convergence? Not for the simple problems that we've been solving, but this is where the code gets interesting!
 </p>
 
 <p>
@@ -409,7 +409,7 @@ In Hughes' paper, he used the <code>improve</code> function again and again on t
 </p>
 
 <p>
-The Miranda code in the paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The <code>repeat_f</code> function defined doesn't work on iterators, so we'll need a specialized version to take care of the semantics of iterators.
+The paper expresses this idea with a beautiful one-liner. Unfortunately, Python's iterator is not as elegant. The <code>repeat_f</code> function defined doesn't work on iterators, so we'll need a specialized version:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -&gt; Iterator:
@@ -451,7 +451,7 @@ Let's see if the 5th item in the yielded iterator is the same as applying <code>
 </div>
 
 <p>
-I haven't checked a textbook, but the paper says that the second approximation from each of the improved iterator is a good sequence for solving our problem. So, this is the third version of the numerical differentiation function:
+I haven't checked a textbook, but the paper says that the second approximation from each of the improved iterator is a good sequence for numerical differentiation. So, this is the third version of the numerical differentiation function:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def second(itr: Iterator[float]) -&gt; float:
@@ -483,8 +483,8 @@ Does it work?
 </div>
 </div>
 
-<div id="outline-container-orgea4051f" class="outline-2">
-<h2 id="orgea4051f"><span class="section-number-2">4</span> Appendix: imports</h2>
+<div id="outline-container-org0dada9f" class="outline-2">
+<h2 id="org0dada9f"><span class="section-number-2">4</span> Appendix: imports</h2>
 <div class="outline-text-2" id="text-4">
 <div class="org-src-container">
 <pre class="src src-python">from math import log2
@@ -510,7 +510,7 @@ from diff import *
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-24 Thu 09:57</p>
+<p class="date">Created: 2022-03-25 Fri 08:35</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

@@ -3,10 +3,10 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-24 Thu 09:57 -->
+<!-- 2022-03-25 Fri 08:35 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Calculating square roots with lazy evaluation</title>
+<title>Calculating square roots with generators</title>
 <meta name="generator" content="Org mode" />
 <meta name="author" content="Hsin-Hao Yu" />
 <style type="text/css">
@@ -219,28 +219,28 @@
 </head>
 <body>
 <div id="content">
-<h1 class="title">Calculating square roots with lazy evaluation</h1>
+<h1 class="title">Calculating square roots with generators</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org48fb99f">1. The math bit</a></li>
-<li><a href="#org9ce3a9d">2. Define a nesting iterator</a></li>
-<li><a href="#org9feb8d5">3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
-<li><a href="#org9f772ce">4. Add a stopping condition</a></li>
-<li><a href="#org22576c3">5. Appendix: Imports</a></li>
+<li><a href="#org8bac632">1. The math bit</a></li>
+<li><a href="#orgf496cc8">2. Define a nesting iterator</a></li>
+<li><a href="#orgbf85d0d">3. Define a lazy iterator that approximates <code>sqrt(n)</code></a></li>
+<li><a href="#orge051121">4. Add a stopping condition</a></li>
+<li><a href="#orgb2f5813">5. Appendix: Imports</a></li>
 </ul>
 </div>
 </div>
+<p>
+This chapter shows how to decompose a complex loop into re-usable components, by chaining functions together. This pattern is most powerful when the functions evaluate lazily. In Python, it means that they are generators. 
+</p>
 
-<div id="outline-container-org48fb99f" class="outline-2">
-<h2 id="org48fb99f"><span class="section-number-2">1</span> The math bit</h2>
+<div id="outline-container-org8bac632" class="outline-2">
+<h2 id="org8bac632"><span class="section-number-2">1</span> The math bit</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 To approximate sqrt(n), we start with an initial value <code>x</code>, and apply (x + n/x) / 2.0 repeatedly.
-</p>
-
-<p>
 <code>next_sqrt_approx(n)</code> returns a closure that brings its input closer to sqrt(n).
 </p>
 <div class="org-src-container">
@@ -268,11 +268,11 @@ def test_next_sqrt_approx():
 </div>
 </div>
 
-<div id="outline-container-org9ce3a9d" class="outline-2">
-<h2 id="org9ce3a9d"><span class="section-number-2">2</span> Define a nesting iterator</h2>
+<div id="outline-container-orgf496cc8" class="outline-2">
+<h2 id="orgf496cc8"><span class="section-number-2">2</span> Define a nesting iterator</h2>
 <div class="outline-text-2" id="text-2">
 <p>
-<code>repeat_f(f, a)</code> applies the function <code>f</code> repeatedly to <code>a</code>. (The original code is more elegant and more general, but Python is not a lazy functional language).
+<code>repeat_f(f, a)</code> applies the function <code>f</code> repeatedly to <code>a</code>. 
 </p>
 <div class="org-src-container">
 <pre class="src src-python">&lt;&lt;LAZY_UTILS_IMPORTS&gt;&gt;
@@ -304,8 +304,8 @@ def test_repeat_f():
 </div>
 </div>
 
-<div id="outline-container-org9feb8d5" class="outline-2">
-<h2 id="org9feb8d5"><span class="section-number-2">3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h2>
+<div id="outline-container-orgbf85d0d" class="outline-2">
+<h2 id="orgbf85d0d"><span class="section-number-2">3</span> Define a lazy iterator that approximates <code>sqrt(n)</code></h2>
 <div class="outline-text-2" id="text-3">
 <p>
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain <code>next_sqrt_approx</code> and <code>repeat_f</code> together:
@@ -333,8 +333,8 @@ Again, approximating sqrt(10.0) from 2.0:
 </div>
 </div>
 
-<div id="outline-container-org9f772ce" class="outline-2">
-<h2 id="org9f772ce"><span class="section-number-2">4</span> Add a stopping condition</h2>
+<div id="outline-container-orge051121" class="outline-2">
+<h2 id="orge051121"><span class="section-number-2">4</span> Add a stopping condition</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 We add a <code>within</code> function to stop the iteration when the difference between two successive iterations is smaller than <code>esp</code>.
@@ -374,8 +374,8 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-org22576c3" class="outline-2">
-<h2 id="org22576c3"><span class="section-number-2">5</span> Appendix: Imports</h2>
+<div id="outline-container-orgb2f5813" class="outline-2">
+<h2 id="orgb2f5813"><span class="section-number-2">5</span> Appendix: Imports</h2>
 <div class="outline-text-2" id="text-5">
 <div class="org-src-container">
 <pre class="src src-python">from typing import Callable, Iterator
@@ -391,8 +391,9 @@ from newton import *
 </div>
 
 <div class="org-src-container">
-<pre class="src src-python">from typing import Callable, Iterator, NamedTuple, Any, Optional
+<pre class="src src-python">from typing import Callable, Iterator, NamedTuple, Any, Optional, Union
 from itertools import tee
+import operator
 </pre>
 </div>
 
@@ -405,7 +406,7 @@ from itertools import tee
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-24 Thu 09:57</p>
+<p class="date">Created: 2022-03-25 Fri 08:35</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

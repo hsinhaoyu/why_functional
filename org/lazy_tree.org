@@ -74,7 +74,7 @@ As before, a variety of lazy tree operations can be implemented with =foldtree=,
 
 * Flattening lazy trees
 This version of =tree_labels= returns an iterator, which visits every label in the tree one by one:
-#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_labels(t: Node) -> Iterator:
       def f(label: Any, folded_subtrees: Iterator) -> Iterator:
           yield label

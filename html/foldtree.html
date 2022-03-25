@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-24 Thu 09:57 -->
+<!-- 2022-03-25 Fri 08:35 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Higher-order functions for trees</title>
@@ -224,26 +224,30 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org19f4af6">1. Representing trees</a></li>
-<li><a href="#org01ebf23">2. Extending <code>reduce</code> for trees</a></li>
-<li><a href="#org4840a85">3. Summing all labels in a tree</a></li>
-<li><a href="#orgedb37d0">4. Flattening trees</a></li>
-<li><a href="#orgd5e09f9">5. Mapping functions to trees</a></li>
-<li><a href="#org8bf51eb">6. Size of a tree</a></li>
-<li><a href="#org6f3d3c5">7. Depth of a tree</a></li>
-<li><a href="#orgc53d573">8. Appendix: imports</a></li>
+<li><a href="#org01636d1">1. Representing trees</a></li>
+<li><a href="#orgc6f86e4">2. Extending <code>reduce</code> for trees</a></li>
+<li><a href="#org65069ae">3. Summing all labels in a tree</a></li>
+<li><a href="#orgad2b8f9">4. Flattening trees</a></li>
+<li><a href="#orgdb2d1e3">5. Mapping functions to trees</a></li>
+<li><a href="#orgfc10425">6. Size of trees</a></li>
+<li><a href="#orge7bb8ba">7. Depth of trees</a></li>
+<li><a href="#orgdcb13d9">8. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
 <p>
-Hughes' paper begins with <i>list folding</i>, which is the job of <code>functools.reduce</code> in Python. It is powerful higher-order function that can be used to implement a wide range of operations on lists. Hughes argued that replacing loops with <code>reduce</code> makes loops more modular and more extensible. Since it's easy to find a tutorial on <code>reduce</code>, I will skip this part, and directly jump to the part where the concept of <code>reduce</code> is generalized to a more complex structure: trees. 
+Hughes' paper begins with higher-order constructions such as folding (<code>functools.reduce</code> in Python) and mapping (<code>map</code> in Python). Replacing loops with these functions makes them more modular and more flexible. Since it's easy to find Python tutorials on this topic, I will skip this part.
 </p>
 
-<div id="outline-container-org19f4af6" class="outline-2">
-<h2 id="org19f4af6"><span class="section-number-2">1</span> Representing trees</h2>
+<p>
+Higher-order functions are typically used to implement operations on lists. Hughes took this idea further, and showed that they can also be used to work on more complex structures such as trees. We'll return to this topic in a later .
+</p>
+
+<div id="outline-container-org01636d1" class="outline-2">
+<h2 id="org01636d1"><span class="section-number-2">1</span> Representing trees</h2>
 <div class="outline-text-2" id="text-1">
 <p>
-I'll represent a tree this way: <code>(label, [subtree...])</code>. In other words, a node in a tree is tuple with a label and a list of subtrees. Note that this is not a binary tree.
+I'll represent a tree this way: <code>(label, [subtree...])</code>. With this representation, a node in a tree is tuple with a label and a list of subtrees. A node can have many subtrees, so the tree is not restricted to be binary.
 </p>
 <div class="org-src-container">
 <pre class="src src-python">&lt;&lt;TEST_FOLDTREE_IMPORTS&gt;&gt;
@@ -260,20 +264,20 @@ my_tree = (1, [
 </div>
 </div>
 
-<div id="outline-container-org01ebf23" class="outline-2">
-<h2 id="org01ebf23"><span class="section-number-2">2</span> Extending <code>reduce</code> for trees</h2>
+<div id="outline-container-orgc6f86e4" class="outline-2">
+<h2 id="orgc6f86e4"><span class="section-number-2">2</span> Extending <code>reduce</code> for trees</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 <code>reduce</code> uses a reduction function of two arguments to fold a list. For example, using <code>operator.add</code> as the reduction function, <code>reduce(operator.add, [1, 2, 3, 4], 0)</code> sums the numbers in [1, 2, 3, 4].
 </p>
 
 <p>
-To generalize <code>reduce</code> to trees, we need two reduction functions of two arguments: <code>f</code> and <code>g</code>. Given a node, <code>g</code> reduces the subtrees to a value which can be further combined with the label using <code>f</code>. As in <code>reduce</code>, an initializing constant <code>a</code> is also needed.
+To generalize <code>reduce</code> to trees, we need two reduction functions: <code>f</code> and <code>g</code>. Both are functions of two arguments. Given a node, <code>g</code> reduces the subtrees to a value which can be further combined with the label using <code>f</code>. As in <code>reduce</code>, an initializing constant <code>a</code> is also needed. It is used in leaf nodes.
 </p>
 <div class="org-src-container">
 <pre class="src src-python">&lt;&lt;FOLDTREE_IMPORTS&gt;&gt;
 
-def foldtree(f: Callable, g: Callable, a: Any, t: Tuple):
+def foldtree(f: Callable, g: Callable, a: Any, t: Union[Tuple, List]):
     """Apply two functions (f and g) of two arguments to transform a tree.
     f: combine the label of a node to its subtrees
     g: combine the subtrees of a node
@@ -297,8 +301,8 @@ def foldtree(f: Callable, g: Callable, a: Any, t: Tuple):
 </div>
 </div>
 
-<div id="outline-container-org4840a85" class="outline-2">
-<h2 id="org4840a85"><span class="section-number-2">3</span> Summing all labels in a tree</h2>
+<div id="outline-container-org65069ae" class="outline-2">
+<h2 id="org65069ae"><span class="section-number-2">3</span> Summing all labels in a tree</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Just like using <code>reduce</code> to sum the numbers in a list, we can use <code>foldtree</code> to sum the labels in a tree:
@@ -315,13 +319,14 @@ Just like using <code>reduce</code> to sum the numbers in a list, we can use <co
 <div class="org-src-container">
 <pre class="src src-python">def test_sumtree():
     assert sumtree(my_tree) == 10
+    assert sumtree(my_tree2) == sum(range(1, 12))
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-orgedb37d0" class="outline-2">
-<h2 id="orgedb37d0"><span class="section-number-2">4</span> Flattening trees</h2>
+<div id="outline-container-orgad2b8f9" class="outline-2">
+<h2 id="orgad2b8f9"><span class="section-number-2">4</span> Flattening trees</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 <code>tree_labels</code> collects all labels of a tree into a list.
@@ -342,16 +347,17 @@ Just like using <code>reduce</code> to sum the numbers in a list, we can use <co
 <div class="org-src-container">
 <pre class="src src-python">def test_tree_labels():
     assert tree_labels(my_tree) == [1, 2, 3, 4]
+    assert tree_labels(my_tree2) == list(range(1, 12))
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-orgd5e09f9" class="outline-2">
-<h2 id="orgd5e09f9"><span class="section-number-2">5</span> Mapping functions to trees</h2>
+<div id="outline-container-orgdb2d1e3" class="outline-2">
+<h2 id="orgdb2d1e3"><span class="section-number-2">5</span> Mapping functions to trees</h2>
 <div class="outline-text-2" id="text-5">
 <p>
-Map a function <code>f</code> to all labels in a tree:
+Map a function <code>f</code> to all labels in a tree, creating another tree:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def maptree(func: Callable, t: Tuple) -&gt; Tuple:
@@ -373,14 +379,21 @@ Map a function <code>f</code> to all labels in a tree:
     res = maptree(lambda x: -1 * x, my_tree)
     res = tree_labels(res)
     assert res == [-1, -2, -3, -4]
+
+    res = maptree(lambda x: -1 * x, my_tree2)
+    res = tree_labels(res)
+    assert res == [-1 * i for i in range(1, 12)]
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org8bf51eb" class="outline-2">
-<h2 id="org8bf51eb"><span class="section-number-2">6</span> Size of a tree</h2>
+<div id="outline-container-orgfc10425" class="outline-2">
+<h2 id="orgfc10425"><span class="section-number-2">6</span> Size of trees</h2>
 <div class="outline-text-2" id="text-6">
+<p>
+How many node are there in the tree?
+</p>
 <div class="org-src-container">
 <pre class="src src-python">def tree_size(t: Tuple) -&gt; int:
     """Return the number of nodes in a tree"""
@@ -398,20 +411,25 @@ Map a function <code>f</code> to all labels in a tree:
 <pre class="src src-python">def test_tree_size():
     assert tree_size(my_tree) == 4
     assert tree_size((1, [])) == 1
+    assert tree_size(my_tree2) == 11
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org6f3d3c5" class="outline-2">
-<h2 id="org6f3d3c5"><span class="section-number-2">7</span> Depth of a tree</h2>
+<div id="outline-container-orge7bb8ba" class="outline-2">
+<h2 id="orge7bb8ba"><span class="section-number-2">7</span> Depth of trees</h2>
 <div class="outline-text-2" id="text-7">
+<p>
+What is the longest branch in the tree?
+</p>
 <div class="org-src-container">
 <pre class="src src-python">def tree_depth(t: Tuple) -&gt; int:
+    """Returns the maximal depth of nodes in the tree"""
     def f(label: Any, folded_subtrees: int):
 	return 1 + folded_subtrees
 
-    def g(folded_first: int, folded_rest: int):
+    def g(folded_first: int, folded_rest: int) -&gt; int:
 	return max(folded_first, folded_rest)
 
     return foldtree(f, g, 0, t)
@@ -427,22 +445,35 @@ Map a function <code>f</code> to all labels in a tree:
     assert tree_depth(t) == 2
 
     assert tree_depth(my_tree) == 3
+
+    assert tree_depth(my_tree2) == 5
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-orgc53d573" class="outline-2">
-<h2 id="orgc53d573"><span class="section-number-2">8</span> Appendix: imports</h2>
+<div id="outline-container-orgdcb13d9" class="outline-2">
+<h2 id="orgdcb13d9"><span class="section-number-2">8</span> Appendix: imports</h2>
 <div class="outline-text-2" id="text-8">
 <div class="org-src-container">
-<pre class="src src-python">from typing import Tuple, Callable, Any, List
+<pre class="src src-python">from typing import Tuple, Callable, Any, List, Union
 import operator
 </pre>
 </div>
 
 <div class="org-src-container">
 <pre class="src src-python">from foldtree import *
+
+my_tree2 = (1, [
+		(2, [
+		     (3, []),
+		     (4, [
+			  (5, []),
+			  (6, [(7, [])])
+			 ]),
+		     (8, [(9, [])])
+		    ]),
+		 (10, [(11, [])])])
 </pre>
 </div>
 </div>
@@ -450,7 +481,7 @@ import operator
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-24 Thu 09:57</p>
+<p class="date">Created: 2022-03-25 Fri 08:35</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-24 Thu 09:57 -->
+<!-- 2022-03-25 Fri 08:35 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Play Tic-tac-toe using lazy trees</title>
@@ -224,37 +224,30 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org1c4d4ee">1. Build a (lazy) game tree</a></li>
-<li><a href="#org94caff5">2. Prune the game tree</a></li>
-<li><a href="#orgf534077">3. Apply static evaluation to the game tree</a></li>
-<li><a href="#org7c7c8aa">4. Implement the Minimax algorithm</a></li>
-<li><a href="#org69f74ae">5. Appendix 1: Tic-tac-toe utilities</a></li>
-<li><a href="#orgacb0c03">6. Appendix 2: Static evaluation function for Tic-tac-toe</a></li>
-<li><a href="#org17cfeb7">7. Appendix 3: Tic-tac-toe gametree</a></li>
-<li><a href="#orgef6a8e8">8. Appendix 4: Testing the tree evaluation function</a></li>
-<li><a href="#org54bda21">9. Appendix 5: Gameplay</a></li>
-<li><a href="#orgee127e3">10. Appendix 6: Imports</a></li>
+<li><a href="#orgbda8de4">1. Build a (lazy) game tree</a></li>
+<li><a href="#orgd977e57">2. Prune the game tree</a></li>
+<li><a href="#org3814c63">3. Static evaluation (using <code>maptree</code>)</a></li>
+<li><a href="#org464d402">4. Minimax (using mutually recursive functions)</a></li>
+<li><a href="#org3004678">5. Alpha-beta pruning (using iterators of iterators)</a></li>
+<li><a href="#org9d33fe1">6. Appendix 1: Tic-tac-toe utilities</a></li>
+<li><a href="#orgdf2dded">7. Appendix 2: Static evaluation function for Tic-tac-toe</a></li>
+<li><a href="#org20be616">8. Appendix 3: The Tic-tac-toe gametree</a></li>
+<li><a href="#orgcb55e10">9. Appendix 4: Testing the tree evaluation function</a></li>
+<li><a href="#org0614245">10. Appendix 5: Gameplay</a></li>
+<li><a href="#orgd401942">11. Appendix 6: Misc</a></li>
+<li><a href="#org22243b0">12. Appendix 7: Imports</a></li>
 </ul>
 </div>
 </div>
 <p>
-In this section, we're going to apply the ideas developed so far on a more complicated problem: playing Tic-tac-toe. We'll concentrate on the code structure rather than on the game AI, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
+In this chapter, we're going to apply the ideas developed so far to a more complicated problem: playing Tic-tac-toe. We'll concentrate on the code structure rather than on the game AI, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
 </p>
 
-<div class="org-src-container">
-<pre class="src src-python">&lt;&lt;TIC_TAC_TOE_IMPORTS&gt;&gt;
-&lt;&lt;TIC_TAC_TOE_UTILS&gt;&gt;
-&lt;&lt;TIC_TAC_TOE_EVAL&gt;&gt;
-&lt;&lt;TIC_TAC_TOE_TREE&gt;&gt;
-&lt;&lt;TIC_TAC_TOE_PLAY&gt;&gt;
-</pre>
-</div>
-
-<div id="outline-container-org1c4d4ee" class="outline-2">
-<h2 id="org1c4d4ee"><span class="section-number-2">1</span> Build a (lazy) game tree</h2>
+<div id="outline-container-orgbda8de4" class="outline-2">
+<h2 id="orgbda8de4"><span class="section-number-2">1</span> Build a (lazy) game tree</h2>
 <div class="outline-text-2" id="text-1">
 <p>
-Remember that <code>repeat_f</code> (defined ) repeatedly maps a function to an initial value to generate a list. Let's extend the idea to trees. Let <code>f</code> be a function that takes a value, and returns a list of values. We define <code>reptree</code>, which grows a tree out of an initial value by applying <code>f</code> repeatedly. Recall that tree is represented by <code>Node</code> defined in the . 
+Remember that <code>repeat_f</code> (defined ) repeatedly applies a function to an initial value to generate a list. Let's extend the idea to trees. Let <code>f</code> be a function that takes a value, and returns a list of values. We define <code>reptree</code> to grows a tree out of an initial value by applying <code>f</code> repeatedly. Recall that tree is represented by <code>Node</code> defined in the . 
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -&gt; Node:
@@ -274,7 +267,7 @@ Remember that <code>repeat_f</code> (defined ) repeatedly maps a function to an 
 </div>
 
 <p>
-By applying <code>moves</code> repeatedly to a board configuration, we get a tree of all possible future configurations of the game! <code>reptree</code> is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
+For playing game, <code>moves</code> is a function that takes a game configuration, and returns an iterator of board configurations corresponding to all legal moves. By applying <code>moves</code> repeatedly to an initial board configuration, we get a tree of all possible future configurations of the game! <code>reptree</code> is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
 </p>
 <div class="org-src-container">
 <pre class="src src-python">&lt;&lt;GAME_IMPORTS&gt;&gt;
@@ -282,6 +275,8 @@ By applying <code>moves</code> repeatedly to a board configuration, we get a tre
 # Board is a type alias for representing a board configuration.
 # In this example,  it's just a list
 Board = List
+
+&lt;&lt;GAME_UTILS&gt;&gt;
 
 def gametree(moves: Callable[[Board], Optional[Iterator[Board]]]) -&gt; Callable[[Board], Node]:
     """Return a func that builds a gametree from an initial board.
@@ -320,11 +315,11 @@ def test_gametree2():
 </div>
 </div>
 
-<div id="outline-container-org94caff5" class="outline-2">
-<h2 id="org94caff5"><span class="section-number-2">2</span> Prune the game tree</h2>
+<div id="outline-container-orgd977e57" class="outline-2">
+<h2 id="orgd977e57"><span class="section-number-2">2</span> Prune the game tree</h2>
 <div class="outline-text-2" id="text-2">
 <p>
-We can reduce the size of game tree by removing nodes after a certain depth (<code>n</code>). 
+To find the best next move, searching the entire game tree is typically impractical. We can reduce the size of the search space by limiting the game AI to looks ahead for only a fixed number of moves. The <code>prune</code> function does this by removing nodes after a certain depth (<code>n</code>). 
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def prune(n: int, tree: Node) -&gt; Node:
@@ -341,7 +336,7 @@ We can reduce the size of game tree by removing nodes after a certain depth (<co
 </div>
 
 <p>
-As in the previous section, I defined a Tic-tac-toe version of <code>prune</code> in Appendix 3. This version of <code>prune</code> doesn't need the depth in the input, because it uses a pre-defined value for Tic-tac-toe.
+As in the previous section, I defined a Tic-tac-toe version of <code>prune</code> in Appendix 3. This version of <code>prune</code> doesn't need the depth in the input, because it uses a pre-defined value for Tic-tac-toe (which is 5).
 </p>
 
 <p>
@@ -368,8 +363,8 @@ Let's check the size of the pruned tree:
 </div>
 </div>
 
-<div id="outline-container-orgf534077" class="outline-2">
-<h2 id="orgf534077"><span class="section-number-2">3</span> Apply static evaluation to the game tree</h2>
+<div id="outline-container-org3814c63" class="outline-2">
+<h2 id="org3814c63"><span class="section-number-2">3</span> Static evaluation (using <code>maptree</code>)</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 To play Tic-tac-toe, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a starting point.
@@ -381,9 +376,12 @@ In Appendix 2, I defined <code>static_eval(player)</code> for this purpose. For 
 </div>
 </div>
 
-<div id="outline-container-org7c7c8aa" class="outline-2">
-<h2 id="org7c7c8aa"><span class="section-number-2">4</span> Implement the Minimax algorithm</h2>
+<div id="outline-container-org464d402" class="outline-2">
+<h2 id="org464d402"><span class="section-number-2">4</span> Minimax (using mutually recursive functions)</h2>
 <div class="outline-text-2" id="text-4">
+<p>
+<a href="https://en.wikipedia.org/wiki/Minimax">Minimax</a> is an algorithm for playing zero-sum two-player games. To find the best move, Minimax looks into future states of the game in the game tree, in two alternate steps: My next move should make the best (the maximization step) out of the worst that my opponent can do to me in a future step (the minimization step). For example, if my opponent could win the game in the next move, I assume that he wouldn't miss that move, and I'll do my best to prevent him from making that move. But how do I know the worst that my opponent can do to me? It's the other side of the coin: the best out of the worst that I could do to him in a future step. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
+</p>
 <div class="org-src-container">
 <pre class="src src-python">def maximize1(gametree: Node) -&gt; int:
     """The max step of Minimax"""
@@ -411,28 +409,30 @@ def minimize1(gametree: Node) -&gt; int:
 </div>
 
 <p>
-This is our first version of the tree evaluation function:
+The code below is the first version of our tree evaluation function. For every legal move that I can make, I pass the board configuration to <code>evaluate1</code>, and it returns a score representing how bad my opponent can do to me in the future. A positive score means that my move is a winning move; a negative score means that my move is a losing one. The code is surprisingly easy to read, because it's a chain of functions: given a board configuration, it creates a game tree of all possible configurations, prunes it to limit the search to a fixed steps ahead, applies the static evaluation to all the nodes, and then uses Minimax to return a score.
+</p>
+
+<p>
+Note that all the functions in the chain are lazy. Although the code reads like pruning, scoring, and minimaxing apply to the whole tree, only the parts that are needed will be evaluated.
 </p>
 <div class="org-src-container">
-<pre class="src src-python">def evaluate1(gametree_: Callable[[Board], Node], eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -&gt; Callable[[Board], int]:
+<pre class="src src-python">def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -&gt; Callable[[Board], int]:
+    """Return a tree evaluation function"""
     def evaluate_(board: Board) -&gt; int:
-	return minimize1(maptree(eval_, prune_(gametree_(board))))
+	return minimize1(maptree(static_eval_, prune_(gametree_(board))))
     return evaluate_
 </pre>
 </div>
 
+<p>
+Again, this version of <code>evaluate1</code> is not specific to any game, so it needs many parameters. In the Appendix 3, I defined a version of <code>evaluate1</code> that only takes the board configuration as input.
+</p>
+
+<p>
+We apply <code>evaluate1</code> to all candidate moves, and pick the one with the highest score. Note that <code>max_assoc</code> is an utility function defined near the end of the document. It returns the board associated with the highest score.
+</p>
 <div class="org-src-container">
-<pre class="src src-python">def max_assoc(itr: Iterator[Tuple[Board, int]]) -&gt; Board:
-    """ Return the board with the highest score.
-    itr is (board1, score1), (board2, score2)...
-    """
-    def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
-	return new_item if new_item[1] &gt; old_item[1] else old_item
-
-    first_item = next(itr)
-    return reduce(max_f, itr, first_item)[0]
-
-def max_next_move(gametree_func: Callable[[Board], Node], tree_eval_func: Callable[[Board], int]) -&gt; Callable[[Board], Optional[Board]]:
+<pre class="src src-python">def max_next_move(gametree_func: Callable[[Board], Node], tree_eval_func: Callable[[Board], int]) -&gt; Callable[[Board], Optional[Board]]:
     """Return a function to make the next move."""
     def max_next_move_(board: Board) -&gt; Optional[Board]:
 	# return a board or None
@@ -452,11 +452,29 @@ As before, the function defined above is generic. I have defined a version (in A
 </div>
 </div>
 
-<div id="outline-container-org69f74ae" class="outline-2">
-<h2 id="org69f74ae"><span class="section-number-2">5</span> Appendix 1: Tic-tac-toe utilities</h2>
+<div id="outline-container-org3004678" class="outline-2">
+<h2 id="org3004678"><span class="section-number-2">5</span> Alpha-beta pruning (using iterators of iterators)</h2>
 <div class="outline-text-2" id="text-5">
 <p>
-These functions define the Tic-tac-toe game.
+At this point, you can already play Tic-tac-toe with the computer. Just run <code>tic_tac_toe.play()</code>. However, the computer's response is a little slow. Let's speed it up.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org9d33fe1" class="outline-2">
+<h2 id="org9d33fe1"><span class="section-number-2">6</span> Appendix 1: Tic-tac-toe utilities</h2>
+<div class="outline-text-2" id="text-6">
+<div class="org-src-container">
+<pre class="src src-python">&lt;&lt;TIC_TAC_TOE_IMPORTS&gt;&gt;
+&lt;&lt;TIC_TAC_TOE_UTILS&gt;&gt;
+&lt;&lt;TIC_TAC_TOE_EVAL&gt;&gt;
+&lt;&lt;TIC_TAC_TOE_TREE&gt;&gt;
+&lt;&lt;TIC_TAC_TOE_PLAY&gt;&gt;
+</pre>
+</div>
+
+<p>
+These functions define the Tic-tac-toe game:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">### gameplay options
@@ -577,7 +595,7 @@ def display_board(board: Board, coordinates = False) -&gt; None:
 </div>
 
 <p>
-Note that the player who plays the next move is encoded in the board. This information is not stored as a game state.
+Note that the player who plays the next move is not stored as a game state, because it can easily be inferred from the game board:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def test_who_plays():
@@ -613,13 +631,12 @@ Note that the player who plays the next move is encoded in the board. This infor
 </div>
 </div>
 
-<div id="outline-container-orgacb0c03" class="outline-2">
-<h2 id="orgacb0c03"><span class="section-number-2">6</span> Appendix 2: Static evaluation function for Tic-tac-toe</h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-orgdf2dded" class="outline-2">
+<h2 id="orgdf2dded"><span class="section-number-2">7</span> Appendix 2: Static evaluation function for Tic-tac-toe</h2>
+<div class="outline-text-2" id="text-7">
 <p>
 A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a configuration is. I implemented a common one.
 </p>
-
 <div class="org-src-container">
 <pre class="src src-python">### Heuristic evaluation of board configurations
 def is_good_line(n: int, player: int, line: List[Cell]) -&gt; bool:
@@ -731,9 +748,9 @@ It's important that the static evaluation function knows when a player wins the 
 </div>
 </div>
 
-<div id="outline-container-org17cfeb7" class="outline-2">
-<h2 id="org17cfeb7"><span class="section-number-2">7</span> Appendix 3: Tic-tac-toe gametree</h2>
-<div class="outline-text-2" id="text-7">
+<div id="outline-container-org20be616" class="outline-2">
+<h2 id="org20be616"><span class="section-number-2">8</span> Appendix 3: The Tic-tac-toe gametree</h2>
+<div class="outline-text-2" id="text-8">
 <p>
 Functions related to game AI (<code>gametree</code>, <code>prune</code>, <code>evaluate</code>) defined previously in the chapter are generic, and therefore require a couple of parameters to call. Here, we define Tic-tac-toe versions of these functions, to make them easier to use.
 </p>
@@ -801,9 +818,12 @@ The static evaluation function, when applied to the game tree, should also refle
 </div>
 </div>
 
-<div id="outline-container-orgef6a8e8" class="outline-2">
-<h2 id="orgef6a8e8"><span class="section-number-2">8</span> Appendix 4: Testing the tree evaluation function</h2>
-<div class="outline-text-2" id="text-8">
+<div id="outline-container-orgcb55e10" class="outline-2">
+<h2 id="orgcb55e10"><span class="section-number-2">9</span> Appendix 4: Testing the tree evaluation function</h2>
+<div class="outline-text-2" id="text-9">
+<p>
+Test the tree evaluation function <code>evaluate1</code> on the most basic conditions:
+</p>
 <div class="org-src-container">
 <pre class="src src-python">def test_tree_eval():
     b = [1, 0, 0, None, 0, None, 1, None, None]
@@ -833,9 +853,12 @@ The static evaluation function, when applied to the game tree, should also refle
 </div>
 </div>
 
-<div id="outline-container-org54bda21" class="outline-2">
-<h2 id="org54bda21"><span class="section-number-2">9</span> Appendix 5: Gameplay</h2>
-<div class="outline-text-2" id="text-9">
+<div id="outline-container-org0614245" class="outline-2">
+<h2 id="org0614245"><span class="section-number-2">10</span> Appendix 5: Gameplay</h2>
+<div class="outline-text-2" id="text-10">
+<p>
+Here are some functions that are needed to actually play the game:
+</p>
 <div class="org-src-container">
 <pre class="src src-python">def human_next_move(board: Board) -&gt; Optional[Board]:
     """Display current board, ask player to make the next move.
@@ -859,19 +882,13 @@ The static evaluation function, when applied to the game tree, should also refle
 		pass
 
 	return make_move(board, i, player) 
-</pre>
-</div>
 
-<div class="org-src-container">
-<pre class="src src-python">def computer_next_move(board: Board) -&gt; Optional[Board]:
+def computer_next_move(board: Board) -&gt; Optional[Board]:
     player = who_plays(board)
     computer_move_function = max_next_move(evaluate1(player))
     return computer_move_function(board)
-</pre>
-</div>
 
-<div class="org-src-container">
-<pre class="src src-python">def player_next_move(board: Board, player_settings = {0: 'human', 1: 'computer'}) -&gt; Optional[Board]:
+def player_next_move(board: Board, player_settings = {0: 'human', 1: 'computer'}) -&gt; Optional[Board]:
     player = who_plays(board)
     if player_settings[player] == 'human':
 	return human_next_move(board)
@@ -880,6 +897,9 @@ The static evaluation function, when applied to the game tree, should also refle
 </pre>
 </div>
 
+<p>
+The main game loop:
+</p>
 <div class="org-src-container">
 <pre class="src src-python">def play(player_settings = {0: 'human', 1: 'computer'}) -&gt; None:
     b = init_board()
@@ -905,9 +925,32 @@ The static evaluation function, when applied to the game tree, should also refle
 </div>
 </div>
 
-<div id="outline-container-orgee127e3" class="outline-2">
-<h2 id="orgee127e3"><span class="section-number-2">10</span> Appendix 6: Imports</h2>
-<div class="outline-text-2" id="text-10">
+<div id="outline-container-orgd401942" class="outline-2">
+<h2 id="orgd401942"><span class="section-number-2">11</span> Appendix 6: Misc</h2>
+<div class="outline-text-2" id="text-11">
+<div class="org-src-container">
+<pre class="src src-python">def max_assoc(itr: Iterator[Tuple[Board, int]]) -&gt; Board:
+    """Return the board with the highest score."""
+    def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
+	return new_item if new_item[1] &gt; old_item[1] else old_item
+
+    first_item = next(itr)
+    return reduce(max_f, itr, first_item)[0]
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">def test_max_assoc():
+    data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
+    print(max_assic(iter(data)))
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org22243b0" class="outline-2">
+<h2 id="org22243b0"><span class="section-number-2">12</span> Appendix 7: Imports</h2>
+<div class="outline-text-2" id="text-12">
 <div class="org-src-container">
 <pre class="src src-python">from typing import List, Iterator, Callable, Optional
 from functools import reduce
@@ -937,7 +980,7 @@ from lazy_utils import tree_size, tree_depth, maptree, tree_labels
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-24 Thu 09:57</p>
+<p class="date">Created: 2022-03-25 Fri 08:35</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

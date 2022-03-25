@@ -59,6 +59,22 @@ def sumtree(t: Node) -> int:
     return foldtree(add, add, 0, t)
 
 
+def tree_labels(t: Node) -> Iterator:
+
+    def f(label: Any, folded_subtrees: Iterator) -> Iterator:
+        yield label
+        for item in folded_subtrees:
+            yield item
+
+    def g(folded_first: Iterator, folded_rest: Iterator) -> Iterator:
+        for item in folded_first:
+            yield item
+        for item in folded_rest:
+            yield item
+
+    return foldtree(f, g, [], t)
+
+
 def maptree(func: Callable, t: Node) -> Node:
 
     def f(label: Any, folded_subtrees: Optional[Iterator]):
