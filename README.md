@@ -11,7 +11,8 @@ Hughes argued that functional languages provide elegant mechanisms for decomposi
 - [Numerican differentiation using iterators of iterators](org/diff.org)
 - [Numerical integration using lazy recursion](org/integration.org)
 - [Lazy trees](org/lazy_tree.org)
-- [Playing Tic-tac-toe using lazy trees](org/tic_tac_toe.org)
+- [Playing games using lazy trees](org/game.org)
+- [Playing Tic-tac-toe](org/tic_tac_toe.org)
 
 ## A note on literate programming
 

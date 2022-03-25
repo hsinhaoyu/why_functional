@@ -1,186 +1,26 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
 #+EXPORT_FILE_NAME: ../html/tic-tac-toe.html
 #+OPTIONS: broken-links:t
-#+TITLE: Play Tic-tac-toe using lazy trees
-In this chapter, we're going to apply the ideas developed so far to a more complicated problem: playing Tic-tac-toe. We'll concentrate on the code structure rather than on the game AI, so I have moved all Tic-tac-toe-specific functions to the end of the chapter.
+#+TITLE: Let's play Tic-tac-toe
+This chapter uses the game AI code developed in the [[org/game.org][previous chapter]] to play Tic-tac-toe. To play the game, run =tic_tac_toe.play()=.
 
-* Build a (lazy) game tree
-Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a function to an initial value to generate a list. Let's extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree= to grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
-#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -> Node:
-      """Appy a function f to a label repeatedly to create a tree.
-      f(label) is a list of labels
-      """
-      def make_children(lst):
-          if lst is None:
-              # f produces nothing
-              return None
-          else:
-              # else, apply f repeatedly to elements of lst
-              return map(lambda b: reptree(f, b), lst)
-
-      return Node(label, make_children(f(label)))
-#+end_src
-
-For playing game, =moves= is a function that takes a game configuration, and returns an iterator of board configurations corresponding to all legal moves. By applying =moves= repeatedly to an initial board configuration, we get a tree of all possible future configurations of the game! =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
-#+begin_src python :noweb no-export :tangle ../src/game.py
-  <<GAME_IMPORTS>>
-
-  # Board is a type alias for representing a board configuration.
-  # In this example,  it's just a list
-  Board = List
-
-  <<GAME_UTILS>>
-
-  def gametree(moves: Callable[[Board], Optional[Iterator[Board]]]) -> Callable[[Board], Node]:
-      """Return a func that builds a gametree from an initial board.
-      moves is a function that returns all legal moves given a board.
-      """
-      def gametree_(board: Board) -> Node:
-          return reptree(moves, board)
-      return gametree_
-#+end_src
-
-The code above defines a =gametree= as "factory function", which receives =moves= and returns a closure that only needs the initial board configuration as its input. In Appendix 3, I used the factory function to define a version of =gametree= specifically for Tic-tac-toe. We'll use the Tic-tac-toe version of =gametree= for the rest of this chapter.
-
-Here, we generate all possible Tic-tac-toe games! Let's find out how big the tree is.
-#+begin_src python :noweb no-export :tangle ../src/test_tic_tac_toe.py
-  <<TEST_TIC_TAC_TOE_IMPORTS>>
-
-  def test_gametree():
-      print("\n\n## test_gametree: no pruning")
-      b0 = init_board()
-      t = gametree(b0)
-      d = tree_depth(t)
-      print("depth=", d)
-
-  def test_gametree2():
-      b0 = init_board()
-      t = gametree(b0)
-      s = tree_size(t)
-      print("size=", s)
-#+end_src
-
-* Prune the game tree
-To find the best next move, searching the entire game tree is typically impractical. We can reduce the size of the search space by limiting the game AI to looks ahead for only a fixed number of moves. The =prune= function does this by removing nodes after a certain depth (=n=). 
-#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
-  def prune(n: int, tree: Node) -> Node:
-      """Remove nodes n levels below in the tree"""
-      (board, subtrees) = tree
-
-      if n == 0:
-          return Node(board, None)
-      elif subtrees is None:
-          return Node(board, None)
-      else:
-          return Node(board, map(lambda t: prune(n - 1, t), subtrees))
-#+end_src
-
-As in the previous section, I defined a Tic-tac-toe version of =prune= in Appendix 3. This version of =prune= doesn't need the depth in the input, because it uses a pre-defined value for Tic-tac-toe (which is 5).
-
-Let's check the size of the pruned tree:
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_prune():
-      print("\n\n## test_prune: after pruning")
-      b0 = init_board()
-      t = prune(gametree(b0))
-      d = tree_depth(t)
-      print("depth=", d)
-#+end_src
-
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_prune2():
-      b0 = init_board()
-      t = prune(gametree(b0))
-      s = tree_size(t)
-      print("size=", s)
-#+end_src
-
-* Static evaluation (using =maptree=)
-To play Tic-tac-toe, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a starting point.
-
-In Appendix 2, I defined =static_eval(player)= for this purpose. For a given =player=, the function evaluates if the configuration "looks good". A positive number means that the configuration is good for =player=. A negative number means that it's good for the other player (see Appendix 2 to see example uses). 
-
-* Minimax (using mutually recursive functions)
-[[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. To find the best move, Minimax looks into future states of the game in the game tree, in two alternate steps: My next move should make the best (the maximization step) out of the worst that my opponent can do to me in a future step (the minimization step). For example, if my opponent could win the game in the next move, I assume that he wouldn't miss that move, and I'll do my best to prevent him from making that move. But how do I know the worst that my opponent can do to me? It's the other side of the coin: the best out of the worst that I could do to him in a future step. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
-#+begin_src python :noweb yes :tangle ../src/game.py
-  def maximize1(gametree: Node) -> int:
-      """The max step of Minimax"""
-      (score, subtrees) = gametree
-
-      if subtrees is None:
-          s = score
-      else:
-          s = max(map(minimize1, subtrees))
-      return s
-
-  def minimize1(gametree: Node) -> int:
-      """The min step of Minimax.
-      A node in gametree is ((board, score), subtrees)
-      Returns (board, score) with the minimal score
-      """    
-      (score, subtrees) = gametree
-
-      if subtrees is None:
-          s = score
-      else:
-          s = min(map(maximize1, subtrees))
-      return s
-#+end_src
-
-The code below is the first version of our tree evaluation function. For every legal move that I can make, I pass the board configuration to =evaluate1=, and it returns a score representing how bad my opponent can do to me in the future. A positive score means that my move is a winning move; a negative score means that my move is a losing one. The code is surprisingly easy to read, because it's a chain of functions: given a board configuration, it creates a game tree of all possible configurations, prunes it to limit the search to a fixed steps ahead, applies the static evaluation to all the nodes, and then uses Minimax to return a score.
-
-Note that all the functions in the chain are lazy. Although the code reads like pruning, scoring, and minimaxing apply to the whole tree, only the parts that are needed will be evaluated.
-#+begin_src python :noweb yes :tangle ../src/game.py
-  def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
-      """Return a tree evaluation function"""
-      def evaluate_(board: Board) -> int:
-          return minimize1(maptree(static_eval_, prune_(gametree_(board))))
-      return evaluate_
-#+end_src
-
-Again, this version of =evaluate1= is not specific to any game, so it needs many parameters. In the Appendix 3, I defined a version of =evaluate1= that only takes the board configuration as input.
-
-We apply =evaluate1= to all candidate moves, and pick the one with the highest score. Note that =max_assoc= is an utility function defined near the end of the document. It returns the board associated with the highest score.
-#+begin_src python :noweb yes :tangle ../src/game.py
-  def max_next_move(gametree_func: Callable[[Board], Node], tree_eval_func: Callable[[Board], int]) -> Callable[[Board], Optional[Board]]:
-      """Return a function to make the next move."""
-      def max_next_move_(board: Board) -> Optional[Board]:
-          # return a board or None
-          (_, subtree) = gametree_func(board)
-          if subtree is None:
-              return None
-          else:
-              subtrees_evaluated = map(lambda next_move: (next_move[0], tree_eval_func(next_move[0])), subtree)
-              return max_assoc(subtrees_evaluated)
-      return max_next_move_
-#+end_src
-
-As before, the function defined above is generic. I have defined a version (in Appendix 3) that is specific to Tic-tac-toe. It can be called with just a board configuration.
-
-* Alpha-beta pruning (using iterators of iterators)
-At this point, you can already play Tic-tac-toe with the computer. Just run =tic_tac_toe.play()=. However, the computer's response is a little slow. Let's speed it up.
-#+begin_src python :noweb no-export :tangle ../src/game.py
-  <<ALPHA_BETA_UTILS>>
-#+end_src
-
-* Appendix 1: Tic-tac-toe utilities
 #+begin_src python :noweb no-export :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
-  <<TIC_TAC_TOE_UTILS>>
-  <<TIC_TAC_TOE_EVAL>>
+  <<TIC_TAC_TOE_RULES>>
   <<TIC_TAC_TOE_TREE>>
+  <<TIC_TAC_TOE_STATIC>>
+  <<TIC_TAC_TOE_MINIMAX>>
   <<TIC_TAC_TOE_PLAY>>
 #+end_src
 
-These functions define the Tic-tac-toe game:
-#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_UTILS
+* The Tic-tac-toe game board
+These functions define the Tic-tac-toe game world:
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_RULES
   ### gameplay options
   use_player_token = True
   shuffle_moves = False
   max_depth = 5
 
-  ### board configuration and geometry
   posinf = 100000
   neginf = -1 * posinf
 
@@ -216,14 +56,16 @@ These functions define the Tic-tac-toe game:
       else:
           return False
 
-  ### Moves
-  def player_token(i: int) -> str:
-      assert i in [0, 1]
-      if use_player_token:
-          return "X" if i == 0 else "O"
-      else:
-          return "0" if i== 0 else "1"
+  def who_plays(board: Board) -> int:
+      """Which player is playing the next move?"""
+      return board.count(0) - board.count(1)
+#+end_src
 
+Note that the player who plays the next move is not stored as a game state, because it can easily be inferred from the game board by =who_plays=.
+
+* Legal moves
+The function =moves= encapsulates the legal moves of Tic-tac-toe.
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_RULES
   def make_move(board: Board, move: int, current_player: int) -> Board:
       """Apply a move (0-8) to a board for a player.
       Return a new board.
@@ -235,10 +77,6 @@ These functions define the Tic-tac-toe game:
       new_board[move] = current_player
 
       return new_board
-
-  def who_plays(board: Board) -> int:
-      """Which player is playing the next move?"""
-      return board.count(0) - board.count(1)
 
   def moves(board: Board) -> Optional[Iterator[Board]]:
       """Returns an iterator of boards for all legal next moves."""
@@ -258,71 +96,56 @@ These functions define the Tic-tac-toe game:
               return None
           else:
               return map(lambda i: make_move(board, i, next_player), candidate_moves)
-
-  def display_board(board: Board, coordinates = False) -> None:
-      """Display a board"""
-      def row(lst):
-          return reduce(lambda a, b: a + " "+ b, lst, "")
-
-      d = {None: '.', 1: player_token(1), 0: player_token(0)}
-
-      zz = list(map(lambda i: d[i], board))
-      zz = [zz[i:i+3] for i in range(0, 9, 3)]
-      zz = list(map(row, zz))
-
-      if coordinates:
-          def d_(i):
-              if board[i] is None:
-                  return str(i)
-              else:
-                  return "."
-          zz2 = [d_(i) for i in range(9)]
-          zz2 = [zz2[i:i+3] for i in range(0, 9, 3)]
-          zz2 = list(map(row, zz2))
-
-      res = ""
-      if coordinates:
-          for i in range(3):
-              res = res + zz[i] + "\t\t" + zz2[i] + "\n"
-      else:
-          for i in range(3):
-              res = res + zz[i] + "\n"
-
-      print(res[:-1])
 #+end_src
 
-Note that the player who plays the next move is not stored as a game state, because it can easily be inferred from the game board:
+* The Tic-tac-toe game tree
+In the previous chapter, we defined generic =gametree= and =prune=. Here, we customize them for Tic-tac-toe:
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_TREE
+  gametree: Callable[[Board], Node] = game.gametree(moves)
+
+  def prune(tree: Node) -> Node:
+      return lazy_utils.prune(max_depth, tree)
+#+end_src
+
+With these, we can generate all possible Tic-tac-toe games! Let's find out how big the tree is.
+#+begin_src python :noweb no-export :tangle ../src/test_tic_tac_toe.py
+  <<TEST_TIC_TAC_TOE_IMPORTS>>
+
+  def test_gametree():
+      print("\n\n## test_gametree: no pruning")
+      b0 = init_board()
+      t = gametree(b0)
+      d = tree_depth(t)
+      print("depth=", d)
+
+  def test_gametree2():
+      b0 = init_board()
+      t = gametree(b0)
+      s = tree_size(t)
+      print("size=", s)
+#+end_src
+
+For playing Tic-tac-toe, we set a limit to the depth of the game tree to =max_depth=, which is set to 5. Let's check the size of the pruned tree:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_who_plays():
-      b = init_board()
-      assert who_plays(b) == 0
-
-      b[1] = 0
-      assert who_plays(b) == 1
-
-      b[2] = 1
-      assert who_plays(b) == 0
+  def test_prune():
+      print("\n\n## test_prune: after pruning")
+      b0 = init_board()
+      t = prune(gametree(b0))
+      d = tree_depth(t)
+      print("depth=", d)
 #+end_src
 
-=moves= is very important because it defines all the legal moves. Some basic testing is needed:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_moves():
-      # there should be no legal move for 0 because 1 has already won
-      b = [1, 0, 0, 1, 0, None, 1, None, None]
-      assert moves(b) is None
-
-      # there should be no legal move for 0 because 0 has already won    
-      b = [1, 0, 0, 1, 0, None, None, 0, 1]
-      assert moves(b) is None
-
-      # the board is full
-      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
-      assert moves(b) is None
+  def test_prune2():
+      b0 = init_board()
+      t = prune(gametree(b0))
+      s = tree_size(t)
+      print("size=", s)
 #+end_src
 
-* Appendix 2: Static evaluation function for Tic-tac-toe
-A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a configuration is. I implemented a common one.
-#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_EVAL
+* Static evaluation
+A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a Tic-tac-toe configuration is. I implemented a common one.
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_STATIC
   ### Heuristic evaluation of board configurations
   def is_good_line(n: int, player: int, line: List[Cell]) -> bool:
       """A typical way to evaluate if a line is good"""
@@ -405,33 +228,9 @@ Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]], w
       show_freq(freq(t))
 #+end_src
 
-It's important that the static evaluation function knows when a player wins the game.
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_static_eval_winning_condition():
-      # evaluate for player 0
-      eval_0 = static_eval(0)
-      # evaluate for player 1
-      eval_1 = static_eval(1)
-
-      # player 0 won
-      b = [1, 0, 0, 1, 0, None, None, 0, 1]
-      assert eval_0(b) == posinf
-      assert eval_1(b) == neginf
-
-      # player 1 won
-      b = [1, 0, 0, 1, 0, None, 1, None, None]
-      assert eval_0(b) == neginf
-      assert eval_1(b) == posinf
-#+end_src
-
-* Appendix 3: The Tic-tac-toe gametree
-Functions related to game AI (=gametree=, =prune=, =evaluate=) defined previously in the chapter are generic, and therefore require a couple of parameters to call. Here, we define Tic-tac-toe versions of these functions, to make them easier to use.
-#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_TREE
-  gametree: Callable[[Board], Node] = game.gametree(moves)
-
-  def prune(tree: Node) -> Node:
-      return lazy_utils.prune(max_depth, tree)
-
+* Minimax
+Here's the first move evaluation function, based on just Minimax:
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_MINIMAX
   # given a player, returns a tree evlauation function
   def evaluate1(player: int) -> Callable[[Board], int]:
       """Evaluate tic-tac-toe tree for player i (version 1)"""
@@ -443,46 +242,7 @@ Functions related to game AI (=gametree=, =prune=, =evaluate=) defined previousl
       return game.max_next_move(gametree, tree_eval_func)
 #+end_src
 
-The winning conditions have to be reflected in the game tree. Let's make sure that they are:
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_game_tree_structure():
-      # Since player 0 has won, there should be no subtrees
-      b = [1, 0, 0, 1, 0, None, None, 0, 1]
-      t = gametree(b)
-      assert t[1] is None
-
-      # Since player 1 has won, there should be no subtrees
-      b = [1, 0, 0, 1, 0, None, 1, None, None]
-      t = gametree(b)
-      assert t[1] is None
-
-      # This is a draw. There should be no subtrees
-      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
-      t = gametree(b)
-      assert t[1] is None
-#+end_src
-
-The static evaluation function, when applied to the game tree, should also reflect the winning conditions.
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_gametree_evaluation():
-      # player 0 has won
-      b = [1, 0, 0, 1, 0, None, None, 0, 1]
-      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
-      assert subtrees is None and score == posinf
-
-      # player 1 has won
-      b = [1, 0, 0, 1, 0, None, 1, None, None]
-      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
-      assert subtrees is None and score == neginf
-
-      # This is a draw
-      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
-      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
-      assert subtrees is None and score == 0
-#+end_src
-
-* Appendix 4: Testing the tree evaluation function
-Test the tree evaluation function =evaluate1= on the most basic conditions:
+Let's it on the most basic conditions:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_tree_eval():
       b = [1, 0, 0, None, 0, None, 1, None, None]
@@ -509,9 +269,47 @@ Test the tree evaluation function =evaluate1= on the most basic conditions:
       assert score == posinf
 #+end_src
 
-* Appendix 5: Gameplay
-Here are some functions that are needed to actually play the game:
+* Gameplay
+Simple utilities for displaying the game board and for handling human player moves:
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
+  def player_token(i: int) -> str:
+      assert i in [0, 1]
+      if use_player_token:
+          return "X" if i == 0 else "O"
+      else:
+          return "0" if i== 0 else "1"
+
+  def display_board(board: Board, coordinates = False) -> None:
+      """Display a board"""
+      def row(lst):
+          return reduce(lambda a, b: a + " "+ b, lst, "")
+
+      d = {None: '.', 1: player_token(1), 0: player_token(0)}
+
+      zz = list(map(lambda i: d[i], board))
+      zz = [zz[i:i+3] for i in range(0, 9, 3)]
+      zz = list(map(row, zz))
+
+      if coordinates:
+          def d_(i):
+              if board[i] is None:
+                  return str(i)
+              else:
+                  return "."
+          zz2 = [d_(i) for i in range(9)]
+          zz2 = [zz2[i:i+3] for i in range(0, 9, 3)]
+          zz2 = list(map(row, zz2))
+
+      res = ""
+      if coordinates:
+          for i in range(3):
+              res = res + zz[i] + "\t\t" + zz2[i] + "\n"
+      else:
+          for i in range(3):
+              res = res + zz[i] + "\n"
+
+      print(res[:-1])
+
   def human_next_move(board: Board) -> Optional[Board]:
       """Display current board, ask player to make the next move.
       Return a board after the player's move.
@@ -534,7 +332,10 @@ Here are some functions that are needed to actually play the game:
                   pass
 
           return make_move(board, i, player) 
+#+end_src
 
+This let a player make a move. A player can be human or computer.
+#+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_PLAY
   def computer_next_move(board: Board) -> Optional[Board]:
       player = who_plays(board)
       computer_move_function = max_next_move(evaluate1(player))
@@ -570,128 +371,7 @@ The main game loop:
               print("Draw!")
               finished = True  
 #+end_src
-
-* Appendix 6: Alpha-beta utilities
-To implement alpha-beta pruning, we define =mapmin= and =mapmax=. These two functions also depend on some supporting functions.
-#+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
-  def mapmin(seqs: Iterator[Iterator]) -> Iterator:
-      """Like map(min, seqs)
-      But skip those that don't matter for max.
-      The sequence increases monotonically
-      """
-      try:
-          seq = next(seqs)
-          mn = min(seq)
-          yield mn
-          for i in omit_max(mn, seqs):
-              yield i
-      except StopIteration:
-          pass
-   
-  def mapmax(seqs: Iterator[Iterator]) -> Iterator:
-      """Like map(max, seqs)
-      But skip those that don't matter for min
-      The sequence decreases monotonically
-      """
-      try:
-          seq = next(seqs)
-          mx = max(seq)
-          yield mx
-          for i in omit_min(mx, seqs):
-              yield i
-      except StopIteration:
-          pass
-
-  def mk_omit(skip_func: Callable) -> Callable:
-      """The skip function is either minleq or maxgeq"""
-      def omit_(pot: int, seqs: Optional[Iterator[Iterator[int]]]) -> Iterator[Optional[int]]:
-          """Given an iterator of iterators, call skip_func.
-          If the returned value is true, skip it. Otherwise, yield the value
-          """
-          for seq in seqs:
-              m = skip_func(seq, pot)
-              if m is True:
-                  for i in omit_(pot, seqs):
-                      yield i
-              else:
-                  yield m
-                  for i in omit_(m, seqs):
-                      yield i
-
-      return omit_
-
-  def mk_ab_seq(comp: Callable, op: Callable) -> Callable:
-      """Given a comparison function comp and an operator op, return a function."""
-      def ab_seq(seq: Optional[Iterator], pot: int) -> Optional[Union[int, bool]]:
-          """Efficient min/max of an iterator, given potential max/min"""
-          def ab_seq_(seq, current_val):
-              try:
-                  i = next(seq)
-                  if current_val is None:
-                      current_val = i
-
-                  if comp(i, pot):
-                      # if smaller, returns true immediately
-                      return True
-                  else:
-                      return ab_seq_(seq, op(i, current_val))
-              except StopIteration:
-                  if current_val is None:
-                      return pot
-                  else:
-                      return current_val
-
-          if seq is None:
-              return pot
-          else:
-              return ab_seq_(seq, None)
-
-      return ab_seq
-
-  minleq = mk_ab_seq(operator.le, min)
-  minleq.__doc__ = """
-  Return min of seq if it's > potential max.
-  Else return True"""
-
-  maxgeq = mk_ab_seq(operator.ge, max)
-  maxgeq.__doc__ = """
-  Return max of seq if it's < potential min.
-  Else return True"""
-
-  omit_max = mk_omit(minleq)
-  omit_max.__doc__ = """
-  Given an initial potential max, return the min of subsequences.
-  Skip those that don't matter. Sequence increases.
-  """
-
-  omit_min = mk_omit(maxgeq)
-  omit_max.__doc__ = """
-  Given an initial potental min, return the max of subsequences.
-  Skip those that don't matter. Sequence decreases.
-  """
-#+end_src
-
-* Appendix 7: Misc
-
-#+begin_src python :tangle no :noweb-ref GAME_UTILS
-  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
-      """Return the board with the highest score."""
-      def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
-          return new_item if new_item[1] > old_item[1] else old_item
-
-      first_item = next(itr)
-      return reduce(max_f, itr, first_item)[0]
-#+end_src
-
-#+begin_src python :noweb no-export :tangle ../src/test_game.py
-  <<TEST_GAME_IMPORTS>>
-  
-  def test_max_assoc():
-      data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
-      print(max_assoc(iter(data)))
-#+end_src
-
-* Appendix 8: Imports
+* Imports
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_IMPORTS
   from typing import List, Iterator, Callable, Optional
   from functools import reduce
@@ -700,17 +380,6 @@ To implement alpha-beta pruning, we define =mapmin= and =mapmax=. These two func
   from lazy_utils import Node
   import lazy_utils
   import game
-#+end_src
-
-#+begin_src python :tangle no :noweb-ref GAME_IMPORTS
-  from functools import reduce
-  from typing import Callable, List, Iterator, Tuple, Optional, Union
-  from lazy_utils import reptree, maptree, Node
-  import operator
-#+end_src
-
-#+begin_src python :tangle no :noweb-ref TEST_GAME_IMPORTS
-  from game import max_assoc
 #+end_src
 
 #+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
