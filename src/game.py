@@ -87,6 +87,49 @@ def max_next_move(
     return max_next_move_
 
 
+def mk_ab_seq(comp: Callable, op: Callable) -> Callable:
+    """Given a comparison function comp and an operator op, return a function."""
+
+    def ab_seq(seq: Optional[Iterator],
+               pot: int) -> Optional[Union[int, bool]]:
+        """Efficient min/max of an iterator, given potential max/min"""
+
+        def ab_seq_(seq, current_val):
+            try:
+                i = next(seq)
+                if current_val is None:
+                    current_val = i
+
+                if comp(i, pot):
+                    # if smaller, returns true immediately
+                    return True
+                else:
+                    return ab_seq_(seq, op(i, current_val))
+            except StopIteration:
+                if current_val is None:
+                    return pot
+                else:
+                    return current_val
+
+        if seq is None:
+            return pot
+        else:
+            return ab_seq_(seq, None)
+
+    return ab_seq
+
+
+minleq = mk_ab_seq(operator.le, min)
+minleq.__doc__ = """
+Return min of seq if it's > potential max.
+Else return True"""
+
+maxgeq = mk_ab_seq(operator.ge, max)
+maxgeq.__doc__ = """
+Return max of seq if it's < potential min.
+Else return True"""
+
+
 def mapmin(seqs: Iterator[Iterator]) -> Iterator:
     """Like map(min, seqs)
     But skip those that don't matter for max.
@@ -138,48 +181,6 @@ def mk_omit(skip_func: Callable) -> Callable:
 
     return omit_
 
-
-def mk_ab_seq(comp: Callable, op: Callable) -> Callable:
-    """Given a comparison function comp and an operator op, return a function."""
-
-    def ab_seq(seq: Optional[Iterator],
-               pot: int) -> Optional[Union[int, bool]]:
-        """Efficient min/max of an iterator, given potential max/min"""
-
-        def ab_seq_(seq, current_val):
-            try:
-                i = next(seq)
-                if current_val is None:
-                    current_val = i
-
-                if comp(i, pot):
-                    # if smaller, returns true immediately
-                    return True
-                else:
-                    return ab_seq_(seq, op(i, current_val))
-            except StopIteration:
-                if current_val is None:
-                    return pot
-                else:
-                    return current_val
-
-        if seq is None:
-            return pot
-        else:
-            return ab_seq_(seq, None)
-
-    return ab_seq
-
-
-minleq = mk_ab_seq(operator.le, min)
-minleq.__doc__ = """
-Return min of seq if it's > potential max.
-Else return True"""
-
-maxgeq = mk_ab_seq(operator.ge, max)
-maxgeq.__doc__ = """
-Return max of seq if it's < potential min.
-Else return True"""
 
 omit_max = mk_omit(minleq)
 omit_max.__doc__ = """

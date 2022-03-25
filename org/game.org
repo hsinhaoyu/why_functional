@@ -113,60 +113,50 @@ We apply =evaluate1= to all candidate moves, and pick the one with the highest s
 #+end_src
 
 * Alpha-beta pruning (using iterators of iterators)
-At this point, you can already play Tic-tac-toe with the computer. Just run =tic_tac_toe.play()=. However, the computer's response is a little slow. Let's speed it up.
+In the previous section, the tree evaluation function uses the lazy tree is quite efficient: because only a segment of the tree is needed at a time, the entire tree doesn't need to be stored in memory. Once a branch has been evaluated, it can be garbage collected immediately. However, Minimax does need to visit every node in the tree. Is there a way to prevent Minimax from visiting branches that are not necessary?
+
+The answer is yes. The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in the end of this chapter. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the max of the min of the two sublists. The min of [1, 2] is 1. When we get to [0, X], we don't know the min, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
+
 #+begin_src python :noweb no-export :tangle ../src/game.py
   <<ALPHA_BETA_UTILS>>
 #+end_src
 
-* Appendix 6: Alpha-beta utilities
-To implement alpha-beta pruning, we define =mapmin= and =mapmax=. These two functions also depend on some supporting functions.
+* Miscellaneous utilities
+#+begin_src python :tangle no :noweb-ref GAME_UTILS
+  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
+      """Return the board with the highest score."""
+      def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
+          return new_item if new_item[1] > old_item[1] else old_item
+
+      first_item = next(itr)
+      return reduce(max_f, itr, first_item)[0]
+#+end_src
+
+#+begin_src python :noweb no-export :tangle ../src/test_game.py
+  <<TEST_GAME_IMPORTS>>
+  
+  def test_max_assoc():
+      data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
+      print(max_assoc(iter(data)))
+#+end_src
+
+* Alpha-beta utilities
+To implement =mapmin=, we begin with =minleq= (similarly, for =mapmax=, we have =maxgeq=). Given an iterator =seq= and a "potential max" =mx=, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
+#+begin_src python
+  minleq(iter([3, 2, 5, 10, 1, 6]), 20)
+#+end_src
+
+=minleq(itr, 20)= is looking for a value greater than 20. The first value of =itr= is 3, which means that the minimum of =itr= is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The returned value =True= indicates that this sequence is to be omitted.
+
+The following statement, however, returns 1.
+#+begin_src python
+  minleq(iter([3, 2, 5, 10, 1, 6]), 0)
+#+end_src
+
+This sequence cannot be omitted because all numbers are larger than the potential max. In that case, the minimum (1) is return.
+
+Here's the code. See [[org/tests.org][test.org]] for more examples.
 #+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
-  def mapmin(seqs: Iterator[Iterator]) -> Iterator:
-      """Like map(min, seqs)
-      But skip those that don't matter for max.
-      The sequence increases monotonically
-      """
-      try:
-          seq = next(seqs)
-          mn = min(seq)
-          yield mn
-          for i in omit_max(mn, seqs):
-              yield i
-      except StopIteration:
-          pass
-   
-  def mapmax(seqs: Iterator[Iterator]) -> Iterator:
-      """Like map(max, seqs)
-      But skip those that don't matter for min
-      The sequence decreases monotonically
-      """
-      try:
-          seq = next(seqs)
-          mx = max(seq)
-          yield mx
-          for i in omit_min(mx, seqs):
-              yield i
-      except StopIteration:
-          pass
-
-  def mk_omit(skip_func: Callable) -> Callable:
-      """The skip function is either minleq or maxgeq"""
-      def omit_(pot: int, seqs: Optional[Iterator[Iterator[int]]]) -> Iterator[Optional[int]]:
-          """Given an iterator of iterators, call skip_func.
-          If the returned value is true, skip it. Otherwise, yield the value
-          """
-          for seq in seqs:
-              m = skip_func(seq, pot)
-              if m is True:
-                  for i in omit_(pot, seqs):
-                      yield i
-              else:
-                  yield m
-                  for i in omit_(m, seqs):
-                      yield i
-
-      return omit_
-
   def mk_ab_seq(comp: Callable, op: Callable) -> Callable:
       """Given a comparison function comp and an operator op, return a function."""
       def ab_seq(seq: Optional[Iterator], pot: int) -> Optional[Union[int, bool]]:
@@ -204,6 +194,54 @@ To implement alpha-beta pruning, we define =mapmin= and =mapmax=. These two func
   maxgeq.__doc__ = """
   Return max of seq if it's < potential min.
   Else return True"""
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
+  def mapmin(seqs: Iterator[Iterator]) -> Iterator:
+      """Like map(min, seqs)
+      But skip those that don't matter for max.
+      The sequence increases monotonically
+      """
+      try:
+          seq = next(seqs)
+          mn = min(seq)
+          yield mn
+          for i in omit_max(mn, seqs):
+              yield i
+      except StopIteration:
+          pass
+
+  def mapmax(seqs: Iterator[Iterator]) -> Iterator:
+      """Like map(max, seqs)
+      But skip those that don't matter for min
+      The sequence decreases monotonically
+      """
+      try:
+          seq = next(seqs)
+          mx = max(seq)
+          yield mx
+          for i in omit_min(mx, seqs):
+              yield i
+      except StopIteration:
+          pass
+
+  def mk_omit(skip_func: Callable) -> Callable:
+      """The skip function is either minleq or maxgeq"""
+      def omit_(pot: int, seqs: Optional[Iterator[Iterator[int]]]) -> Iterator[Optional[int]]:
+          """Given an iterator of iterators, call skip_func.
+          If the returned value is true, skip it. Otherwise, yield the value
+          """
+          for seq in seqs:
+              m = skip_func(seq, pot)
+              if m is True:
+                  for i in omit_(pot, seqs):
+                      yield i
+              else:
+                  yield m
+                  for i in omit_(m, seqs):
+                      yield i
+
+      return omit_
 
   omit_max = mk_omit(minleq)
   omit_max.__doc__ = """
@@ -218,25 +256,6 @@ To implement alpha-beta pruning, we define =mapmin= and =mapmax=. These two func
   """
 #+end_src
 
-* Miscellaneous utilities
-#+begin_src python :tangle no :noweb-ref GAME_UTILS
-  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
-      """Return the board with the highest score."""
-      def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
-          return new_item if new_item[1] > old_item[1] else old_item
-
-      first_item = next(itr)
-      return reduce(max_f, itr, first_item)[0]
-#+end_src
-
-#+begin_src python :noweb no-export :tangle ../src/test_game.py
-  <<TEST_GAME_IMPORTS>>
-  
-  def test_max_assoc():
-      data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
-      print(max_assoc(iter(data)))
-#+end_src
-
 * Appendix: Imports
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
   from functools import reduce
@@ -247,4 +266,9 @@ To implement alpha-beta pruning, we define =mapmin= and =mapmax=. These two func
 
 #+begin_src python :tangle no :noweb-ref TEST_GAME_IMPORTS
   from game import max_assoc
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref RUNTIME_IMPORTS
+  from typing import Callable, Optional, Iterator, Union
+  import operator
 #+end_src

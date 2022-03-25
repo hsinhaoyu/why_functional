@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-25 Fri 08:35 -->
+<!-- 2022-03-25 Fri 23:29 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Higher-order functions for trees</title>
@@ -224,14 +224,14 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org01636d1">1. Representing trees</a></li>
-<li><a href="#orgc6f86e4">2. Extending <code>reduce</code> for trees</a></li>
-<li><a href="#org65069ae">3. Summing all labels in a tree</a></li>
-<li><a href="#orgad2b8f9">4. Flattening trees</a></li>
-<li><a href="#orgdb2d1e3">5. Mapping functions to trees</a></li>
-<li><a href="#orgfc10425">6. Size of trees</a></li>
-<li><a href="#orge7bb8ba">7. Depth of trees</a></li>
-<li><a href="#orgdcb13d9">8. Appendix: imports</a></li>
+<li><a href="#orgdc26941">1. Representing trees</a></li>
+<li><a href="#org9f74513">2. Extending <code>reduce</code> for trees</a></li>
+<li><a href="#org73f4759">3. Summing all labels in a tree</a></li>
+<li><a href="#org81dc8db">4. Flattening trees</a></li>
+<li><a href="#org7a1d009">5. Mapping functions to trees</a></li>
+<li><a href="#orgdee6913">6. Size of trees</a></li>
+<li><a href="#orgf20bd93">7. Depth of trees</a></li>
+<li><a href="#orgd15767e">8. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
@@ -243,8 +243,8 @@ Hughes' paper begins with higher-order constructions such as folding (<code>func
 Higher-order functions are typically used to implement operations on lists. Hughes took this idea further, and showed that they can also be used to work on more complex structures such as trees. We'll return to this topic in a later .
 </p>
 
-<div id="outline-container-org01636d1" class="outline-2">
-<h2 id="org01636d1"><span class="section-number-2">1</span> Representing trees</h2>
+<div id="outline-container-orgdc26941" class="outline-2">
+<h2 id="orgdc26941"><span class="section-number-2">1</span> Representing trees</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 I'll represent a tree this way: <code>(label, [subtree...])</code>. With this representation, a node in a tree is tuple with a label and a list of subtrees. A node can have many subtrees, so the tree is not restricted to be binary.
@@ -264,8 +264,8 @@ my_tree = (1, [
 </div>
 </div>
 
-<div id="outline-container-orgc6f86e4" class="outline-2">
-<h2 id="orgc6f86e4"><span class="section-number-2">2</span> Extending <code>reduce</code> for trees</h2>
+<div id="outline-container-org9f74513" class="outline-2">
+<h2 id="org9f74513"><span class="section-number-2">2</span> Extending <code>reduce</code> for trees</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 <code>reduce</code> uses a reduction function of two arguments to fold a list. For example, using <code>operator.add</code> as the reduction function, <code>reduce(operator.add, [1, 2, 3, 4], 0)</code> sums the numbers in [1, 2, 3, 4].
@@ -301,8 +301,8 @@ def foldtree(f: Callable, g: Callable, a: Any, t: Union[Tuple, List]):
 </div>
 </div>
 
-<div id="outline-container-org65069ae" class="outline-2">
-<h2 id="org65069ae"><span class="section-number-2">3</span> Summing all labels in a tree</h2>
+<div id="outline-container-org73f4759" class="outline-2">
+<h2 id="org73f4759"><span class="section-number-2">3</span> Summing all labels in a tree</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Just like using <code>reduce</code> to sum the numbers in a list, we can use <code>foldtree</code> to sum the labels in a tree:
@@ -325,8 +325,8 @@ Just like using <code>reduce</code> to sum the numbers in a list, we can use <co
 </div>
 </div>
 
-<div id="outline-container-orgad2b8f9" class="outline-2">
-<h2 id="orgad2b8f9"><span class="section-number-2">4</span> Flattening trees</h2>
+<div id="outline-container-org81dc8db" class="outline-2">
+<h2 id="org81dc8db"><span class="section-number-2">4</span> Flattening trees</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 <code>tree_labels</code> collects all labels of a tree into a list.
@@ -353,8 +353,8 @@ Just like using <code>reduce</code> to sum the numbers in a list, we can use <co
 </div>
 </div>
 
-<div id="outline-container-orgdb2d1e3" class="outline-2">
-<h2 id="orgdb2d1e3"><span class="section-number-2">5</span> Mapping functions to trees</h2>
+<div id="outline-container-org7a1d009" class="outline-2">
+<h2 id="org7a1d009"><span class="section-number-2">5</span> Mapping functions to trees</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 Map a function <code>f</code> to all labels in a tree, creating another tree:
@@ -388,8 +388,8 @@ Map a function <code>f</code> to all labels in a tree, creating another tree:
 </div>
 </div>
 
-<div id="outline-container-orgfc10425" class="outline-2">
-<h2 id="orgfc10425"><span class="section-number-2">6</span> Size of trees</h2>
+<div id="outline-container-orgdee6913" class="outline-2">
+<h2 id="orgdee6913"><span class="section-number-2">6</span> Size of trees</h2>
 <div class="outline-text-2" id="text-6">
 <p>
 How many node are there in the tree?
@@ -417,8 +417,8 @@ How many node are there in the tree?
 </div>
 </div>
 
-<div id="outline-container-orge7bb8ba" class="outline-2">
-<h2 id="orge7bb8ba"><span class="section-number-2">7</span> Depth of trees</h2>
+<div id="outline-container-orgf20bd93" class="outline-2">
+<h2 id="orgf20bd93"><span class="section-number-2">7</span> Depth of trees</h2>
 <div class="outline-text-2" id="text-7">
 <p>
 What is the longest branch in the tree?
@@ -452,8 +452,8 @@ What is the longest branch in the tree?
 </div>
 </div>
 
-<div id="outline-container-orgdcb13d9" class="outline-2">
-<h2 id="orgdcb13d9"><span class="section-number-2">8</span> Appendix: imports</h2>
+<div id="outline-container-orgd15767e" class="outline-2">
+<h2 id="orgd15767e"><span class="section-number-2">8</span> Appendix: imports</h2>
 <div class="outline-text-2" id="text-8">
 <div class="org-src-container">
 <pre class="src src-python">from typing import Tuple, Callable, Any, List, Union
@@ -481,7 +481,7 @@ my_tree2 = (1, [
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-25 Fri 08:35</p>
+<p class="date">Created: 2022-03-25 Fri 23:29</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

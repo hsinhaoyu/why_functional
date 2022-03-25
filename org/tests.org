@@ -1,3 +1,6 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+#+EXPORT_FILE_NAME: ../html/tests.html
+#+OPTIONS: broken-links:t
 * Tic-tac-toe rules
 ** who_plays()
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
