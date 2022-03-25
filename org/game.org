@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/game.html
 #+OPTIONS: broken-links:t
 #+TITLE: Play games using lazy trees
-In this chapter, we're going to apply the ideas developed so far to a more complicated problem: playing a two-player game. We'll develop the game AI code here, and then we'll use them to play Tic-tac-toe in the [[org/tic_tac_toe.org][next chapter]].
+In this chapter, we will apply the ideas developed so far to a more complicated problem: playing a two-player game. We'll develop the game AI code here, and then we'll use them to play Tic-tac-toe in the [[org/tic_tac_toe.org][next chapter]].
 
 * Build a (lazy) game tree
 Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a function to an initial value to generate a list. Let's extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree= to grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
@@ -22,7 +22,7 @@ Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a funct
       return Node(label, make_children(f(label)))
 #+end_src
 
-For playing games, we represent the rules of the game in a function called =moves=. This function takes a initial state of the game board, and returns an iterator of board configurations corresponding to all legal moves (see [[org/tic_tac_toe.org][next chapter]] for a concrete example). By applying =moves= repeatedly to an initial board configuration, we get a tree of all possible future configurations of the game! =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
+For playing games, we represent the rules of the game in a function called =moves=. This function takes a initial state of the game board, and returns an iterator of board configurations corresponding to all legal moves (see [[org/tic_tac_toe.org][next chapter]] for a concrete example). By applying =moves= repeatedly to an initial board configuration, we get a tree of all possible future configurations of the game! Remember that =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
 #+begin_src python :noweb no-export :tangle ../src/game.py
   <<GAME_IMPORTS>>
 
@@ -41,7 +41,7 @@ For playing games, we represent the rules of the game in a function called =move
       return gametree_
 #+end_src
 
-The code above defines a =gametree= as "factory function", which receives =moves= and returns a closure that only needs the initial board configuration as its input. 
+The code above defines a =gametree= as "factory function", which receives =moves= and returns a closure that only needs the initial board configuration as its input. This way, it's easier to customized it for a specific game.
 
 * Prune the game tree
 To find the best next move, searching the entire game tree is typically impractical. We can reduce the size of the search space by limiting the game AI to looks ahead for only a fixed number of moves. The =prune= function does this by removing nodes after a certain depth (=n=). 
@@ -58,13 +58,11 @@ To find the best next move, searching the entire game tree is typically impracti
           return Node(board, map(lambda t: prune(n - 1, t), subtrees))
 #+end_src
 
-* Static evaluation (using =maptree=)
-To play Tic-tac-toe, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a starting point.
-
-In Appendix 2, I defined =static_eval(player)= for this purpose. For a given =player=, the function evaluates if the configuration "looks good". A positive number means that the configuration is good for =player=. A negative number means that it's good for the other player (see Appendix 2 to see example uses). 
+* Static evaluation 
+To games play games, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point. See the [[org/tic_tac_toe.org][next chapter]] for a concrete example.
 
 * Minimax (using mutually recursive functions)
-[[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. To find the best move, Minimax looks into future states of the game in the game tree, in two alternate steps: My next move should make the best (the maximization step) out of the worst that my opponent can do to me in a future step (the minimization step). For example, if my opponent could win the game in the next move, I assume that he wouldn't miss that move, and I'll do my best to prevent him from making that move. But how do I know the worst that my opponent can do to me? It's the other side of the coin: the best out of the worst that I could do to him in a future step. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
+[[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do in a follow-up move (this is the "min" step). This is scored with a number representing the computer's advantage. The move associated with the highest score is the best move for the computer (the "max" step). For example, if the human could win the game in the next move, the computer should do its best to prevent the opponent from making that move. But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: the best out of the worst that the computer could do to the human in a future step. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
 #+begin_src python :noweb yes :tangle ../src/game.py
   def maximize1(gametree: Node) -> int:
       """The max step of Minimax"""
@@ -90,9 +88,7 @@ In Appendix 2, I defined =static_eval(player)= for this purpose. For a given =pl
       return s
 #+end_src
 
-The code below is the first version of our tree evaluation function. For every legal move that I can make, I pass the board configuration to =evaluate1=, and it returns a score representing how bad my opponent can do to me in the future. A positive score means that my move is a winning move; a negative score means that my move is a losing one. The code is surprisingly easy to read, because it's a chain of functions: given a board configuration, it creates a game tree of all possible configurations, prunes it to limit the search to a fixed steps ahead, applies the static evaluation to all the nodes, and then uses Minimax to return a score.
-
-Note that all the functions in the chain are lazy. Although the code reads like pruning, scoring, and minimaxing apply to the whole tree, only the parts that are needed will be evaluated.
+The code below is the first version of our tree evaluation function. The code is easy to read, because it's a chain of functions: given a board configuration, creates a game tree of all possible configurations, prune it to limit the search to a fixed steps ahead, apply the static evaluation to all the nodes, and then uses Minimax to return a score. Note that all the functions in the chain are lazy. Although the code reads like pruning, scoring, and minimaxing apply to the whole tree, only the parts that are needed will be evaluated.
 #+begin_src python :noweb yes :tangle ../src/game.py
   def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
       """Return a tree evaluation function"""
@@ -100,8 +96,6 @@ Note that all the functions in the chain are lazy. Although the code reads like 
           return minimize1(maptree(static_eval_, prune_(gametree_(board))))
       return evaluate_
 #+end_src
-
-Again, this version of =evaluate1= is not specific to any game, so it needs many parameters. In the Appendix 3, I defined a version of =evaluate1= that only takes the board configuration as input.
 
 We apply =evaluate1= to all candidate moves, and pick the one with the highest score. Note that =max_assoc= is an utility function defined near the end of the document. It returns the board associated with the highest score.
 #+begin_src python :noweb yes :tangle ../src/game.py
@@ -118,14 +112,11 @@ We apply =evaluate1= to all candidate moves, and pick the one with the highest s
       return max_next_move_
 #+end_src
 
-As before, the function defined above is generic. I have defined a version (in Appendix 3) that is specific to Tic-tac-toe. It can be called with just a board configuration.
-
 * Alpha-beta pruning (using iterators of iterators)
 At this point, you can already play Tic-tac-toe with the computer. Just run =tic_tac_toe.play()=. However, the computer's response is a little slow. Let's speed it up.
 #+begin_src python :noweb no-export :tangle ../src/game.py
   <<ALPHA_BETA_UTILS>>
 #+end_src
-
 
 * Appendix 6: Alpha-beta utilities
 To implement alpha-beta pruning, we define =mapmin= and =mapmax=. These two functions also depend on some supporting functions.
@@ -246,7 +237,7 @@ To implement alpha-beta pruning, we define =mapmin= and =mapmax=. These two func
       print(max_assoc(iter(data)))
 #+end_src
 
-* Appendix 8: Imports
+* Appendix: Imports
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
   from functools import reduce
   from typing import Callable, List, Iterator, Tuple, Optional, Union

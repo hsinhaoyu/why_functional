@@ -10,7 +10,6 @@ use_player_token = True
 shuffle_moves = False
 max_depth = 5
 
-### board configuration and geometry
 posinf = 100000
 neginf = -1 * posinf
 
@@ -52,13 +51,9 @@ def won(board: Board, player: int) -> bool:
         return False
 
 
-### Moves
-def player_token(i: int) -> str:
-    assert i in [0, 1]
-    if use_player_token:
-        return "X" if i == 0 else "O"
-    else:
-        return "0" if i == 0 else "1"
+def who_plays(board: Board) -> int:
+    """Which player is playing the next move?"""
+    return board.count(0) - board.count(1)
 
 
 def make_move(board: Board, move: int, current_player: int) -> Board:
@@ -72,11 +67,6 @@ def make_move(board: Board, move: int, current_player: int) -> Board:
     new_board[move] = current_player
 
     return new_board
-
-
-def who_plays(board: Board) -> int:
-    """Which player is playing the next move?"""
-    return board.count(0) - board.count(1)
 
 
 def moves(board: Board) -> Optional[Iterator[Board]]:
@@ -100,39 +90,11 @@ def moves(board: Board) -> Optional[Iterator[Board]]:
                        candidate_moves)
 
 
-def display_board(board: Board, coordinates=False) -> None:
-    """Display a board"""
+gametree: Callable[[Board], Node] = game.gametree(moves)
 
-    def row(lst):
-        return reduce(lambda a, b: a + " " + b, lst, "")
 
-    d = {None: '.', 1: player_token(1), 0: player_token(0)}
-
-    zz = list(map(lambda i: d[i], board))
-    zz = [zz[i:i + 3] for i in range(0, 9, 3)]
-    zz = list(map(row, zz))
-
-    if coordinates:
-
-        def d_(i):
-            if board[i] is None:
-                return str(i)
-            else:
-                return "."
-
-        zz2 = [d_(i) for i in range(9)]
-        zz2 = [zz2[i:i + 3] for i in range(0, 9, 3)]
-        zz2 = list(map(row, zz2))
-
-    res = ""
-    if coordinates:
-        for i in range(3):
-            res = res + zz[i] + "\t\t" + zz2[i] + "\n"
-    else:
-        for i in range(3):
-            res = res + zz[i] + "\n"
-
-    print(res[:-1])
+def prune(tree: Node) -> Node:
+    return lazy_utils.prune(max_depth, tree)
 
 
 ### Heuristic evaluation of board configurations
@@ -193,13 +155,6 @@ def static_eval(i: int) -> Callable[[Board], int]:
     return static_eval_
 
 
-gametree: Callable[[Board], Node] = game.gametree(moves)
-
-
-def prune(tree: Node) -> Node:
-    return lazy_utils.prune(max_depth, tree)
-
-
 # given a player, returns a tree evlauation function
 def evaluate1(player: int) -> Callable[[Board], int]:
     """Evaluate tic-tac-toe tree for player i (version 1)"""
@@ -212,6 +167,49 @@ def max_next_move(
     tree_eval_func: Callable[[Board],
                              int]) -> Callable[[Board], Optional[Board]]:
     return game.max_next_move(gametree, tree_eval_func)
+
+
+def player_token(i: int) -> str:
+    assert i in [0, 1]
+    if use_player_token:
+        return "X" if i == 0 else "O"
+    else:
+        return "0" if i == 0 else "1"
+
+
+def display_board(board: Board, coordinates=False) -> None:
+    """Display a board"""
+
+    def row(lst):
+        return reduce(lambda a, b: a + " " + b, lst, "")
+
+    d = {None: '.', 1: player_token(1), 0: player_token(0)}
+
+    zz = list(map(lambda i: d[i], board))
+    zz = [zz[i:i + 3] for i in range(0, 9, 3)]
+    zz = list(map(row, zz))
+
+    if coordinates:
+
+        def d_(i):
+            if board[i] is None:
+                return str(i)
+            else:
+                return "."
+
+        zz2 = [d_(i) for i in range(9)]
+        zz2 = [zz2[i:i + 3] for i in range(0, 9, 3)]
+        zz2 = list(map(row, zz2))
+
+    res = ""
+    if coordinates:
+        for i in range(3):
+            res = res + zz[i] + "\t\t" + zz2[i] + "\n"
+    else:
+        for i in range(3):
+            res = res + zz[i] + "\n"
+
+    print(res[:-1])
 
 
 def human_next_move(board: Board) -> Optional[Board]:

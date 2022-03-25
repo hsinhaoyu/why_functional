@@ -144,7 +144,7 @@ For playing Tic-tac-toe, we set a limit to the depth of the game tree to =max_de
 #+end_src
 
 * Static evaluation
-A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a Tic-tac-toe configuration is. I implemented a common one.
+A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a Tic-tac-toe configuration is. I implemented a common one in  =static_eval(player)=. For a given =player=, the function evaluates if the configuration "looks good". A positive number means that the configuration is good for =player=. A negative number means that it's good for the other player.
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_STATIC
   ### Heuristic evaluation of board configurations
   def is_good_line(n: int, player: int, line: List[Cell]) -> bool:
@@ -384,6 +384,6 @@ The main game loop:
 
 #+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
   from tic_tac_toe import init_board, moves, static_eval, display_board
-  from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate1
+  from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate1, won
   from lazy_utils import tree_size, tree_depth, maptree, tree_labels
 #+end_src

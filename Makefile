@@ -7,7 +7,7 @@ tangle: org/*.org
 	./tangle.sh org/diff.org
 	./tangle.sh org/integration.org
 	./tangle.sh org/lazy_tree.org
-	/.tangle.sh org/game.org
+	./tangle.sh org/game.org
 	./tangle.sh org/tic_tac_toe.org
 	./tangle.sh org/tests.org
 	yapf --in-place --recursive src/
