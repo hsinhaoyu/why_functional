@@ -59,7 +59,7 @@ To find the best next move, searching the entire game tree is typically impracti
 #+end_src
 
 * Static evaluation 
-To games play games, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point. See the [[org/tic_tac_toe.org][next chapter]] for a concrete example.
+To games play games, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point. See the [[org/tic_tac_toe.org][next chapter]] for a example.
 
 * Minimax (using mutually recursive functions)
 [[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do in a follow-up move (this is the "min" step). This is scored with a number representing the computer's advantage. The move associated with the highest score is the best move for the computer (the "max" step). For example, if the human could win the game in the next move, the computer should do its best to prevent the opponent from making that move. But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: the best out of the worst that the computer could do to the human in a future step. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
@@ -113,7 +113,7 @@ We apply =evaluate1= to all candidate moves, and pick the one with the highest s
 #+end_src
 
 * Alpha-beta pruning (using iterators of iterators)
-In the previous section, the tree evaluation function uses the lazy tree is quite efficient: because only a segment of the tree is needed at a time, the entire tree doesn't need to be stored in memory. Once a branch has been evaluated, it can be garbage collected immediately. However, Minimax does need to visit every node in the tree. Is there a way to prevent Minimax from visiting branches that are not necessary?
+In the previous section, the tree evaluation function uses the lazy tree is efficient: because only a segment of the tree is needed at a time, the entire tree doesn't need to be stored in memory. Once a branch has been evaluated, it can be garbage collected immediately. However, Minimax does need to visit every node in the tree. Is there a way to prevent Minimax from visiting branches that are obviously not promising?
 
 The answer is yes. The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in the end of this chapter. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the max of the min of the two sublists. The min of [1, 2] is 1. When we get to [0, X], we don't know the min, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
 
@@ -121,39 +121,20 @@ The answer is yes. The trick is a pair of functions called =mapmin= and =mapmax=
   <<ALPHA_BETA_UTILS>>
 #+end_src
 
-* Miscellaneous utilities
-#+begin_src python :tangle no :noweb-ref GAME_UTILS
-  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
-      """Return the board with the highest score."""
-      def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
-          return new_item if new_item[1] > old_item[1] else old_item
-
-      first_item = next(itr)
-      return reduce(max_f, itr, first_item)[0]
-#+end_src
-
-#+begin_src python :noweb no-export :tangle ../src/test_game.py
-  <<TEST_GAME_IMPORTS>>
-  
-  def test_max_assoc():
-      data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
-      print(max_assoc(iter(data)))
-#+end_src
-
 * Alpha-beta utilities
-To implement =mapmin=, we begin with =minleq= (similarly, for =mapmax=, we have =maxgeq=). Given an iterator =seq= and a "potential max" =mx=, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
+To implement =mapmin=, we begin with =minleq=. Given an iterator =seq= and a "potential max" =mx=, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
 #+begin_src python
-  minleq(iter([3, 2, 5, 10, 1, 6]), 20)
+  minleq(iter([3, 2, 5, 30, 1, 6]), 20)
 #+end_src
 
-=minleq(itr, 20)= is looking for a value greater than 20. The first value of =itr= is 3, which means that the minimum of =itr= is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The returned value =True= indicates that this sequence is to be omitted.
+=minleq(itr, 20)= is looking for a value greater than 20. The first value of =itr= is 3, which means that the minimum of =itr= is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The returned value =True= indicates that this sequence is to be omitted. In the context of games, this is not a move that needs to be considered further, because the first counter-move we consider is already pretty bad (3), It's true that the 4th counter-move can be very good for us (30), but we can't count on the opponent making a blunder, can we?
 
 The following statement, however, returns 1.
 #+begin_src python
-  minleq(iter([3, 2, 5, 10, 1, 6]), 0)
+  minleq(iter([3, 2, 5, 30, 1, 6]), 0)
 #+end_src
 
-This sequence cannot be omitted because all numbers are larger than the potential max. In that case, the minimum (1) is return.
+This sequence cannot be omitted because all numbers are larger than the potential max. In that case, the minimum (1) is return. In the context of games, this move is stronger than what had been considered before, because no matter what the counter-move is, we always end up in a better position.
 
 Here's the code. See [[org/tests.org][test.org]] for more examples.
 #+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
@@ -196,6 +177,13 @@ Here's the code. See [[org/tests.org][test.org]] for more examples.
   Else return True"""
 #+end_src
 
+With =minleq=, we can write =mapmin=. It takes a iterators of sub-iterators, and return the minima of the sub-iterators, omitting the sub-iterators that don't matter. For example, the following code returns [1, 3]. Note that it is an increasing sequence.
+#+begin_src python :noweb yes :tangle filename
+  seqs = iter([iter([1, 2]), iter([0, 10]), iter([3, 20]), iter([1, 100])])
+  list(mapmin(seqs))
+#+end_src
+
+Here's the implementation:
 #+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
   def mapmin(seqs: Iterator[Iterator]) -> Iterator:
       """Like map(min, seqs)
@@ -254,6 +242,27 @@ Here's the code. See [[org/tests.org][test.org]] for more examples.
   Given an initial potental min, return the max of subsequences.
   Skip those that don't matter. Sequence decreases.
   """
+#+end_src
+
+=mapmin=, =omit_max= and =minleq= are for the max step. Similarly, =mapmax=, =omit_min= and =maxgeq= are for the min step. 
+
+* Miscellaneous utilities
+#+begin_src python :tangle no :noweb-ref GAME_UTILS
+  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
+      """Return the board with the highest score."""
+      def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
+          return new_item if new_item[1] > old_item[1] else old_item
+
+      first_item = next(itr)
+      return reduce(max_f, itr, first_item)[0]
+#+end_src
+
+#+begin_src python :noweb no-export :tangle ../src/test_game.py
+  <<TEST_GAME_IMPORTS>>
+  
+  def test_max_assoc():
+      data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
+      print(max_assoc(iter(data)))
 #+end_src
 
 * Appendix: Imports
