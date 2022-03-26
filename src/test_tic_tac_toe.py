@@ -1,6 +1,8 @@
 from tic_tac_toe import init_board, moves, static_eval, display_board
 from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate1, won
+from tic_tac_toe import static_eval_state
 from lazy_utils import tree_size, tree_depth, maptree, tree_labels
+import pytest
 
 
 def test_gametree():
@@ -54,36 +56,30 @@ def test_static_eval():
 
     b0 = init_board()
     t = prune(gametree(b0))
-    t = maptree(static_eval(0), t)
-    t = list(tree_labels(t))
+    t = maptree(static_eval_state(0), t)
+    t = tree_labels(t)  # collect all the states from the tree
+    t = list(map(lambda s: s.score, t))  # extract just the scores
     show_freq(freq(t))
 
 
 def test_tree_eval():
+    print("## test_tree_eval()")
     b = [1, 0, 0, None, 0, None, 1, None, None]
-    print("\nGiven this board, player 1 to play")
+    print("\nGiven this board, player 1 (O) to play")
     player = 1
     display_board(b)
 
-    print("\nThis move wins")
-    b = [1, 0, 0, 1, 0, None, 1, None, None]
-    display_board(b)
-    score = evaluate1(player)(b)
-    assert score == posinf
+    best_move = evaluate1(player)(b)
+    print()
+    print("O's best move:")
+    display_board(best_move.board)
 
-    print(
-        "\nThis move will lose in the next move, so should get a losing score")
-    b = [1, 0, 0, None, 0, 1, 1, None, None]
-    display_board(b)
-    score = evaluate1(player)(b)
-    assert score == neginf
+    # player 1 should be able to win the game in one move
+    # so the score should be the winning score
+    assert best_move.score == posinf
 
-    print(
-        "\nThis move will win in the next move, so should get a winning score")
-    b = [1, 0, 0, None, 0, None, 1, 1, None]
-    display_board(b)
-    score = evaluate1(player)(b)
-    assert score == posinf
+
+#@pytest.mark.skip(reason="skip skip skip")
 
 
 def test_who_plays():

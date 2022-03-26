@@ -59,10 +59,17 @@ To find the best next move, searching the entire game tree is typically impracti
 #+end_src
 
 * Static evaluation 
-To games play games, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point. See the [[org/tic_tac_toe.org][next chapter]] for a example.
+To play games, we need a static evaluation function to score each board configuration with a value, in order to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point.
+
+The [[org/tic_tac_toe.org][next chapter]] customizes the code above to play Tic-tac-toe: =init_board= creates an empty game board, =gametree= creates a game tree, =prune= prunes a tree, and =static_eval(0)= scores a board configuration with a static evaluation function for player 0. The statement below replaces the labels in the game tree with the static scores. There is another function that keeps the board configuration and the score.
+#+begin_src python
+  maptree(static_eval(0), prune(gametree(init_board())))
+#+end_src
+
+Recall that =maptree= was defined in a the [[org/lazy_tree.org][lazy tree chapter]].
 
 * Minimax (using mutually recursive functions)
-[[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do in a follow-up move (this is the "min" step). This is scored with a number representing the computer's advantage. The move associated with the highest score is the best move for the computer (the "max" step). For example, if the human could win the game in the next move, the computer should do its best to prevent the opponent from making that move. But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: the best out of the worst that the computer could do to the human in a future step. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
+[[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do to the computer in a follow-up move (this is the "min" step). Then take the move that is associated with the best outcome for the computer (the "max" step). But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: It's the human's best move against the computer future moves. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
 #+begin_src python :noweb yes :tangle ../src/game.py
   def maximize1(gametree: Node) -> int:
       """The max step of Minimax"""
@@ -93,23 +100,34 @@ The code below is the first version of our tree evaluation function. The code is
   def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
       """Return a tree evaluation function"""
       def evaluate_(board: Board) -> int:
-          return minimize1(maptree(static_eval_, prune_(gametree_(board))))
+          return maximize1(maptree(static_eval_, prune_(gametree_(board))))
       return evaluate_
 #+end_src
 
-We apply =evaluate1= to all candidate moves, and pick the one with the highest score. Note that =max_assoc= is an utility function defined near the end of the document. It returns the board associated with the highest score.
-#+begin_src python :noweb yes :tangle ../src/game.py
-  def max_next_move(gametree_func: Callable[[Board], Node], tree_eval_func: Callable[[Board], int]) -> Callable[[Board], Optional[Board]]:
-      """Return a function to make the next move."""
-      def max_next_move_(board: Board) -> Optional[Board]:
-          # return a board or None
-          (_, subtree) = gametree_func(board)
-          if subtree is None:
-              return None
-          else:
-              subtrees_evaluated = map(lambda next_move: (next_move[0], tree_eval_func(next_move[0])), subtree)
-              return max_assoc(subtrees_evaluated)
-      return max_next_move_
+* A slight modification
+#+begin_src python :noweb yes :tangle filename
+  def maximize2_(gametree: Node) -> int:
+      """The max step of Minimax"""
+      (score, subtrees) = gametree
+
+      if subtrees is None:
+          s = score
+      else:
+          s = map(minimize1, subtrees)
+      return s
+
+  def minimize2_(gametree: Node) -> int:
+      """The min step of Minimax.
+      A node in gametree is ((board, score), subtrees)
+      Returns (board, score) with the minimal score
+      """    
+      (score, subtrees) = gametree
+
+      if subtrees is None:
+          s = score
+      else:
+          s = map(maximize1, subtrees)
+      return s
 #+end_src
 
 * Alpha-beta pruning (using iterators of iterators)
@@ -246,35 +264,12 @@ Here's the implementation:
 
 =mapmin=, =omit_max= and =minleq= are for the max step. Similarly, =mapmax=, =omit_min= and =maxgeq= are for the min step. 
 
-* Miscellaneous utilities
-#+begin_src python :tangle no :noweb-ref GAME_UTILS
-  def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
-      """Return the board with the highest score."""
-      def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
-          return new_item if new_item[1] > old_item[1] else old_item
-
-      first_item = next(itr)
-      return reduce(max_f, itr, first_item)[0]
-#+end_src
-
-#+begin_src python :noweb no-export :tangle ../src/test_game.py
-  <<TEST_GAME_IMPORTS>>
-  
-  def test_max_assoc():
-      data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
-      print(max_assoc(iter(data)))
-#+end_src
-
 * Appendix: Imports
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
   from functools import reduce
   from typing import Callable, List, Iterator, Tuple, Optional, Union
   from lazy_utils import reptree, maptree, Node
   import operator
-#+end_src
-
-#+begin_src python :tangle no :noweb-ref TEST_GAME_IMPORTS
-  from game import max_assoc
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref RUNTIME_IMPORTS

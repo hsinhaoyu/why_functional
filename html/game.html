@@ -1,0 +1,581 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2022-03-25 Fri 23:29 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Play games using lazy trees</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="Hsin-Hao Yu" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+<script type="text/javascript">
+// @license magnet:?xt=urn:btih:e95b018ef3580986a04669f1b5879592219e2a7a&dn=public-domain.txt Public Domain
+<!--/*--><![CDATA[/*><!--*/
+     function CodeHighlightOn(elem, id)
+     {
+       var target = document.getElementById(id);
+       if(null != target) {
+         elem.classList.add("code-highlighted");
+         target.classList.add("code-highlighted");
+       }
+     }
+     function CodeHighlightOff(elem, id)
+     {
+       var target = document.getElementById(id);
+       if(null != target) {
+         elem.classList.remove("code-highlighted");
+         target.classList.remove("code-highlighted");
+       }
+     }
+    /*]]>*///-->
+// @license-end
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Play games using lazy trees</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org292967d">1. Build a (lazy) game tree</a></li>
+<li><a href="#org61d6a13">2. Prune the game tree</a></li>
+<li><a href="#orgb0f4e28">3. Static evaluation</a></li>
+<li><a href="#orgb07ed87">4. Minimax (using mutually recursive functions)</a></li>
+<li><a href="#org9a8b7be">5. Alpha-beta pruning (using iterators of iterators)</a></li>
+<li><a href="#orgf3c45b3">6. Miscellaneous utilities</a></li>
+<li><a href="#org21fbc0e">7. Alpha-beta utilities</a></li>
+<li><a href="#org460705b">8. Appendix: Imports</a></li>
+</ul>
+</div>
+</div>
+<p>
+In this chapter, we will apply the ideas developed so far to a more complicated problem: playing a two-player game. We'll develop the game AI code here, and then we'll use them to play Tic-tac-toe in the .
+</p>
+
+<div id="outline-container-org292967d" class="outline-2">
+<h2 id="org292967d"><span class="section-number-2">1</span> Build a (lazy) game tree</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Remember that <code>repeat_f</code> (defined ) repeatedly applies a function to an initial value to generate a list. Let's extend the idea to trees. Let <code>f</code> be a function that takes a value, and returns a list of values. We define <code>reptree</code> to grows a tree out of an initial value by applying <code>f</code> repeatedly. Recall that tree is represented by <code>Node</code> defined in the . 
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -&gt; Node:
+    """Appy a function f to a label repeatedly to create a tree.
+    f(label) is a list of labels
+    """
+    def make_children(lst):
+	if lst is None:
+	    # f produces nothing
+	    return None
+	else:
+	    # else, apply f repeatedly to elements of lst
+	    return map(lambda b: reptree(f, b), lst)
+
+    return Node(label, make_children(f(label)))
+</pre>
+</div>
+
+<p>
+For playing games, we represent the rules of the game in a function called <code>moves</code>. This function takes a initial state of the game board, and returns an iterator of board configurations corresponding to all legal moves (see for a concrete example). By applying <code>moves</code> repeatedly to an initial board configuration, we get a tree of all possible future configurations of the game! Remember that <code>reptree</code> is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
+</p>
+<div class="org-src-container">
+<pre class="src src-python">&lt;&lt;GAME_IMPORTS&gt;&gt;
+
+# Board is a type alias for representing a board configuration.
+# In this example,  it's just a list
+Board = List
+
+&lt;&lt;GAME_UTILS&gt;&gt;
+
+def gametree(moves: Callable[[Board], Optional[Iterator[Board]]]) -&gt; Callable[[Board], Node]:
+    """Return a func that builds a gametree from an initial board.
+    moves is a function that returns all legal moves given a board.
+    """
+    def gametree_(board: Board) -&gt; Node:
+	return reptree(moves, board)
+    return gametree_
+</pre>
+</div>
+
+<p>
+The code above defines a <code>gametree</code> as "factory function", which receives <code>moves</code> and returns a closure that only needs the initial board configuration as its input. This way, it's easier to customized it for a specific game.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org61d6a13" class="outline-2">
+<h2 id="org61d6a13"><span class="section-number-2">2</span> Prune the game tree</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+To find the best next move, searching the entire game tree is typically impractical. We can reduce the size of the search space by limiting the game AI to looks ahead for only a fixed number of moves. The <code>prune</code> function does this by removing nodes after a certain depth (<code>n</code>). 
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def prune(n: int, tree: Node) -&gt; Node:
+    """Remove nodes n levels below in the tree"""
+    (board, subtrees) = tree
+
+    if n == 0:
+	return Node(board, None)
+    elif subtrees is None:
+	return Node(board, None)
+    else:
+	return Node(board, map(lambda t: prune(n - 1, t), subtrees))
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgb0f4e28" class="outline-2">
+<h2 id="orgb0f4e28"><span class="section-number-2">3</span> Static evaluation</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+To games play games, we need a static evaluation function to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point. See the for a concrete example.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgb07ed87" class="outline-2">
+<h2 id="orgb07ed87"><span class="section-number-2">4</span> Minimax (using mutually recursive functions)</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+<a href="https://en.wikipedia.org/wiki/Minimax">Minimax</a> is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do in a follow-up move (this is the "min" step). This is scored with a number representing the computer's advantage. The move associated with the highest score is the best move for the computer (the "max" step). For example, if the human could win the game in the next move, the computer should do its best to prevent the opponent from making that move. But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: the best out of the worst that the computer could do to the human in a future step. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def maximize1(gametree: Node) -&gt; int:
+    """The max step of Minimax"""
+    (score, subtrees) = gametree
+
+    if subtrees is None:
+	s = score
+    else:
+	s = max(map(minimize1, subtrees))
+    return s
+
+def minimize1(gametree: Node) -&gt; int:
+    """The min step of Minimax.
+    A node in gametree is ((board, score), subtrees)
+    Returns (board, score) with the minimal score
+    """    
+    (score, subtrees) = gametree
+
+    if subtrees is None:
+	s = score
+    else:
+	s = min(map(maximize1, subtrees))
+    return s
+</pre>
+</div>
+
+<p>
+The code below is the first version of our tree evaluation function. The code is easy to read, because it's a chain of functions: given a board configuration, creates a game tree of all possible configurations, prune it to limit the search to a fixed steps ahead, apply the static evaluation to all the nodes, and then uses Minimax to return a score. Note that all the functions in the chain are lazy. Although the code reads like pruning, scoring, and minimaxing apply to the whole tree, only the parts that are needed will be evaluated.
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -&gt; Callable[[Board], int]:
+    """Return a tree evaluation function"""
+    def evaluate_(board: Board) -&gt; int:
+	return minimize1(maptree(static_eval_, prune_(gametree_(board))))
+    return evaluate_
+</pre>
+</div>
+
+<p>
+We apply <code>evaluate1</code> to all candidate moves, and pick the one with the highest score. Note that <code>max_assoc</code> is an utility function defined near the end of the document. It returns the board associated with the highest score.
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def max_next_move(gametree_func: Callable[[Board], Node], tree_eval_func: Callable[[Board], int]) -&gt; Callable[[Board], Optional[Board]]:
+    """Return a function to make the next move."""
+    def max_next_move_(board: Board) -&gt; Optional[Board]:
+	# return a board or None
+	(_, subtree) = gametree_func(board)
+	if subtree is None:
+	    return None
+	else:
+	    subtrees_evaluated = map(lambda next_move: (next_move[0], tree_eval_func(next_move[0])), subtree)
+	    return max_assoc(subtrees_evaluated)
+    return max_next_move_
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org9a8b7be" class="outline-2">
+<h2 id="org9a8b7be"><span class="section-number-2">5</span> Alpha-beta pruning (using iterators of iterators)</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+In the previous section, the tree evaluation function uses the lazy tree is quite efficient: because only a segment of the tree is needed at a time, the entire tree doesn't need to be stored in memory. Once a branch has been evaluated, it can be garbage collected immediately. However, Minimax does need to visit every node in the tree. Is there a way to prevent Minimax from visiting branches that are not necessary?
+</p>
+
+<p>
+The answer is yes. The trick is a pair of functions called <code>mapmin</code> and <code>mapmax</code>. I'll only describe what they do. The code is in the end of this chapter. <code>mapmin</code> is just like <code>map(min(...))</code>, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the max of the min of the two sublists. The min of [1, 2] is 1. When we get to [0, X], we don't know the min, because X is unknown. However, we know that min([0, X])&lt;=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">&lt;&lt;ALPHA_BETA_UTILS&gt;&gt;
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgf3c45b3" class="outline-2">
+<h2 id="orgf3c45b3"><span class="section-number-2">6</span> Miscellaneous utilities</h2>
+<div class="outline-text-2" id="text-6">
+<div class="org-src-container">
+<pre class="src src-python">def max_assoc(itr: Iterator[Tuple[Board, int]]) -&gt; Board:
+    """Return the board with the highest score."""
+    def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
+	return new_item if new_item[1] &gt; old_item[1] else old_item
+
+    first_item = next(itr)
+    return reduce(max_f, itr, first_item)[0]
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">&lt;&lt;TEST_GAME_IMPORTS&gt;&gt;
+
+def test_max_assoc():
+    data =[(["a"], 0), (["b"], -1), (["c"], 30), (["d", 20])]
+    print(max_assoc(iter(data)))
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org21fbc0e" class="outline-2">
+<h2 id="org21fbc0e"><span class="section-number-2">7</span> Alpha-beta utilities</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+To implement <code>mapmin</code>, we begin with <code>minleq</code> (similarly, for <code>mapmax</code>, we have <code>maxgeq</code>). Given an iterator <code>seq</code> and a "potential max" <code>mx</code>, <code>minleq(seq, mx)</code> returns if the iterator can be "omitted". For example, the following returns True. <code>minleq(itr, 20)</code> is looking for a value greater than 20. The first value of <code>itr</code> is 3, which means that the minimum of <code>itr</code> is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The returned value <code>True</code> indicates that this sequence is to be omitted.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">itr = iter([3, 2, 5, 10, 1, 6])
+minleq(itr, 20)
+</pre>
+</div>
+
+<p>
+Here's the code. 
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def mk_ab_seq(comp: Callable, op: Callable) -&gt; Callable:
+    """Given a comparison function comp and an operator op, return a function."""
+    def ab_seq(seq: Optional[Iterator], pot: int) -&gt; Optional[Union[int, bool]]:
+	"""Efficient min/max of an iterator, given potential max/min"""
+	def ab_seq_(seq, current_val):
+	    try:
+		i = next(seq)
+		if current_val is None:
+		    current_val = i
+
+		if comp(i, pot):
+		    # if smaller, returns true immediately
+		    return True
+		else:
+		    return ab_seq_(seq, op(i, current_val))
+	    except StopIteration:
+		if current_val is None:
+		    return pot
+		else:
+		    return current_val
+
+	if seq is None:
+	    return pot
+	else:
+	    return ab_seq_(seq, None)
+
+    return ab_seq
+
+minleq = mk_ab_seq(operator.le, min)
+minleq.__doc__ = """
+Return min of seq if it's &gt; potential max.
+Else return True"""
+
+maxgeq = mk_ab_seq(operator.ge, max)
+maxgeq.__doc__ = """
+Return max of seq if it's &lt; potential min.
+Else return True"""
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">def mapmin(seqs: Iterator[Iterator]) -&gt; Iterator:
+    """Like map(min, seqs)
+    But skip those that don't matter for max.
+    The sequence increases monotonically
+    """
+    try:
+	seq = next(seqs)
+	mn = min(seq)
+	yield mn
+	for i in omit_max(mn, seqs):
+	    yield i
+    except StopIteration:
+	pass
+
+def mapmax(seqs: Iterator[Iterator]) -&gt; Iterator:
+    """Like map(max, seqs)
+    But skip those that don't matter for min
+    The sequence decreases monotonically
+    """
+    try:
+	seq = next(seqs)
+	mx = max(seq)
+	yield mx
+	for i in omit_min(mx, seqs):
+	    yield i
+    except StopIteration:
+	pass
+
+def mk_omit(skip_func: Callable) -&gt; Callable:
+    """The skip function is either minleq or maxgeq"""
+    def omit_(pot: int, seqs: Optional[Iterator[Iterator[int]]]) -&gt; Iterator[Optional[int]]:
+	"""Given an iterator of iterators, call skip_func.
+	If the returned value is true, skip it. Otherwise, yield the value
+	"""
+	for seq in seqs:
+	    m = skip_func(seq, pot)
+	    if m is True:
+		for i in omit_(pot, seqs):
+		    yield i
+	    else:
+		yield m
+		for i in omit_(m, seqs):
+		    yield i
+
+    return omit_
+
+omit_max = mk_omit(minleq)
+omit_max.__doc__ = """
+Given an initial potential max, return the min of subsequences.
+Skip those that don't matter. Sequence increases.
+"""
+
+omit_min = mk_omit(maxgeq)
+omit_max.__doc__ = """
+Given an initial potental min, return the max of subsequences.
+Skip those that don't matter. Sequence decreases.
+"""
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org460705b" class="outline-2">
+<h2 id="org460705b"><span class="section-number-2">8</span> Appendix: Imports</h2>
+<div class="outline-text-2" id="text-8">
+<div class="org-src-container">
+<pre class="src src-python">from functools import reduce
+from typing import Callable, List, Iterator, Tuple, Optional, Union
+from lazy_utils import reptree, maptree, Node
+import operator
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">from game import max_assoc
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">from typing import Callable, Optional, Iterator, Union
+import operator
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Hsin-Hao Yu</p>
+<p class="date">Created: 2022-03-25 Fri 23:29</p>
+<p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

@@ -8,16 +8,6 @@ import operator
 Board = List
 
 
-def max_assoc(itr: Iterator[Tuple[Board, int]]) -> Board:
-    """Return the board with the highest score."""
-
-    def max_f(new_item: Tuple[Board, int], old_item: Tuple[Board, int]):
-        return new_item if new_item[1] > old_item[1] else old_item
-
-    first_item = next(itr)
-    return reduce(max_f, itr, first_item)[0]
-
-
 def gametree(
     moves: Callable[[Board], Optional[Iterator[Board]]]
 ) -> Callable[[Board], Node]:
@@ -62,29 +52,9 @@ def evaluate1(gametree_: Callable[[Board],
     """Return a tree evaluation function"""
 
     def evaluate_(board: Board) -> int:
-        return minimize1(maptree(static_eval_, prune_(gametree_(board))))
+        return maximize1(maptree(static_eval_, prune_(gametree_(board))))
 
     return evaluate_
-
-
-def max_next_move(
-    gametree_func: Callable[[Board], Node],
-    tree_eval_func: Callable[[Board],
-                             int]) -> Callable[[Board], Optional[Board]]:
-    """Return a function to make the next move."""
-
-    def max_next_move_(board: Board) -> Optional[Board]:
-        # return a board or None
-        (_, subtree) = gametree_func(board)
-        if subtree is None:
-            return None
-        else:
-            subtrees_evaluated = map(
-                lambda next_move: (next_move[0], tree_eval_func(next_move[0])),
-                subtree)
-            return max_assoc(subtrees_evaluated)
-
-    return max_next_move_
 
 
 def mk_ab_seq(comp: Callable, op: Callable) -> Callable:

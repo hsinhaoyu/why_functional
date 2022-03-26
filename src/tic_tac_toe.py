@@ -1,6 +1,7 @@
 from typing import List, Iterator, Callable, Optional
 from functools import reduce
 from random import shuffle
+from dataclasses import dataclass
 
 from lazy_utils import Node
 import lazy_utils
@@ -143,7 +144,7 @@ def static_eval_0(board: Board) -> int:
 
 def static_eval(i: int) -> Callable[[Board], int]:
     """Static board value for player i"""
-    assert i in [0, 1], i
+    assert i in [0, 1]
 
     def static_eval_(board):
         v = static_eval_0(board)
@@ -155,18 +156,42 @@ def static_eval(i: int) -> Callable[[Board], int]:
     return static_eval_
 
 
+@dataclass
+class State:
+    board: Board
+    score: int
+
+    def __eq__(self, other):
+        return self.score == other.score
+
+    def __gt__(self, other):
+        return self.score > other.score
+
+    def __ge__(self, othre):
+        return self.score >= other.score
+
+    def __lt__(self, other):
+        return self.score < other.score
+
+    def __le__(self, other):
+        return self.score <= other.score
+
+
+def static_eval_state(i: int) -> Callable[[Board], State]:
+    """Static board state for player i"""
+    assert i in [0, 1]
+    score_func = static_eval(i)
+
+    def static_eval_(board):
+        return State(board, score_func(board))
+
+    return static_eval_
+
+
 # given a player, returns a tree evlauation function
-def evaluate1(player: int) -> Callable[[Board], int]:
+def evaluate1(player: int) -> Callable[[Board], State]:
     """Evaluate tic-tac-toe tree for player i (version 1)"""
-    return game.evaluate1(gametree, static_eval(player), prune)
-
-
-# given a tree evaluation function, return a function
-# which takes a board and returns a board
-def max_next_move(
-    tree_eval_func: Callable[[Board],
-                             int]) -> Callable[[Board], Optional[Board]]:
-    return game.max_next_move(gametree, tree_eval_func)
+    return game.evaluate1(gametree, static_eval_state(player), prune)
 
 
 def player_token(i: int) -> str:
@@ -236,31 +261,40 @@ def human_next_move(board: Board) -> Optional[Board]:
         return make_move(board, i, player)
 
 
-def computer_next_move(board: Board) -> Optional[Board]:
+def computer_next_move(
+        board: Board, eval_func: Callable[[int],
+                                          Callable[[Board],
+                                                   State]]) -> Optional[Board]:
     player = who_plays(board)
-    computer_move_function = max_next_move(evaluate1(player))
-    return computer_move_function(board)
+    computer_move_function = eval_func(player)
+    # computer_move_function is a State
+    return computer_move_function(board).board
 
 
-def player_next_move(
-        board: Board,
-        player_settings={
-            0: 'human',
-            1: 'computer'
-        }) -> Optional[Board]:
+def player_next_move(board: Board,
+                     player_settings={
+                         0: 'human',
+                         1: 'computer'
+                     },
+                     eval_func=evaluate1) -> Optional[Board]:
     player = who_plays(board)
     if player_settings[player] == 'human':
         return human_next_move(board)
     else:
-        return computer_next_move(board)
+        return computer_next_move(board, eval_func)
 
 
-def play(player_settings={0: 'human', 1: 'computer'}) -> None:
+def play(
+        player_settings={
+            0: 'human',
+            1: 'computer'
+        },
+        eval_func=evaluate1) -> None:
     b = init_board()
 
     finished = False
     while not finished:
-        b = player_next_move(b, player_settings)
+        b = player_next_move(b, player_settings, eval_func)
         player = (who_plays(b) + 1) % 2
         print()
         print(f"{player_token(player)} played:")
