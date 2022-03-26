@@ -131,10 +131,9 @@ In the previous chapter, we defined generic =gametree= and =prune=. Here, we cus
       return lazy_utils.prune(max_depth, tree)
 #+end_src
 
-With these, we can generate all possible Tic-tac-toe games! Let's find out how big the tree is.
+With these, we can generate all possible Tic-tac-toe games! Let's find out how big the tree is:
 #+begin_src python :exports both :noweb no-export :results output :dir ../src/
   <<DEMO_IMPORTS>>
-
   d = tree_depth(gametree(init_board()))
   print("depth=", d)
   n = tree_size(gametree(init_board()))
@@ -145,23 +144,18 @@ With these, we can generate all possible Tic-tac-toe games! Let's find out how b
 : depth= 10
 : number of nodes= 549946
 
-For playing Tic-tac-toe, we set a limit to the depth of the game tree to =max_depth=, which is set to 5. Let's check the size of the pruned tree:
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_prune():
-      print("\n\n## test_prune: after pruning")
-      b0 = init_board()
-      t = prune(gametree(b0))
-      d = tree_depth(t)
-      print("depth=", d)
+For playing Tic-tac-toe, we set a limit to the depth of the game tree to =max_depth=, which is set to 5. Let's check the size of the pruned tree (it's only 3% of the full tree size):
+#+begin_src python :exports both :noweb no-export :results output :dir ../src/
+  <<DEMO_IMPORTS>>
+  d = tree_depth(prune(gametree(init_board())))
+  print("depth=", d)
+  n = tree_size(prune(gametree(init_board())))
+  print("number of nodes=", n)
 #+end_src
 
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_prune2():
-      b0 = init_board()
-      t = prune(gametree(b0))
-      s = tree_size(t)
-      print("size=", s)
-#+end_src
+#+RESULTS:
+: depth= 6
+: number of nodes= 18730
 
 The winning conditions have to be reflected in the game tree. Let's make sure that they are:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
@@ -298,35 +292,52 @@ This is the static evaluation function that returns a State:
       return static_eval_
 #+end_src
 
-The following shows the distribution of the scores in a pruned tree:
-#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_static_eval():
-      """Apply static eval to a game tree"""
-      print("\n## test_static_eval2")
-      def freq(lst):
-          dict = {}
-          for i in lst:
-              if i in dict:
-                  dict[i] = dict[i] + 1
-              else:
-                  dict[i] = 1
-          return dict
+The following shows the distribution of the scores in a pruned tree. You can see that the first player to move does have a clear advantage.
+#+begin_src python :exports both :noweb no-export :results output :dir ../src/
+  <<DEMO_IMPORTS>>
+  def freq(lst):
+      dict = {}
+      for i in lst:
+          if i in dict:
+              dict[i] = dict[i] + 1
+          else:
+              dict[i] = 1
+      return dict
+  def show_freq(dict):
+      k = dict.keys()
+      k = sorted(k)
+      for kk in k:
+          print(f'{kk:10}     {dict[kk]}')
 
-      def show_freq(dict):
-          k = dict.keys()
-          k = sorted(k)
-          for kk in k:
-              print(f'{kk:10}     {dict[kk]}')
-
-      b0 = init_board()
-      t = prune(gametree(b0))
-      t = maptree(static_eval_state(0), t)
-      t = tree_labels(t) # collect all the states from the tree
-      t = list(map(lambda s: s.score, t)) # extract just the scores 
-      show_freq(freq(t))
+  t = prune(gametree(init_board()))
+  t = maptree(static_eval_state(0), t)
+  t = tree_labels(t) # collect all the states from the tree
+  t = list(map(lambda s: s.score, t)) # extract just the scores 
+  show_freq(freq(t))
 #+end_src
 
-The static evaluation function, when applied to the game tree, should reflect winning conditions.
+#+RESULTS:
+#+begin_example
+        -5     32
+        -4     112
+        -3     496
+        -2     580
+        -1     888
+         0     1633
+         1     2152
+         2     2552
+         3     2540
+         4     2233
+         5     1784
+         6     1280
+         7     384
+         8     384
+         9     192
+        10     48
+    100000     1440
+#+end_example
+
+The static evaluation function, when applied to the game tree, should reflect winning conditions. Let's test that.
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_gametree_evaluation():
       # player 0 has won
@@ -355,24 +366,42 @@ Here's the first move evaluation function, based on just Minimax:
 #+end_src
 
 Let's try it on the most basic conditions:
+#+begin_src python :exports both :noweb no-export :results output :dir ../src/
+  <<DEMO_IMPORTS>>
+  print("\nGiven this board, player 1 (O) to play\n")
+  b = [1, 0, 0, None, 0, None, 1, None, None]
+  display_board(b)
+  player = 1
+  best_move = evaluate1(player)(b)
+  print("\nO's best move:\n")
+  display_board(best_move.board)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+
+Given this board, player 1 (O) to play
+
+ O X X
+ . X .
+ O . .
+
+O's best move:
+
+ O X X
+ O X .
+ O . .
+#+end_example
+
+Test some simple moves:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_tree_eval():
-      print("## test_tree_eval()")
-      b = [1, 0, 0, None, 0, None, 1, None, None]
-      print("\nGiven this board, player 1 (O) to play")
-      player = 1
-      display_board(b)
-
-      best_move = evaluate1(player)(b)
-      print()
-      print("O's best move:")
-      display_board(best_move.board)
-
       # player 1 should be able to win the game in one move
       # so the score should be the winning score
+      b = [1, 0, 0, None, 0, None, 1, None, None]
+      player = 1
+      best_move = evaluate1(player)(b)
       assert best_move.score == posinf
-
-  #@pytest.mark.skip(reason="skip skip skip")    
 #+end_src
 
 * Gameplay
@@ -499,6 +528,6 @@ The main game loop:
 #+end_src
 
 #+begin_src python :tangoe no :noweb-ref DEMO_IMPORTS
-  from tic_tac_toe import init_board, gametree, prune
-  from lazy_utils import tree_size, tree_depth
+  from tic_tac_toe import init_board, gametree, prune, static_eval_state, display_board, evaluate1
+  from lazy_utils import tree_size, tree_depth, maptree, tree_labels
 #+end_src
