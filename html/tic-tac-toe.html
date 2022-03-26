@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-26 Sat 22:30 -->
+<!-- 2022-03-26 Sat 22:38 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Let's play Tic-tac-toe</title>
@@ -224,14 +224,14 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org7c26080">1. The Tic-tac-toe game board</a></li>
-<li><a href="#org3dd2628">2. Legal moves</a></li>
-<li><a href="#org8e77114">3. The Tic-tac-toe game tree</a></li>
-<li><a href="#org6ffc4bb">4. Static evaluation</a></li>
-<li><a href="#orgf13fac0">5. Score the game tree</a></li>
-<li><a href="#org8bfafb7">6. Minimax</a></li>
-<li><a href="#org9b0a284">7. Gameplay</a></li>
-<li><a href="#org0125d7d">8. Imports</a></li>
+<li><a href="#orge09418c">1. The Tic-tac-toe game board</a></li>
+<li><a href="#org7d7f8bf">2. Legal moves</a></li>
+<li><a href="#org48840c7">3. The Tic-tac-toe game tree</a></li>
+<li><a href="#org233cce7">4. Static evaluation</a></li>
+<li><a href="#org7698067">5. Score the game tree</a></li>
+<li><a href="#org590d1cf">6. Minimax</a></li>
+<li><a href="#org10c4fe3">7. Gameplay</a></li>
+<li><a href="#orgf01b21e">8. Imports</a></li>
 </ul>
 </div>
 </div>
@@ -249,8 +249,8 @@ This chapter uses the game AI code developed in the to play Tic-tac-toe. To play
 </pre>
 </div>
 
-<div id="outline-container-org7c26080" class="outline-2">
-<h2 id="org7c26080"><span class="section-number-2">1</span> The Tic-tac-toe game board</h2>
+<div id="outline-container-orge09418c" class="outline-2">
+<h2 id="orge09418c"><span class="section-number-2">1</span> The Tic-tac-toe game board</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 These functions define the Tic-tac-toe game world:
@@ -317,8 +317,8 @@ Note that the player who plays the next move is not stored as a game state, beca
 </div>
 </div>
 
-<div id="outline-container-org3dd2628" class="outline-2">
-<h2 id="org3dd2628"><span class="section-number-2">2</span> Legal moves</h2>
+<div id="outline-container-org7d7f8bf" class="outline-2">
+<h2 id="org7d7f8bf"><span class="section-number-2">2</span> Legal moves</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 The function <code>moves</code> encapsulates the legal moves of Tic-tac-toe. Given a board configuration, <code>moves</code> returns an iterator of board configurations associated with the legal next moves.
@@ -378,8 +378,8 @@ Simple tests to make sure that <code>moves</code> knows it when no legal moves a
 </div>
 </div>
 
-<div id="outline-container-org8e77114" class="outline-2">
-<h2 id="org8e77114"><span class="section-number-2">3</span> The Tic-tac-toe game tree</h2>
+<div id="outline-container-org48840c7" class="outline-2">
+<h2 id="org48840c7"><span class="section-number-2">3</span> The Tic-tac-toe game tree</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 In the previous chapter, we defined generic <code>gametree</code> and <code>prune</code>. Here, we customize them for Tic-tac-toe:
@@ -401,7 +401,13 @@ With these, we can generate all possible Tic-tac-toe games! Let's find out how b
 d = tree_depth(gametree(init_board()))
 print("depth=", d)
 n = tree_size(gametree(init_board()))
-print("# nodes=", n)
+print("number of nodes=", n)
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-org">depth= 10
+number of nodes= 549946
 </pre>
 </div>
 
@@ -455,8 +461,8 @@ The winning conditions have to be reflected in the game tree. Let's make sure th
 </div>
 </div>
 
-<div id="outline-container-org6ffc4bb" class="outline-2">
-<h2 id="org6ffc4bb"><span class="section-number-2">4</span> Static evaluation</h2>
+<div id="outline-container-org233cce7" class="outline-2">
+<h2 id="org233cce7"><span class="section-number-2">4</span> Static evaluation</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a Tic-tac-toe configuration is. I implemented a common one in  <code>static_eval(player)</code>. For a given <code>player</code>, the function evaluates if the configuration "looks good". A positive number means that the configuration is good for <code>player</code>. A negative number means that it's good for the other player.
@@ -542,8 +548,8 @@ It's important that the static evaluation function knows when a player wins the 
 </div>
 </div>
 
-<div id="outline-container-orgf13fac0" class="outline-2">
-<h2 id="orgf13fac0"><span class="section-number-2">5</span> Score the game tree</h2>
+<div id="outline-container-org7698067" class="outline-2">
+<h2 id="org7698067"><span class="section-number-2">5</span> Score the game tree</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 Using the <code>maptree</code> function defined in a to apply the static evaluation function to every node in the game tree, we can score an entire game!
@@ -642,8 +648,8 @@ The static evaluation function, when applied to the game tree, should reflect wi
 </div>
 </div>
 
-<div id="outline-container-org8bfafb7" class="outline-2">
-<h2 id="org8bfafb7"><span class="section-number-2">6</span> Minimax</h2>
+<div id="outline-container-org590d1cf" class="outline-2">
+<h2 id="org590d1cf"><span class="section-number-2">6</span> Minimax</h2>
 <div class="outline-text-2" id="text-6">
 <p>
 Here's the first move evaluation function, based on just Minimax:
@@ -682,8 +688,8 @@ Let's try it on the most basic conditions:
 </div>
 </div>
 
-<div id="outline-container-org9b0a284" class="outline-2">
-<h2 id="org9b0a284"><span class="section-number-2">7</span> Gameplay</h2>
+<div id="outline-container-org10c4fe3" class="outline-2">
+<h2 id="org10c4fe3"><span class="section-number-2">7</span> Gameplay</h2>
 <div class="outline-text-2" id="text-7">
 <p>
 Simple utilities for displaying the game board and for handling human player moves:
@@ -798,8 +804,8 @@ The main game loop:
 </div>
 </div>
 </div>
-<div id="outline-container-org0125d7d" class="outline-2">
-<h2 id="org0125d7d"><span class="section-number-2">8</span> Imports</h2>
+<div id="outline-container-orgf01b21e" class="outline-2">
+<h2 id="orgf01b21e"><span class="section-number-2">8</span> Imports</h2>
 <div class="outline-text-2" id="text-8">
 <div class="org-src-container">
 <pre class="src src-python">from typing import List, Iterator, Callable, Optional
@@ -832,7 +838,7 @@ from lazy_utils import tree_size, tree_depth
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-26 Sat 22:30</p>
+<p class="date">Created: 2022-03-26 Sat 22:38</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

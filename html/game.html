@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-26 Sat 22:30 -->
+<!-- 2022-03-26 Sat 22:38 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Play games using lazy trees</title>
@@ -224,14 +224,14 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgdeeb838">1. Build a (lazy) game tree</a></li>
-<li><a href="#orgf4f16d0">2. Prune the game tree</a></li>
-<li><a href="#org534d716">3. Static evaluation</a></li>
-<li><a href="#org6044b97">4. Minimax (using mutually recursive functions)</a></li>
-<li><a href="#org07322bf">5. A slight modification</a></li>
-<li><a href="#org1dd38c1">6. Alpha-beta pruning (using iterators of iterators)</a></li>
-<li><a href="#orgf9e1589">7. Alpha-beta utilities</a></li>
-<li><a href="#orgf82fc66">8. Appendix: Imports</a></li>
+<li><a href="#org7f65cae">1. Build a (lazy) game tree</a></li>
+<li><a href="#org0f0c73d">2. Prune the game tree</a></li>
+<li><a href="#orgeccac35">3. Static evaluation</a></li>
+<li><a href="#orgc8484fe">4. Minimax (using mutually recursive functions)</a></li>
+<li><a href="#org227e20b">5. A slight modification</a></li>
+<li><a href="#org89893b9">6. Alpha-beta pruning (using iterators of iterators)</a></li>
+<li><a href="#org66ecb2b">7. Alpha-beta utilities</a></li>
+<li><a href="#org46f6a52">8. Appendix: Imports</a></li>
 </ul>
 </div>
 </div>
@@ -239,8 +239,8 @@
 In this chapter, we will apply the ideas developed so far to a more complicated problem: playing a two-player game. We'll develop the game AI code here, and then we'll use them to play Tic-tac-toe in the .
 </p>
 
-<div id="outline-container-orgdeeb838" class="outline-2">
-<h2 id="orgdeeb838"><span class="section-number-2">1</span> Build a (lazy) game tree</h2>
+<div id="outline-container-org7f65cae" class="outline-2">
+<h2 id="org7f65cae"><span class="section-number-2">1</span> Build a (lazy) game tree</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 Remember that <code>repeat_f</code> (defined ) repeatedly applies a function to an initial value to generate a list. Let's extend the idea to trees. Let <code>f</code> be a function that takes a value, and returns a list of values. We define <code>reptree</code> to grows a tree out of an initial value by applying <code>f</code> repeatedly. Recall that tree is represented by <code>Node</code> defined in the . 
@@ -290,8 +290,8 @@ The code above defines a <code>gametree</code> as "factory function", which rece
 </div>
 </div>
 
-<div id="outline-container-orgf4f16d0" class="outline-2">
-<h2 id="orgf4f16d0"><span class="section-number-2">2</span> Prune the game tree</h2>
+<div id="outline-container-org0f0c73d" class="outline-2">
+<h2 id="org0f0c73d"><span class="section-number-2">2</span> Prune the game tree</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 To find the best next move, searching the entire game tree is typically impractical. We can reduce the size of the search space by limiting the game AI to looks ahead for only a fixed number of moves. The <code>prune</code> function does this by removing nodes after a certain depth (<code>n</code>). 
@@ -312,8 +312,8 @@ To find the best next move, searching the entire game tree is typically impracti
 </div>
 </div>
 
-<div id="outline-container-org534d716" class="outline-2">
-<h2 id="org534d716"><span class="section-number-2">3</span> Static evaluation</h2>
+<div id="outline-container-orgeccac35" class="outline-2">
+<h2 id="orgeccac35"><span class="section-number-2">3</span> Static evaluation</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 To play games, we need a static evaluation function to score each board configuration with a value, in order to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point.
@@ -333,8 +333,8 @@ Recall that <code>maptree</code> was defined in a the .
 </div>
 </div>
 
-<div id="outline-container-org6044b97" class="outline-2">
-<h2 id="org6044b97"><span class="section-number-2">4</span> Minimax (using mutually recursive functions)</h2>
+<div id="outline-container-orgc8484fe" class="outline-2">
+<h2 id="orgc8484fe"><span class="section-number-2">4</span> Minimax (using mutually recursive functions)</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 <a href="https://en.wikipedia.org/wiki/Minimax">Minimax</a> is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do to the computer in a follow-up move (this is the "min" step). Then take the move that is associated with the best outcome for the computer (the "max" step). But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: It's the human's best move against the computer future moves. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
@@ -379,8 +379,8 @@ The code below is the first version of our tree evaluation function. The code is
 </div>
 </div>
 
-<div id="outline-container-org07322bf" class="outline-2">
-<h2 id="org07322bf"><span class="section-number-2">5</span> A slight modification</h2>
+<div id="outline-container-org227e20b" class="outline-2">
+<h2 id="org227e20b"><span class="section-number-2">5</span> A slight modification</h2>
 <div class="outline-text-2" id="text-5">
 <div class="org-src-container">
 <pre class="src src-python">def maximize2_(gametree: Node) -&gt; int:
@@ -410,8 +410,8 @@ def minimize2_(gametree: Node) -&gt; int:
 </div>
 </div>
 
-<div id="outline-container-org1dd38c1" class="outline-2">
-<h2 id="org1dd38c1"><span class="section-number-2">6</span> Alpha-beta pruning (using iterators of iterators)</h2>
+<div id="outline-container-org89893b9" class="outline-2">
+<h2 id="org89893b9"><span class="section-number-2">6</span> Alpha-beta pruning (using iterators of iterators)</h2>
 <div class="outline-text-2" id="text-6">
 <p>
 In the previous section, the tree evaluation function uses the lazy tree is efficient: because only a segment of the tree is needed at a time, the entire tree doesn't need to be stored in memory. Once a branch has been evaluated, it can be garbage collected immediately. However, Minimax does need to visit every node in the tree. Is there a way to prevent Minimax from visiting branches that are obviously not promising?
@@ -428,8 +428,8 @@ The answer is yes. The trick is a pair of functions called <code>mapmin</code> a
 </div>
 </div>
 
-<div id="outline-container-orgf9e1589" class="outline-2">
-<h2 id="orgf9e1589"><span class="section-number-2">7</span> Alpha-beta utilities</h2>
+<div id="outline-container-org66ecb2b" class="outline-2">
+<h2 id="org66ecb2b"><span class="section-number-2">7</span> Alpha-beta utilities</h2>
 <div class="outline-text-2" id="text-7">
 <p>
 To implement <code>mapmin</code>, we begin with <code>minleq</code>. Given an iterator <code>seq</code> and a "potential max" <code>mx</code>, <code>minleq(seq, mx)</code> returns if the iterator can be "omitted". For example, the following statement returns True.
@@ -578,8 +578,8 @@ Skip those that don't matter. Sequence decreases.
 </div>
 </div>
 
-<div id="outline-container-orgf82fc66" class="outline-2">
-<h2 id="orgf82fc66"><span class="section-number-2">8</span> Appendix: Imports</h2>
+<div id="outline-container-org46f6a52" class="outline-2">
+<h2 id="org46f6a52"><span class="section-number-2">8</span> Appendix: Imports</h2>
 <div class="outline-text-2" id="text-8">
 <div class="org-src-container">
 <pre class="src src-python">from functools import reduce
@@ -599,7 +599,7 @@ import operator
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-26 Sat 22:30</p>
+<p class="date">Created: 2022-03-26 Sat 22:38</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

@@ -132,18 +132,18 @@ In the previous chapter, we defined generic =gametree= and =prune=. Here, we cus
 #+end_src
 
 With these, we can generate all possible Tic-tac-toe games! Let's find out how big the tree is.
-#+begin_src python :noweb no-export :results output :dir ../src/
+#+begin_src python :exports both :noweb no-export :results output :dir ../src/
   <<DEMO_IMPORTS>>
 
   d = tree_depth(gametree(init_board()))
   print("depth=", d)
   n = tree_size(gametree(init_board()))
-  print("# nodes=", n)
+  print("number of nodes=", n)
 #+end_src
 
 #+RESULTS:
 : depth= 10
-: # nodes= 549946
+: number of nodes= 549946
 
 For playing Tic-tac-toe, we set a limit to the depth of the game tree to =max_depth=, which is set to 5. Let's check the size of the pruned tree:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py

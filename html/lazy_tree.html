@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-26 Sat 22:30 -->
+<!-- 2022-03-26 Sat 22:38 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Lazy trees</title>
@@ -224,14 +224,14 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgcaf7cd5">1. Representing lazy trees</a></li>
-<li><a href="#org45c8028">2. The higher-order function <code>foldtree</code> for lazy trees</a></li>
-<li><a href="#orge14274b">3. Summing all labels in a lazy tree</a></li>
-<li><a href="#org5de684b">4. Flattening lazy trees</a></li>
-<li><a href="#org03dc18c">5. Mapping functions to lazy trees</a></li>
-<li><a href="#orgae65ff7">6. Size of lazy trees</a></li>
-<li><a href="#org4b3ae62">7. Depth of lazy trees</a></li>
-<li><a href="#org3555839">8. Appendix: imports</a></li>
+<li><a href="#org5413d1a">1. Representing lazy trees</a></li>
+<li><a href="#org50b2958">2. The higher-order function <code>foldtree</code> for lazy trees</a></li>
+<li><a href="#org8badad3">3. Summing all labels in a lazy tree</a></li>
+<li><a href="#org8737a12">4. Flattening lazy trees</a></li>
+<li><a href="#org3f74f25">5. Mapping functions to lazy trees</a></li>
+<li><a href="#org5d0fd20">6. Size of lazy trees</a></li>
+<li><a href="#org52b7637">7. Depth of lazy trees</a></li>
+<li><a href="#orga1c3c5c">8. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
@@ -243,8 +243,8 @@ Recall that , we used the higher-order function <code>foldtree</code> to define 
 Because Python is not a lazy language, we have to incorporate generators/iterators into <code>foldtree</code>.
 </p>
 
-<div id="outline-container-orgcaf7cd5" class="outline-2">
-<h2 id="orgcaf7cd5"><span class="section-number-2">1</span> Representing lazy trees</h2>
+<div id="outline-container-org5413d1a" class="outline-2">
+<h2 id="org5413d1a"><span class="section-number-2">1</span> Representing lazy trees</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 As in , a lazy tree is a tuple with a label and a collection of subtrees. For laziness, the subtrees have to be stored in an iterator rather than in a list. Because we will use this structure a lot in the next chapter, I use a named tuple to differentiate a lazy tree from other tuples:
@@ -278,8 +278,8 @@ def mk_test_tree():
 </div>
 </div>
 
-<div id="outline-container-org45c8028" class="outline-2">
-<h2 id="org45c8028"><span class="section-number-2">2</span> The higher-order function <code>foldtree</code> for lazy trees</h2>
+<div id="outline-container-org50b2958" class="outline-2">
+<h2 id="org50b2958"><span class="section-number-2">2</span> The higher-order function <code>foldtree</code> for lazy trees</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 This is almost identical to the eager version defined in a . Unfortunately, some modifications are needed, because lists and iterators are manipulated differently in Python.
@@ -309,8 +309,8 @@ This is almost identical to the eager version defined in a . Unfortunately, some
 </div>
 </div>
 
-<div id="outline-container-orge14274b" class="outline-2">
-<h2 id="orge14274b"><span class="section-number-2">3</span> Summing all labels in a lazy tree</h2>
+<div id="outline-container-org8badad3" class="outline-2">
+<h2 id="org8badad3"><span class="section-number-2">3</span> Summing all labels in a lazy tree</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 As before, a variety of lazy tree operations can be implemented with <code>foldtree</code>, by using appropriate <code>f</code> and <code>g</code>.  
@@ -334,8 +334,8 @@ As before, a variety of lazy tree operations can be implemented with <code>foldt
 </div>
 </div>
 
-<div id="outline-container-org5de684b" class="outline-2">
-<h2 id="org5de684b"><span class="section-number-2">4</span> Flattening lazy trees</h2>
+<div id="outline-container-org8737a12" class="outline-2">
+<h2 id="org8737a12"><span class="section-number-2">4</span> Flattening lazy trees</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 This version of <code>tree_labels</code> returns an iterator, which visits every label in the tree one by one:
@@ -374,8 +374,8 @@ Let's try it. I use <code>list(t)</code> to convert the returned iterator to a r
 </div>
 </div>
 
-<div id="outline-container-org03dc18c" class="outline-2">
-<h2 id="org03dc18c"><span class="section-number-2">5</span> Mapping functions to lazy trees</h2>
+<div id="outline-container-org3f74f25" class="outline-2">
+<h2 id="org3f74f25"><span class="section-number-2">5</span> Mapping functions to lazy trees</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 This version of <code>maptree</code> maps a function <code>f</code> to all labels in a lazy tree, and returns another lazy tree. 
@@ -417,8 +417,8 @@ Let's try it. I use the <code>tree_labels</code> function to collect all the lab
 </div>
 </div>
 
-<div id="outline-container-orgae65ff7" class="outline-2">
-<h2 id="orgae65ff7"><span class="section-number-2">6</span> Size of lazy trees</h2>
+<div id="outline-container-org5d0fd20" class="outline-2">
+<h2 id="org5d0fd20"><span class="section-number-2">6</span> Size of lazy trees</h2>
 <div class="outline-text-2" id="text-6">
 <p>
 Here's one more function that we'll use in the :
@@ -446,8 +446,8 @@ Here's one more function that we'll use in the :
 </div>
 </div>
 
-<div id="outline-container-org4b3ae62" class="outline-2">
-<h2 id="org4b3ae62"><span class="section-number-2">7</span> Depth of lazy trees</h2>
+<div id="outline-container-org52b7637" class="outline-2">
+<h2 id="org52b7637"><span class="section-number-2">7</span> Depth of lazy trees</h2>
 <div class="outline-text-2" id="text-7">
 <p>
 Another utility function:
@@ -482,8 +482,8 @@ Another utility function:
 </div>
 </div>
 
-<div id="outline-container-org3555839" class="outline-2">
-<h2 id="org3555839"><span class="section-number-2">8</span> Appendix: imports</h2>
+<div id="outline-container-orga1c3c5c" class="outline-2">
+<h2 id="orga1c3c5c"><span class="section-number-2">8</span> Appendix: imports</h2>
 <div class="outline-text-2" id="text-8">
 <div class="org-src-container">
 <pre class="src src-python">from lazy_utils import *
@@ -509,7 +509,7 @@ def mk_test_tree2():
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-26 Sat 22:30</p>
+<p class="date">Created: 2022-03-26 Sat 22:38</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-26 Sat 22:30 -->
+<!-- 2022-03-26 Sat 22:38 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Numerical differentiation using generators</title>
@@ -224,10 +224,10 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orga2d55e6">1. A first stab at the problem</a></li>
-<li><a href="#orged524e5">2. Improve convergence with sequence transformation</a></li>
-<li><a href="#orgff3e908">3. An iterator of iterators</a></li>
-<li><a href="#org579e8e6">4. Appendix: imports</a></li>
+<li><a href="#orgb0852ab">1. A first stab at the problem</a></li>
+<li><a href="#org6869e02">2. Improve convergence with sequence transformation</a></li>
+<li><a href="#org6acc2d6">3. An iterator of iterators</a></li>
+<li><a href="#org042c301">4. Appendix: imports</a></li>
 </ul>
 </div>
 </div>
@@ -235,8 +235,8 @@
 From a glance, this section of Hughes' paper appears to be all about numerical methods that are only of interest to the readers of <a href="http://numerical.recipes">Numerical Recipes</a>. But do read on. This chapter demonstrates several interesting tricks that you can use with generators.
 </p>
 
-<div id="outline-container-orga2d55e6" class="outline-2">
-<h2 id="orga2d55e6"><span class="section-number-2">1</span> A first stab at the problem</h2>
+<div id="outline-container-orgb0852ab" class="outline-2">
+<h2 id="orgb0852ab"><span class="section-number-2">1</span> A first stab at the problem</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 For a real function <code>f</code>, the first-order approximation of <code>f'</code> at <code>x</code> can be obtained by displacing <code>x</code> by <code>h</code>, and then calculating the slope:
@@ -295,8 +295,8 @@ def test_diff1():
 </div>
 </div>
 
-<div id="outline-container-orged524e5" class="outline-2">
-<h2 id="orged524e5"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
+<div id="outline-container-org6869e02" class="outline-2">
+<h2 id="org6869e02"><span class="section-number-2">2</span> Improve convergence with sequence transformation</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A problem with <code>differentiate</code> above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called <a href="https://en.wikipedia.org/wiki/Richardson_extrapolation">Richardson extrapolation</a>. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the .
@@ -397,8 +397,8 @@ A simple test:
 </div>
 </div>
 
-<div id="outline-container-orgff3e908" class="outline-2">
-<h2 id="orgff3e908"><span class="section-number-2">3</span> An iterator of iterators</h2>
+<div id="outline-container-org6acc2d6" class="outline-2">
+<h2 id="org6acc2d6"><span class="section-number-2">3</span> An iterator of iterators</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Do we actually need further improvements on the convergence? Not for the simple problems that we've been solving, but this is where the code gets interesting!
@@ -483,8 +483,8 @@ Does it work?
 </div>
 </div>
 
-<div id="outline-container-org579e8e6" class="outline-2">
-<h2 id="org579e8e6"><span class="section-number-2">4</span> Appendix: imports</h2>
+<div id="outline-container-org042c301" class="outline-2">
+<h2 id="org042c301"><span class="section-number-2">4</span> Appendix: imports</h2>
 <div class="outline-text-2" id="text-4">
 <div class="org-src-container">
 <pre class="src src-python">from math import log2
@@ -510,7 +510,7 @@ from diff import *
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-26 Sat 22:30</p>
+<p class="date">Created: 2022-03-26 Sat 22:38</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
