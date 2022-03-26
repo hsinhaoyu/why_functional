@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/tic-tac-toe.html
 #+OPTIONS: broken-links:t
 #+TITLE: Let's play Tic-tac-toe
-This chapter uses the game AI code developed in the [[org/game.org][previous chapter]] to play Tic-tac-toe. To play the game, run =tic_tac_toe.play()=.
+This chapter uses the game AI code developed in the [[org/game.org][previous chapter]] to play Tic-tac-toe. To play the game, run =tic_tac_toe.play()=. This part is not in Hughes' paper.
 
 #+begin_src python :noweb no-export :tangle ../src/tic_tac_toe.py
   <<TIC_TAC_TOE_IMPORTS>>
@@ -62,9 +62,17 @@ These functions define the Tic-tac-toe game world:
 #+end_src
 
 Note that the player who plays the next move is not stored as a game state, because it can easily be inferred from the game board by =who_plays=.
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_who_plays():
+      b = init_board()
+      assert who_plays(b) == 0
+
+      b[1] = 0
+      assert who_plays(b) == 1
+#+end_src
 
 * Legal moves
-The function =moves= encapsulates the legal moves of Tic-tac-toe.
+The function =moves= encapsulates the legal moves of Tic-tac-toe. Given a board configuration, =moves= returns an iterator of board configurations associated with the legal next moves.
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_RULES
   def make_move(board: Board, move: int, current_player: int) -> Board:
       """Apply a move (0-8) to a board for a player.
@@ -98,6 +106,22 @@ The function =moves= encapsulates the legal moves of Tic-tac-toe.
               return map(lambda i: make_move(board, i, next_player), candidate_moves)
 #+end_src
 
+Simple tests to make sure that =moves= knows it when no legal moves are available.
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_moves():
+      # there should be no legal move for 0 because 1 has already won
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      assert moves(b) is None
+
+      # there should be no legal move for 0 because 0 has already won    
+      b = [1, 0, 0, 1, 0, None, None, 0, 1]
+      assert moves(b) is None
+
+      # A draw. the board is full
+      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+      assert moves(b) is None
+#+end_src
+
 * The Tic-tac-toe game tree
 In the previous chapter, we defined generic =gametree= and =prune=. Here, we customize them for Tic-tac-toe:
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_TREE
@@ -108,22 +132,18 @@ In the previous chapter, we defined generic =gametree= and =prune=. Here, we cus
 #+end_src
 
 With these, we can generate all possible Tic-tac-toe games! Let's find out how big the tree is.
-#+begin_src python :noweb no-export :tangle ../src/test_tic_tac_toe.py
-  <<TEST_TIC_TAC_TOE_IMPORTS>>
+#+begin_src python :noweb no-export :results output :dir ../src/
+  <<DEMO_IMPORTS>>
 
-  def test_gametree():
-      print("\n\n## test_gametree: no pruning")
-      b0 = init_board()
-      t = gametree(b0)
-      d = tree_depth(t)
-      print("depth=", d)
-
-  def test_gametree2():
-      b0 = init_board()
-      t = gametree(b0)
-      s = tree_size(t)
-      print("size=", s)
+  d = tree_depth(gametree(init_board()))
+  print("depth=", d)
+  n = tree_size(gametree(init_board()))
+  print("# nodes=", n)
 #+end_src
+
+#+RESULTS:
+: depth= 10
+: # nodes= 549946
 
 For playing Tic-tac-toe, we set a limit to the depth of the game tree to =max_depth=, which is set to 5. Let's check the size of the pruned tree:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
@@ -141,6 +161,29 @@ For playing Tic-tac-toe, we set a limit to the depth of the game tree to =max_de
       t = prune(gametree(b0))
       s = tree_size(t)
       print("size=", s)
+#+end_src
+
+The winning conditions have to be reflected in the game tree. Let's make sure that they are:
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_game_tree_structure():
+      # Since player 0 has won, there should be no subtrees
+      b = [1, 0, 0, 1, 0, None, None, 0, 1]
+      assert won(b, 0) == True
+      t = gametree(b)
+      assert t[1] is None
+
+      # Since player 1 has won, there should be no subtrees
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      assert won(b, 1) == True
+      t = gametree(b)
+      assert t[1] is None
+
+      # This is a draw. There should be no subtrees
+      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+      assert won(b, 0) == False
+      assert won(b, 1) == False
+      t = gametree(b)
+      assert t[1] is None
 #+end_src
 
 * Static evaluation
@@ -199,6 +242,25 @@ A static evaluation function takes a board configuration and returns a number re
               return -1 * v
 
       return static_eval_
+#+end_src
+
+It's important that the static evaluation function knows when a player wins the game:
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_static_eval_winning_condition():
+      # evaluate for player 0
+      eval_0 = static_eval(0)
+      # evaluate for player 1
+      eval_1 = static_eval(1)
+
+      # player 0 won
+      b = [1, 0, 0, 1, 0, None, None, 0, 1]
+      assert eval_0(b) == posinf
+      assert eval_1(b) == neginf
+
+      # player 1 won
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      assert eval_0(b) == neginf
+      assert eval_1(b) == posinf
 #+end_src
 
 * Score the game tree
@@ -262,6 +324,25 @@ The following shows the distribution of the scores in a pruned tree:
       t = tree_labels(t) # collect all the states from the tree
       t = list(map(lambda s: s.score, t)) # extract just the scores 
       show_freq(freq(t))
+#+end_src
+
+The static evaluation function, when applied to the game tree, should reflect winning conditions.
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_gametree_evaluation():
+      # player 0 has won
+      b = [1, 0, 0, 1, 0, None, None, 0, 1]
+      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+      assert subtrees is None and score == posinf
+
+      # player 1 has won
+      b = [1, 0, 0, 1, 0, None, 1, None, None]
+      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+      assert subtrees is None and score == neginf
+
+      # This is a draw
+      b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+      (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+      assert subtrees is None and score == 0
 #+end_src
 
 * Minimax
@@ -409,10 +490,15 @@ The main game loop:
   import game
 #+end_src
 
-#+begin_src python :noweb yes :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
+#+begin_src python :tangle no :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
   from tic_tac_toe import init_board, moves, static_eval, display_board
   from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate1, won
   from tic_tac_toe import static_eval_state
   from lazy_utils import tree_size, tree_depth, maptree, tree_labels
   import pytest
+#+end_src
+
+#+begin_src python :tangoe no :noweb-ref DEMO_IMPORTS
+  from tic_tac_toe import init_board, gametree, prune
+  from lazy_utils import tree_size, tree_depth
 #+end_src

@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-25 Fri 23:29 -->
+<!-- 2022-03-26 Sat 22:30 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Let's play Tic-tac-toe</title>
@@ -224,18 +224,19 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org1f8bd22">1. The Tic-tac-toe game board</a></li>
-<li><a href="#org5f7406e">2. Legal moves</a></li>
-<li><a href="#org46aeaad">3. The Tic-tac-toe game tree</a></li>
-<li><a href="#org3e6658b">4. Static evaluation</a></li>
-<li><a href="#org51daef2">5. Minimax</a></li>
-<li><a href="#org978fb4f">6. Gameplay</a></li>
-<li><a href="#org2af3ffd">7. Imports</a></li>
+<li><a href="#org7c26080">1. The Tic-tac-toe game board</a></li>
+<li><a href="#org3dd2628">2. Legal moves</a></li>
+<li><a href="#org8e77114">3. The Tic-tac-toe game tree</a></li>
+<li><a href="#org6ffc4bb">4. Static evaluation</a></li>
+<li><a href="#orgf13fac0">5. Score the game tree</a></li>
+<li><a href="#org8bfafb7">6. Minimax</a></li>
+<li><a href="#org9b0a284">7. Gameplay</a></li>
+<li><a href="#org0125d7d">8. Imports</a></li>
 </ul>
 </div>
 </div>
 <p>
-This chapter uses the game AI code developed in the to play Tic-tac-toe. To play the game, run <code>tic_tac_toe.play()</code>.
+This chapter uses the game AI code developed in the to play Tic-tac-toe. To play the game, run <code>tic_tac_toe.play()</code>. This part is not in Hughes' paper.
 </p>
 
 <div class="org-src-container">
@@ -248,8 +249,8 @@ This chapter uses the game AI code developed in the to play Tic-tac-toe. To play
 </pre>
 </div>
 
-<div id="outline-container-org1f8bd22" class="outline-2">
-<h2 id="org1f8bd22"><span class="section-number-2">1</span> The Tic-tac-toe game board</h2>
+<div id="outline-container-org7c26080" class="outline-2">
+<h2 id="org7c26080"><span class="section-number-2">1</span> The Tic-tac-toe game board</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 These functions define the Tic-tac-toe game world:
@@ -304,14 +305,23 @@ def who_plays(board: Board) -&gt; int:
 <p>
 Note that the player who plays the next move is not stored as a game state, because it can easily be inferred from the game board by <code>who_plays</code>.
 </p>
+<div class="org-src-container">
+<pre class="src src-python">def test_who_plays():
+    b = init_board()
+    assert who_plays(b) == 0
+
+    b[1] = 0
+    assert who_plays(b) == 1
+</pre>
+</div>
 </div>
 </div>
 
-<div id="outline-container-org5f7406e" class="outline-2">
-<h2 id="org5f7406e"><span class="section-number-2">2</span> Legal moves</h2>
+<div id="outline-container-org3dd2628" class="outline-2">
+<h2 id="org3dd2628"><span class="section-number-2">2</span> Legal moves</h2>
 <div class="outline-text-2" id="text-2">
 <p>
-The function <code>moves</code> encapsulates the legal moves of Tic-tac-toe.
+The function <code>moves</code> encapsulates the legal moves of Tic-tac-toe. Given a board configuration, <code>moves</code> returns an iterator of board configurations associated with the legal next moves.
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def make_move(board: Board, move: int, current_player: int) -&gt; Board:
@@ -346,11 +356,30 @@ def moves(board: Board) -&gt; Optional[Iterator[Board]]:
 	    return map(lambda i: make_move(board, i, next_player), candidate_moves)
 </pre>
 </div>
+
+<p>
+Simple tests to make sure that <code>moves</code> knows it when no legal moves are available.
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def test_moves():
+    # there should be no legal move for 0 because 1 has already won
+    b = [1, 0, 0, 1, 0, None, 1, None, None]
+    assert moves(b) is None
+
+    # there should be no legal move for 0 because 0 has already won    
+    b = [1, 0, 0, 1, 0, None, None, 0, 1]
+    assert moves(b) is None
+
+    # A draw. the board is full
+    b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+    assert moves(b) is None
+</pre>
+</div>
 </div>
 </div>
 
-<div id="outline-container-org46aeaad" class="outline-2">
-<h2 id="org46aeaad"><span class="section-number-2">3</span> The Tic-tac-toe game tree</h2>
+<div id="outline-container-org8e77114" class="outline-2">
+<h2 id="org8e77114"><span class="section-number-2">3</span> The Tic-tac-toe game tree</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 In the previous chapter, we defined generic <code>gametree</code> and <code>prune</code>. Here, we customize them for Tic-tac-toe:
@@ -367,20 +396,12 @@ def prune(tree: Node) -&gt; Node:
 With these, we can generate all possible Tic-tac-toe games! Let's find out how big the tree is.
 </p>
 <div class="org-src-container">
-<pre class="src src-python">&lt;&lt;TEST_TIC_TAC_TOE_IMPORTS&gt;&gt;
+<pre class="src src-python">&lt;&lt;DEMO_IMPORTS&gt;&gt;
 
-def test_gametree():
-    print("\n\n## test_gametree: no pruning")
-    b0 = init_board()
-    t = gametree(b0)
-    d = tree_depth(t)
-    print("depth=", d)
-
-def test_gametree2():
-    b0 = init_board()
-    t = gametree(b0)
-    s = tree_size(t)
-    print("size=", s)
+d = tree_depth(gametree(init_board()))
+print("depth=", d)
+n = tree_size(gametree(init_board()))
+print("# nodes=", n)
 </pre>
 </div>
 
@@ -405,11 +426,37 @@ For playing Tic-tac-toe, we set a limit to the depth of the game tree to <code>m
     print("size=", s)
 </pre>
 </div>
+
+<p>
+The winning conditions have to be reflected in the game tree. Let's make sure that they are:
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def test_game_tree_structure():
+    # Since player 0 has won, there should be no subtrees
+    b = [1, 0, 0, 1, 0, None, None, 0, 1]
+    assert won(b, 0) == True
+    t = gametree(b)
+    assert t[1] is None
+
+    # Since player 1 has won, there should be no subtrees
+    b = [1, 0, 0, 1, 0, None, 1, None, None]
+    assert won(b, 1) == True
+    t = gametree(b)
+    assert t[1] is None
+
+    # This is a draw. There should be no subtrees
+    b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+    assert won(b, 0) == False
+    assert won(b, 1) == False
+    t = gametree(b)
+    assert t[1] is None
+</pre>
+</div>
 </div>
 </div>
 
-<div id="outline-container-org3e6658b" class="outline-2">
-<h2 id="org3e6658b"><span class="section-number-2">4</span> Static evaluation</h2>
+<div id="outline-container-org6ffc4bb" class="outline-2">
+<h2 id="org6ffc4bb"><span class="section-number-2">4</span> Static evaluation</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 A static evaluation function takes a board configuration and returns a number representing how good the position is (without taking future moves into account). There are different ways to evaluate how good a Tic-tac-toe configuration is. I implemented a common one in  <code>static_eval(player)</code>. For a given <code>player</code>, the function evaluates if the configuration "looks good". A positive number means that the configuration is good for <code>player</code>. A negative number means that it's good for the other player.
@@ -458,7 +505,7 @@ def static_eval_0(board: Board) -&gt; int:
 
 def static_eval(i: int) -&gt; Callable[[Board], int]:
     """Static board value for player i"""
-    assert i in [0, 1], i
+    assert i in [0, 1]
 
     def static_eval_(board):
 	v = static_eval_0(board)
@@ -472,7 +519,76 @@ def static_eval(i: int) -&gt; Callable[[Board], int]:
 </div>
 
 <p>
-Using the <code>maptree</code> function defined in a , we can score an entire game! The following shows the distribution of the scores in a pruned tree:
+It's important that the static evaluation function knows when a player wins the game:
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def test_static_eval_winning_condition():
+    # evaluate for player 0
+    eval_0 = static_eval(0)
+    # evaluate for player 1
+    eval_1 = static_eval(1)
+
+    # player 0 won
+    b = [1, 0, 0, 1, 0, None, None, 0, 1]
+    assert eval_0(b) == posinf
+    assert eval_1(b) == neginf
+
+    # player 1 won
+    b = [1, 0, 0, 1, 0, None, 1, None, None]
+    assert eval_0(b) == neginf
+    assert eval_1(b) == posinf
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgf13fac0" class="outline-2">
+<h2 id="orgf13fac0"><span class="section-number-2">5</span> Score the game tree</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+Using the <code>maptree</code> function defined in a to apply the static evaluation function to every node in the game tree, we can score an entire game!
+</p>
+
+<p>
+Instead of replacing each label in the game tree with a score, I want to keep the board configuration as well. So let's define a new version of <code>static_eval</code> that returns a state object. The <code>State</code> class defined below implements methods for numerical comparisons, so the Minimax-related functions defined in the previous chapter can treat a State as if it were an integer.
+</p>
+<div class="org-src-container">
+<pre class="src src-python">@dataclass
+class State:
+    board: Board
+    score: int
+
+    def __eq__(self, other):
+	return self.score == other.score
+    def __gt__(self, other):
+	return self.score &gt; other.score
+    def __ge__(self, othre):
+	return self.score &gt;= other.score
+    def __lt__(self, other):
+	return self.score &lt; other.score
+    def __le__(self, other):
+	return self.score &lt;= other.score
+</pre>
+</div>
+
+<p>
+This is the static evaluation function that returns a State:
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def static_eval_state(i: int) -&gt; Callable[[Board], State]:
+    """Static board state for player i"""
+    assert i in [0, 1]
+    score_func = static_eval(i)
+
+    def static_eval_(board):
+	return State(board, score_func(board))
+
+    return static_eval_
+</pre>
+</div>
+
+<p>
+The following shows the distribution of the scores in a pruned tree:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def test_static_eval():
@@ -495,68 +611,80 @@ Using the <code>maptree</code> function defined in a , we can score an entire ga
 
     b0 = init_board()
     t = prune(gametree(b0))
-    t = maptree(static_eval(0), t)
-    t = list(tree_labels(t))
+    t = maptree(static_eval_state(0), t)
+    t = tree_labels(t) # collect all the states from the tree
+    t = list(map(lambda s: s.score, t)) # extract just the scores 
     show_freq(freq(t))
+</pre>
+</div>
+
+<p>
+The static evaluation function, when applied to the game tree, should reflect winning conditions.
+</p>
+<div class="org-src-container">
+<pre class="src src-python">def test_gametree_evaluation():
+    # player 0 has won
+    b = [1, 0, 0, 1, 0, None, None, 0, 1]
+    (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+    assert subtrees is None and score == posinf
+
+    # player 1 has won
+    b = [1, 0, 0, 1, 0, None, 1, None, None]
+    (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+    assert subtrees is None and score == neginf
+
+    # This is a draw
+    b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
+    (score, subtrees) = maptree(static_eval(0), prune(gametree(b)))
+    assert subtrees is None and score == 0
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org51daef2" class="outline-2">
-<h2 id="org51daef2"><span class="section-number-2">5</span> Minimax</h2>
-<div class="outline-text-2" id="text-5">
+<div id="outline-container-org8bfafb7" class="outline-2">
+<h2 id="org8bfafb7"><span class="section-number-2">6</span> Minimax</h2>
+<div class="outline-text-2" id="text-6">
 <p>
 Here's the first move evaluation function, based on just Minimax:
 </p>
 <div class="org-src-container">
 <pre class="src src-python"># given a player, returns a tree evlauation function
-def evaluate1(player: int) -&gt; Callable[[Board], int]:
+def evaluate1(player: int) -&gt; Callable[[Board], State]:
     """Evaluate tic-tac-toe tree for player i (version 1)"""
-    return game.evaluate1(gametree, static_eval(player), prune)
-
-# given a tree evaluation function, return a function
-# which takes a board and returns a board
-def max_next_move(tree_eval_func: Callable[[Board], int]) -&gt; Callable[[Board], Optional[Board]]:
-    return game.max_next_move(gametree, tree_eval_func)
+    return game.evaluate1(gametree, static_eval_state(player), prune)
 </pre>
 </div>
 
 <p>
-Let's it on the most basic conditions:
+Let's try it on the most basic conditions:
 </p>
 <div class="org-src-container">
 <pre class="src src-python">def test_tree_eval():
+    print("## test_tree_eval()")
     b = [1, 0, 0, None, 0, None, 1, None, None]
-    print("\nGiven this board, player 1 to play")
+    print("\nGiven this board, player 1 (O) to play")
     player = 1
     display_board(b)
 
-    print("\nThis move wins")
-    b = [1, 0, 0, 1, 0, None, 1, None, None]
-    display_board(b)
-    score = evaluate1(player)(b)
-    assert score == posinf
+    best_move = evaluate1(player)(b)
+    print()
+    print("O's best move:")
+    display_board(best_move.board)
 
-    print("\nThis move will lose in the next move, so should get a losing score")
-    b = [1, 0, 0, None, 0, 1, 1, None, None]
-    display_board(b)
-    score = evaluate1(player)(b)
-    assert score == neginf
+    # player 1 should be able to win the game in one move
+    # so the score should be the winning score
+    assert best_move.score == posinf
 
-    print("\nThis move will win in the next move, so should get a winning score")
-    b = [1, 0, 0, None, 0, None, 1, 1, None]
-    display_board(b)
-    score = evaluate1(player)(b)
-    assert score == posinf
+#@pytest.mark.skip(reason="skip skip skip")    
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org978fb4f" class="outline-2">
-<h2 id="org978fb4f"><span class="section-number-2">6</span> Gameplay</h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-org9b0a284" class="outline-2">
+<h2 id="org9b0a284"><span class="section-number-2">7</span> Gameplay</h2>
+<div class="outline-text-2" id="text-7">
 <p>
 Simple utilities for displaying the game board and for handling human player moves:
 </p>
@@ -628,17 +756,18 @@ def human_next_move(board: Board) -&gt; Optional[Board]:
 This let a player make a move. A player can be human or computer.
 </p>
 <div class="org-src-container">
-<pre class="src src-python">def computer_next_move(board: Board) -&gt; Optional[Board]:
+<pre class="src src-python">def computer_next_move(board: Board, eval_func: Callable[[int],Callable[[Board], State]]) -&gt; Optional[Board]:
     player = who_plays(board)
-    computer_move_function = max_next_move(evaluate1(player))
-    return computer_move_function(board)
+    computer_move_function = eval_func(player)
+    # computer_move_function is a State
+    return computer_move_function(board).board
 
-def player_next_move(board: Board, player_settings = {0: 'human', 1: 'computer'}) -&gt; Optional[Board]:
+def player_next_move(board: Board, player_settings = {0: 'human', 1: 'computer'}, eval_func = evaluate1) -&gt; Optional[Board]:
     player = who_plays(board)
     if player_settings[player] == 'human':
 	return human_next_move(board)
     else:
-	return computer_next_move(board)
+	return computer_next_move(board, eval_func)
 </pre>
 </div>
 
@@ -646,12 +775,12 @@ def player_next_move(board: Board, player_settings = {0: 'human', 1: 'computer'}
 The main game loop:
 </p>
 <div class="org-src-container">
-<pre class="src src-python">def play(player_settings = {0: 'human', 1: 'computer'}) -&gt; None:
+<pre class="src src-python">def play(player_settings = {0: 'human', 1: 'computer'}, eval_func = evaluate1) -&gt; None:
     b = init_board()
 
     finished = False
     while not finished:
-	b = player_next_move(b, player_settings)
+	b = player_next_move(b, player_settings, eval_func)
 	player = (who_plays(b) + 1) % 2
 	print()
 	print(f"{player_token(player)} played:")
@@ -669,13 +798,14 @@ The main game loop:
 </div>
 </div>
 </div>
-<div id="outline-container-org2af3ffd" class="outline-2">
-<h2 id="org2af3ffd"><span class="section-number-2">7</span> Imports</h2>
-<div class="outline-text-2" id="text-7">
+<div id="outline-container-org0125d7d" class="outline-2">
+<h2 id="org0125d7d"><span class="section-number-2">8</span> Imports</h2>
+<div class="outline-text-2" id="text-8">
 <div class="org-src-container">
 <pre class="src src-python">from typing import List, Iterator, Callable, Optional
 from functools import reduce
 from random import shuffle
+from dataclasses import dataclass 
 
 from lazy_utils import Node
 import lazy_utils
@@ -686,7 +816,15 @@ import game
 <div class="org-src-container">
 <pre class="src src-python">from tic_tac_toe import init_board, moves, static_eval, display_board
 from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate1, won
+from tic_tac_toe import static_eval_state
 from lazy_utils import tree_size, tree_depth, maptree, tree_labels
+import pytest
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">from tic_tac_toe import init_board, gametree, prune
+from lazy_utils import tree_size, tree_depth
 </pre>
 </div>
 </div>
@@ -694,7 +832,7 @@ from lazy_utils import tree_size, tree_depth, maptree, tree_labels
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Hsin-Hao Yu</p>
-<p class="date">Created: 2022-03-25 Fri 23:29</p>
+<p class="date">Created: 2022-03-26 Sat 22:30</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
