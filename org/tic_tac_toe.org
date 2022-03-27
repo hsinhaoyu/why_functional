@@ -126,7 +126,7 @@ In the previous chapter, we defined generic =gametree= and =prune=. Here, we cus
       return lazy_utils.prune(max_depth, tree)
 #+end_src
 
-With these, we can generate all possible Tic-tac-toe games! Let's find out how big the tree is:
+With these, we can generate all possible Tic-tac-toe games! 
 #+begin_src python :exports both :noweb no-export :results output :dir ../src/
   <<DEMO_IMPORTS>>
   d = tree_depth(gametree(init_board()))
@@ -253,9 +253,7 @@ It's important that the static evaluation function knows when a player wins the 
 #+end_src
 
 * Score the game tree
-Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]] to apply the static evaluation function to every node in the game tree, we can score an entire game!
-
-The following shows the distribution of the scores in a pruned tree. You can see that the first player to move (player 0) does have a clear advantage:
+Using the =maptree= function defined in a [[lazy_tree.org][previous chapter]] to apply the static evaluation function to every node in the game tree, we can score an entire game! The following shows the distribution of the scores in a pruned tree. You can see that the first player does have a clear advantage:
 #+begin_src python :exports both :noweb no-export :results output :dir ../src/
   <<DEMO_IMPORTS>>
   def freq(lst):
@@ -299,7 +297,7 @@ The following shows the distribution of the scores in a pruned tree. You can see
     100000     1440
 #+end_example
 
-The static evaluation function, when applied to the game tree, should reflect winning conditions. Let's test that.
+The static evaluation function should reflect winning conditions in a game tree. Let's test that.
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_gametree_evaluation():
       # player 0 has won
@@ -359,7 +357,7 @@ In the board below, player 1 (represented by "O") can win in the next move. So t
 #+end_src
 
 * Minimax: a playable version
-This is the static evaluation function that returns a State:
+This version of the static evaluation function returns a State, rather than a number:
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   def static_eval_state(i: int) -> Callable[[Board], State]:
       """Static board state for player i"""
@@ -372,6 +370,7 @@ This is the static evaluation function that returns a State:
       return static_eval_
 #+end_src
 
+This version of Minimax returns the best next move:
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   # given a player, returns a tree evlauation function
   def evaluate1(player: int) -> Callable[[Board], State]:
@@ -379,7 +378,7 @@ This is the static evaluation function that returns a State:
       return game.evaluate1(gametree, static_eval_state(player), prune)
 #+end_src
 
-Test simple moves:
+Test a couple of simple moves:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
   def test_tree_eval():
       # player 1 should be able to win the game in one move
@@ -469,7 +468,7 @@ Simple utilities for displaying the game board and for handling human player mov
           return make_move(board, i, player) 
 #+end_src
 
-This let a player make a move. A player can be human or computer.
+This let a player make a move. A player can be a human or a computer.
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   def computer_next_move(board: Board, eval_func: Callable[[int],Callable[[Board], State]]) -> Optional[Board]:
       player = who_plays(board)
@@ -507,6 +506,7 @@ The main game loop:
               print("Draw!")
               finished = True  
 #+end_src
+
 * Imports
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_IMPORTS
   from typing import List, Iterator, Callable, Optional
