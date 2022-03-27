@@ -103,7 +103,12 @@ def test_tree_eval():
     best_move = evaluate1(player=1)(b)
     assert best_move.board == [1, 0, None, None, 0, None, None, 1, None]
 
-    # player 0's turn. It can win in 2 moves. The score should be posinf
+    # player 0's turn. It wins in 2 moves.
     b = [0, 1, None, None, 0, None, None, None, 1]
     best_move = evaluate1(player=0)(b)
     assert best_move.score == posinf
+
+    # player 1's turn. It loses in 2 moves
+    b = [0, 1, None, None, 0, None, 0, None, 1]
+    best_move = evaluate1(player=1)(b)
+    assert best_move.score == neginf

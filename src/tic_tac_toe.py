@@ -6,6 +6,7 @@ from lazy_utils import Node
 import lazy_utils
 import game
 from game import State
+
 ### gameplay options
 use_player_token = True
 shuffle_moves = False
@@ -156,6 +157,12 @@ def static_eval(player: int) -> Callable[[Board], int]:
     return static_eval_
 
 
+# given a player, returns a tree evlauation function
+def evaluate0(player: int) -> Callable[[Board], int]:
+    """Evaluate tic-tac-toe tree for player i (version 1)"""
+    return game.evaluate0(gametree, static_eval(player), prune)
+
+
 def static_eval_state(i: int) -> Callable[[Board], State]:
     """Static board state for player i"""
     assert i in [0, 1]
@@ -165,12 +172,6 @@ def static_eval_state(i: int) -> Callable[[Board], State]:
         return State(board, score_func(board))
 
     return static_eval_
-
-
-# given a player, returns a tree evlauation function
-def evaluate0(player: int) -> Callable[[Board], int]:
-    """Evaluate tic-tac-toe tree for player i (version 1)"""
-    return game.evaluate0(gametree, static_eval(player), prune)
 
 
 # given a player, returns a tree evlauation function
