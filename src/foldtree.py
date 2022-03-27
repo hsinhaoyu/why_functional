@@ -30,7 +30,6 @@ def sumtree(t: Tuple) -> int:
 
 def tree_labels(t):
     """Collect all labels of a tree into a list."""
-
     def f(label: Any, folded_subtrees: List) -> List:
         return [label] + folded_subtrees
 
@@ -44,7 +43,6 @@ def maptree(func: Callable, t: Tuple) -> Tuple:
     """Map a function to all labels in a tree.
     Return a new tree.
     """
-
     def f(label: Any, folded_subtrees: List) -> Tuple:
         return (func(label), folded_subtrees)
 
@@ -56,7 +54,6 @@ def maptree(func: Callable, t: Tuple) -> Tuple:
 
 def tree_size(t: Tuple) -> int:
     """Return the number of nodes in a tree"""
-
     def f(label, folded_subtrees: int):
         return 1 + folded_subtrees
 
@@ -68,7 +65,6 @@ def tree_size(t: Tuple) -> int:
 
 def tree_depth(t: Tuple) -> int:
     """Returns the maximal depth of nodes in the tree"""
-
     def f(label: Any, folded_subtrees: int):
         return 1 + folded_subtrees
 

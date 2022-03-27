@@ -1,11 +1,11 @@
 from typing import List, Iterator, Callable, Optional
 from functools import reduce
 from random import shuffle
-from dataclasses import dataclass
 
 from lazy_utils import Node
 import lazy_utils
 import game
+from game import State
 ### gameplay options
 use_player_token = True
 shuffle_moves = False
@@ -142,39 +142,18 @@ def static_eval_0(board: Board) -> int:
     return val
 
 
-def static_eval(i: int) -> Callable[[Board], int]:
+def static_eval(player: int) -> Callable[[Board], int]:
     """Static board value for player i"""
-    assert i in [0, 1]
+    assert player in [0, 1]
 
     def static_eval_(board):
         v = static_eval_0(board)
-        if i == 0:
+        if player == 0:
             return v
         else:
             return -1 * v
 
     return static_eval_
-
-
-@dataclass
-class State:
-    board: Board
-    score: int
-
-    def __eq__(self, other):
-        return self.score == other.score
-
-    def __gt__(self, other):
-        return self.score > other.score
-
-    def __ge__(self, othre):
-        return self.score >= other.score
-
-    def __lt__(self, other):
-        return self.score < other.score
-
-    def __le__(self, other):
-        return self.score <= other.score
 
 
 def static_eval_state(i: int) -> Callable[[Board], State]:
@@ -186,6 +165,12 @@ def static_eval_state(i: int) -> Callable[[Board], State]:
         return State(board, score_func(board))
 
     return static_eval_
+
+
+# given a player, returns a tree evlauation function
+def evaluate0(player: int) -> Callable[[Board], int]:
+    """Evaluate tic-tac-toe tree for player i (version 1)"""
+    return game.evaluate0(gametree, static_eval(player), prune)
 
 
 # given a player, returns a tree evlauation function
@@ -204,7 +189,6 @@ def player_token(i: int) -> str:
 
 def display_board(board: Board, coordinates=False) -> None:
     """Display a board"""
-
     def row(lst):
         return reduce(lambda a, b: a + " " + b, lst, "")
 

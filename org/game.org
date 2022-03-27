@@ -5,7 +5,7 @@
 In this chapter, we will apply the ideas developed so far to a more complicated problem: playing a two-player game. We'll develop the game AI code here, and then we'll use them to play Tic-tac-toe in the [[org/tic_tac_toe.org][next chapter]].
 
 * Build a (lazy) game tree
-Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a function to an initial value to generate a list. Let's extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree= to grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
+Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a function to an initial value to generate a list. We'll extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree= to grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -> Node:
       """Appy a function f to a label repeatedly to create a tree.
@@ -29,8 +29,6 @@ For playing games, we represent the rules of the game in a function called =move
   # Board is a type alias for representing a board configuration.
   # In this example,  it's just a list
   Board = List
-
-  <<GAME_UTILS>>
 
   def gametree(moves: Callable[[Board], Optional[Iterator[Board]]]) -> Callable[[Board], Node]:
       """Return a func that builds a gametree from an initial board.
@@ -68,66 +66,112 @@ The [[org/tic_tac_toe.org][next chapter]] customizes the code above to play Tic-
 
 Recall that =maptree= was defined in a the [[org/lazy_tree.org][lazy tree chapter]].
 
-* Minimax (using mutually recursive functions)
+* Minimax - the minimalist version
 [[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do to the computer in a follow-up move (this is the "min" step). Then take the move that is associated with the best outcome for the computer (the "max" step). But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: It's the human's best move against the computer future moves. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
+
 #+begin_src python :noweb yes :tangle ../src/game.py
-  def maximize1(gametree: Node) -> int:
+  def maximize0(node: Node) -> int:
       """The max step of Minimax"""
-      (score, subtrees) = gametree
+      (score, subtrees) = node
 
       if subtrees is None:
           s = score
       else:
-          s = max(map(minimize1, subtrees))
+          s = max(map(minimize0, subtrees))
       return s
 
-  def minimize1(gametree: Node) -> int:
+  def minimize0(node: Node) -> int:
       """The min step of Minimax.
       A node in gametree is ((board, score), subtrees)
       Returns (board, score) with the minimal score
       """    
-      (score, subtrees) = gametree
+      (score, subtrees) = node
 
       if subtrees is None:
           s = score
       else:
-          s = min(map(maximize1, subtrees))
+          s = min(map(maximize0, subtrees))
       return s
 #+end_src
 
-The code below is the first version of our tree evaluation function. The code is easy to read, because it's a chain of functions: given a board configuration, creates a game tree of all possible configurations, prune it to limit the search to a fixed steps ahead, apply the static evaluation to all the nodes, and then uses Minimax to return a score. Note that all the functions in the chain are lazy. Although the code reads like pruning, scoring, and minimaxing apply to the whole tree, only the parts that are needed will be evaluated.
+The code below is the first version of our tree evaluation function. Note that all the functions in the chain are lazy. Although the code reads like pruning, scoring, and minimaxing apply to the whole tree one function after another, in reality only the parts that are needed by the subsequent functions will be evaluated.
+#+begin_src python :noweb yes :tangle ../src/game.py
+  def evaluate0(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
+      """Return a tree evaluation function"""
+      def evaluate_(board: Board) -> int:
+          return maximize0(maptree(static_eval_, prune_(gametree_(board))))
+      return evaluate_
+#+end_src
+
+* Minimax - a more general version
+The Minimax code in Hughes' paper is very minimalist (similar to =evaluate0=). I'll expand it slightly. First, I want the labels in the tree to store game board configurations in addition to the static scores. I decided to define a =State= class. Note that I implemented the rich comparison protocol, so that states can be compared just like numbers.  
+#+begin_src python :noweb yes :tangle ../src/game.py
+  @dataclass
+  class State:
+      board: Board
+      score: int
+
+      def __eq__(self, other):
+          return self.score == other.score
+      def __gt__(self, other):
+          return self.score > other.score
+      def __ge__(self, othre):
+          return self.score >= other.score
+      def __lt__(self, other):
+          return self.score < other.score
+      def __le__(self, other):
+          return self.score <= other.score
+#+end_src
+
+This version of Minimax is very similar to the one in the previous section, except for two changes: first, I decomposed =maximize0= into two functions: =maximized1_= only does and mapping, leaving =maximize1= to do the max. This decomposition will be useful in the next section. 
+#+begin_src python :noweb yes :tangle ../src/game.py
+  def maximize1_(node: Node) -> Iterator[State]:
+      """The max step of Minimax before max"""
+      (state, subtrees) = node
+
+      if subtrees is None:
+          yield state
+      else:
+          for s in map_(minimize1, subtrees):
+              yield s
+
+  def maximize1(node) -> State:
+      return max(maximize1_(node))
+
+  def minimize1_(node: Node) -> Iterator[State]:
+      """The min step of Minimax before min"""
+      (state, subtrees) = node
+
+      if subtrees is None:
+          yield state
+      else:
+          for s in map_(maximize1, subtrees):
+              yield s
+
+  def minimize1(node) -> State:
+      return min(minimize1_(node))
+#+end_src
+
+Second, I replaced =map= with =map_=, which is very similar to the regular =map=, except that it takes care of the board configurations in the states. The board configurations returned from =func= are boards of the future. We'll replace them with just the moves under consideration.
+#+begin_src python :noweb yes :tangle ../src/game.py
+  def map_(func: Callable[[Node], State], subtrees: Iterator[Node]) -> Iterator[State]:
+      """Replace the board return from map with boards in subtrees"""
+      assert subtrees is not None
+
+      for subtree in subtrees:
+          # a subtree is a node
+          (state0, _) = subtree
+          state1 = func(subtree)
+          yield State(state0.board, state1.score)
+#+end_src
+
+This is the second version of the tree evaluation function:
 #+begin_src python :noweb yes :tangle ../src/game.py
   def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
       """Return a tree evaluation function"""
       def evaluate_(board: Board) -> int:
           return maximize1(maptree(static_eval_, prune_(gametree_(board))))
       return evaluate_
-#+end_src
-
-* A slight modification
-#+begin_src python :noweb yes :tangle filename
-  def maximize2_(gametree: Node) -> int:
-      """The max step of Minimax"""
-      (score, subtrees) = gametree
-
-      if subtrees is None:
-          s = score
-      else:
-          s = map(minimize1, subtrees)
-      return s
-
-  def minimize2_(gametree: Node) -> int:
-      """The min step of Minimax.
-      A node in gametree is ((board, score), subtrees)
-      Returns (board, score) with the minimal score
-      """    
-      (score, subtrees) = gametree
-
-      if subtrees is None:
-          s = score
-      else:
-          s = map(maximize1, subtrees)
-      return s
 #+end_src
 
 * Alpha-beta pruning (using iterators of iterators)
@@ -268,8 +312,10 @@ Here's the implementation:
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
   from functools import reduce
   from typing import Callable, List, Iterator, Tuple, Optional, Union
-  from lazy_utils import reptree, maptree, Node
+  from dataclasses import dataclass 
   import operator
+
+  from lazy_utils import reptree, maptree, Node
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref RUNTIME_IMPORTS

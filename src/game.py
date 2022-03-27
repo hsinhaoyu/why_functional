@@ -1,7 +1,9 @@
 from functools import reduce
 from typing import Callable, List, Iterator, Tuple, Optional, Union
-from lazy_utils import reptree, maptree, Node
+from dataclasses import dataclass
 import operator
+
+from lazy_utils import reptree, maptree, Node
 
 # Board is a type alias for representing a board configuration.
 # In this example,  it's just a list
@@ -14,43 +16,114 @@ def gametree(
     """Return a func that builds a gametree from an initial board.
     moves is a function that returns all legal moves given a board.
     """
-
     def gametree_(board: Board) -> Node:
         return reptree(moves, board)
 
     return gametree_
 
 
-def maximize1(gametree: Node) -> int:
+def maximize0(node: Node) -> int:
     """The max step of Minimax"""
-    (score, subtrees) = gametree
+    (score, subtrees) = node
 
     if subtrees is None:
         s = score
     else:
-        s = max(map(minimize1, subtrees))
+        s = max(map(minimize0, subtrees))
     return s
 
 
-def minimize1(gametree: Node) -> int:
+def minimize0(node: Node) -> int:
     """The min step of Minimax.
     A node in gametree is ((board, score), subtrees)
     Returns (board, score) with the minimal score
     """
-    (score, subtrees) = gametree
+    (score, subtrees) = node
 
     if subtrees is None:
         s = score
     else:
-        s = min(map(maximize1, subtrees))
+        s = min(map(maximize0, subtrees))
     return s
+
+
+def evaluate0(gametree_: Callable[[Board],
+                                  Node], static_eval_: Callable[[Board], int],
+              prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
+    """Return a tree evaluation function"""
+    def evaluate_(board: Board) -> int:
+        return maximize0(maptree(static_eval_, prune_(gametree_(board))))
+
+    return evaluate_
+
+
+@dataclass
+class State:
+    board: Board
+    score: int
+
+    def __eq__(self, other):
+        return self.score == other.score
+
+    def __gt__(self, other):
+        return self.score > other.score
+
+    def __ge__(self, othre):
+        return self.score >= other.score
+
+    def __lt__(self, other):
+        return self.score < other.score
+
+    def __le__(self, other):
+        return self.score <= other.score
+
+
+def maximize1_(node: Node) -> Iterator[State]:
+    """The max step of Minimax before max"""
+    (state, subtrees) = node
+
+    if subtrees is None:
+        yield state
+    else:
+        for s in map_(minimize1, subtrees):
+            yield s
+
+
+def maximize1(node) -> State:
+    return max(maximize1_(node))
+
+
+def minimize1_(node: Node) -> Iterator[State]:
+    """The min step of Minimax before min"""
+    (state, subtrees) = node
+
+    if subtrees is None:
+        yield state
+    else:
+        for s in map_(maximize1, subtrees):
+            yield s
+
+
+def minimize1(node) -> State:
+    return min(minimize1_(node))
+
+
+def map_(func: Callable[[Node], State],
+         subtrees: Iterator[Node]) -> Iterator[State]:
+    """Replace the board return from map with boards in subtrees"""
+    assert subtrees is not None
+
+    for subtree in subtrees:
+        # a subtree is a node
+        (state0, _) = subtree
+        state1 = func(subtree)
+        yield State(state0.board, state1.score)
 
 
 def evaluate1(gametree_: Callable[[Board],
                                   Node], static_eval_: Callable[[Board], int],
               prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
     """Return a tree evaluation function"""
-
     def evaluate_(board: Board) -> int:
         return maximize1(maptree(static_eval_, prune_(gametree_(board))))
 
@@ -59,11 +132,9 @@ def evaluate1(gametree_: Callable[[Board],
 
 def mk_ab_seq(comp: Callable, op: Callable) -> Callable:
     """Given a comparison function comp and an operator op, return a function."""
-
     def ab_seq(seq: Optional[Iterator],
                pot: int) -> Optional[Union[int, bool]]:
         """Efficient min/max of an iterator, given potential max/min"""
-
         def ab_seq_(seq, current_val):
             try:
                 i = next(seq)
@@ -132,7 +203,6 @@ def mapmax(seqs: Iterator[Iterator]) -> Iterator:
 
 def mk_omit(skip_func: Callable) -> Callable:
     """The skip function is either minleq or maxgeq"""
-
     def omit_(
             pot: int, seqs: Optional[Iterator[Iterator[int]]]
     ) -> Iterator[Optional[int]]:

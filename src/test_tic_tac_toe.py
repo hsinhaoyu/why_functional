@@ -1,3 +1,10 @@
+from tic_tac_toe import init_board, moves, static_eval, display_board
+from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate0, evaluate1, won
+from tic_tac_toe import static_eval_state
+from lazy_utils import tree_size, tree_depth, maptree, tree_labels
+import pytest
+
+
 def test_who_plays():
     b = init_board()
     assert who_plays(b) == 0
@@ -18,21 +25,6 @@ def test_moves():
     # A draw. the board is full
     b = [1, 0, 1, 0, 0, 1, 0, 1, 0]
     assert moves(b) is None
-
-
-def test_prune():
-    print("\n\n## test_prune: after pruning")
-    b0 = init_board()
-    t = prune(gametree(b0))
-    d = tree_depth(t)
-    print("depth=", d)
-
-
-def test_prune2():
-    b0 = init_board()
-    t = prune(gametree(b0))
-    s = tree_size(t)
-    print("size=", s)
 
 
 def test_game_tree_structure():
@@ -73,33 +65,6 @@ def test_static_eval_winning_condition():
     assert eval_1(b) == posinf
 
 
-def test_static_eval():
-    """Apply static eval to a game tree"""
-    print("\n## test_static_eval2")
-
-    def freq(lst):
-        dict = {}
-        for i in lst:
-            if i in dict:
-                dict[i] = dict[i] + 1
-            else:
-                dict[i] = 1
-        return dict
-
-    def show_freq(dict):
-        k = dict.keys()
-        k = sorted(k)
-        for kk in k:
-            print(f'{kk:10}     {dict[kk]}')
-
-    b0 = init_board()
-    t = prune(gametree(b0))
-    t = maptree(static_eval_state(0), t)
-    t = tree_labels(t)  # collect all the states from the tree
-    t = list(map(lambda s: s.score, t))  # extract just the scores
-    show_freq(freq(t))
-
-
 def test_gametree_evaluation():
     # player 0 has won
     b = [1, 0, 0, 1, 0, None, None, 0, 1]
@@ -118,20 +83,27 @@ def test_gametree_evaluation():
 
 
 def test_tree_eval():
-    print("## test_tree_eval()")
-    b = [1, 0, 0, None, 0, None, 1, None, None]
-    print("\nGiven this board, player 1 (O) to play")
-    player = 1
-    display_board(b)
-
-    best_move = evaluate1(player)(b)
-    print()
-    print("O's best move:")
-    display_board(best_move.board)
-
     # player 1 should be able to win the game in one move
     # so the score should be the winning score
+    b = [1, 0, 0, None, 0, None, 1, None, None]
+    player = 1
+    score = evaluate0(player)(b)
     assert best_move.score == posinf
 
 
-#@pytest.mark.skip(reason="skip skip skip")
+def test_tree_eval():
+    # player 1 should be able to win the game in one move
+    # so the score should be the winning score
+    b = [1, 0, 0, None, 0, None, 1, None, None]
+    best_move = evaluate1(player=1)(b)
+    assert best_move.score == posinf
+
+    # player 1 should block player 0's winning move
+    b = [1, 0, None, None, 0, None, None, None, None]
+    best_move = evaluate1(player=1)(b)
+    assert best_move.board == [1, 0, None, None, 0, None, None, 1, None]
+
+    # player 0's turn. It can win in 2 moves. The score should be posinf
+    b = [0, 1, None, None, 0, None, None, None, 1]
+    best_move = evaluate1(player=0)(b)
+    assert best_move.score == posinf
