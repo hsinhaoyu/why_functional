@@ -196,12 +196,6 @@ This is the third version of the tree evaluation function:
           (state0, _) = subtree
           yield replace_board(state0.board, func(subtree))
 
-  def mapmin_(itr):
-      return map(min, itr)
-
-  def mapmax_(itr):
-      return map(max, itr)
-
   def maximize2_(node: Node) -> Iterator[State]:
       """The max step of Minimax before max"""
       (state, subtrees) = node
@@ -210,7 +204,7 @@ This is the third version of the tree evaluation function:
           yield state
       else:
           #sutrees is an iterator of nodes
-          for s in mapmin_(map2_(minimize2_, subtrees)):
+          for s in mapmin(map2_(minimize2_, subtrees)):
               yield s
 
   def maximize2(node: Node) -> State:
@@ -223,7 +217,7 @@ This is the third version of the tree evaluation function:
       if subtrees is None:
           yield state
       else:
-          for s in mapmax_(map2_(maximize2_, subtrees)):
+          for s in mapmax(map2_(maximize2_, subtrees)):
               yield s
 
   def minimize2(node: Node) -> State:

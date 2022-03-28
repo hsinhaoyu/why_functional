@@ -212,6 +212,7 @@ def mk_omit(skip_func: Callable) -> Callable:
         for seq in seqs:
             m = skip_func(seq, pot)
             if m is True:
+                print("skipped")
                 for i in omit_(pot, seqs):
                     yield i
             else:
@@ -235,23 +236,18 @@ Skip those that don't matter. Sequence decreases.
 """
 
 
-def help(board, itr):
+def replace_board(board, itr):
     for state in itr:
         yield State(board, state.score)
 
 
 def map2_(func: Callable[[Node], State],
           subtrees: Iterator[Node]) -> Iterator[State]:
-    """Replace the board return from map with boards in subtrees"""
     assert subtrees is not None
 
     for subtree in subtrees:
-        # a subtree is a node
         (state0, _) = subtree
-        board = state0.board
-        itr = func(subtree)
-        yield help(board, itr)
-        #yield State(state0.board, state1.score)
+        yield replace_board(state0.board, func(subtree))
 
 
 def mapmin_(itr):
@@ -270,7 +266,7 @@ def maximize2_(node: Node) -> Iterator[State]:
         yield state
     else:
         #sutrees is an iterator of nodes
-        for s in mapmin_(map2_(minimize2_, subtrees)):
+        for s in mapmin(map2_(minimize2_, subtrees)):
             yield s
 
 
@@ -285,7 +281,7 @@ def minimize2_(node: Node) -> Iterator[State]:
     if subtrees is None:
         yield state
     else:
-        for s in mapmax_(map2_(maximize2_, subtrees)):
+        for s in mapmax(map2_(maximize2_, subtrees)):
             yield s
 
 
