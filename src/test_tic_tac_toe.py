@@ -83,16 +83,16 @@ def test_gametree_evaluation():
     assert subtrees is None and score == 0
 
 
-def test_tree_eval():
+def test_tree_eval0():
     # player 1 should be able to win the game in one move
     # so the score should be the winning score
     b = [1, 0, 0, None, 0, None, 1, None, None]
     player = 1
     score = evaluate0(player)(b)
-    assert best_move.score == posinf
+    assert score == posinf
 
 
-def test_tree_eval():
+def test_tree_eval1():
     # player 1 should be able to win the game in one move
     # so the score should be the winning score
     b = [1, 0, 0, None, 0, None, 1, None, None]
@@ -112,4 +112,27 @@ def test_tree_eval():
     # player 1's turn. It loses in 2 moves
     b = [0, 1, None, None, 0, None, 0, None, 1]
     best_move = evaluate1(player=1)(b)
+    assert best_move.score == neginf
+
+
+def test_tree_eval2():
+    # player 1 should be able to win the game in one move
+    # so the score should be the winning score
+    b = [1, 0, 0, None, 0, None, 1, None, None]
+    best_move = evaluate2(player=1)(b)
+    assert best_move.score == posinf
+
+    # player 1 should block player 0's winning move
+    b = [1, 0, None, None, 0, None, None, None, None]
+    best_move = evaluate2(player=1)(b)
+    assert best_move.board == [1, 0, None, None, 0, None, None, 1, None]
+
+    # player 0's turn. It wins in 2 moves.
+    b = [0, 1, None, None, 0, None, None, None, 1]
+    best_move = evaluate2(player=0)(b)
+    assert best_move.score == posinf
+
+    # player 1's turn. It loses in 2 moves
+    b = [0, 1, None, None, 0, None, 0, None, 1]
+    best_move = evaluate2(player=1)(b)
     assert best_move.score == neginf

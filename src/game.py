@@ -1,5 +1,4 @@
-from functools import reduce
-from typing import Callable, List, Iterator, Tuple, Optional, Union
+from typing import Callable, List, Iterator, Optional, Union
 from dataclasses import dataclass
 import operator
 
@@ -80,6 +79,33 @@ class State:
         return self.score <= other.score
 
 
+def map_(func: Callable[[Node], State],
+         subtrees: Iterator[Node]) -> Iterator[State]:
+    """Replace boards in an iterator with boards in subtrees"""
+    assert subtrees is not None
+
+    for subtree in subtrees:
+        # a subtree is a node
+        (state0, _) = subtree
+        state1 = func(subtree)
+        yield State(state0.board, state1.score)
+
+
+def replace_board(board, itr):
+    for state in itr:
+        yield State(board, state.score)
+
+
+def map2_(func: Callable[[Node], Iterator[State]],
+          subtrees: Iterator[Node]) -> Iterator[Iterator[State]]:
+    """Replace boards in an iterator of iterators with boards in subtrees"""
+    assert subtrees is not None
+
+    for subtree in subtrees:
+        (state0, _) = subtree
+        yield replace_board(state0.board, func(subtree))
+
+
 def maximize1_(node: Node) -> Iterator[State]:
     """The max step of Minimax before max"""
     (state, subtrees) = node
@@ -108,18 +134,6 @@ def minimize1_(node: Node) -> Iterator[State]:
 
 def minimize1(node: Node) -> State:
     return min(minimize1_(node))
-
-
-def map_(func: Callable[[Node], State],
-         subtrees: Iterator[Node]) -> Iterator[State]:
-    """Replace the board return from map with boards in subtrees"""
-    assert subtrees is not None
-
-    for subtree in subtrees:
-        # a subtree is a node
-        (state0, _) = subtree
-        state1 = func(subtree)
-        yield State(state0.board, state1.score)
 
 
 def evaluate1(gametree_: Callable[[Board], Node],
@@ -238,20 +252,6 @@ omit_max.__doc__ = """
 Given an initial potental min, return the max of subsequences.
 Skip those that don't matter. Sequence decreases.
 """
-
-
-def replace_board(board, itr):
-    for state in itr:
-        yield State(board, state.score)
-
-
-def map2_(func: Callable[[Node], Iterator[State]],
-          subtrees: Iterator[Node]) -> Iterator[Iterator[State]]:
-    assert subtrees is not None
-
-    for subtree in subtrees:
-        (state0, _) = subtree
-        yield replace_board(state0.board, func(subtree))
 
 
 def maximize2_(node: Node) -> Iterator[State]:

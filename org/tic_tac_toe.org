@@ -347,13 +347,13 @@ In the board below, player 1 (represented by "O") can win in the next move. So t
 : score= 100000
 
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_tree_eval():
+  def test_tree_eval0():
       # player 1 should be able to win the game in one move
       # so the score should be the winning score
       b = [1, 0, 0, None, 0, None, 1, None, None]
       player = 1
       score = evaluate0(player)(b)
-      assert best_move.score == posinf
+      assert score == posinf
 #+end_src
 
 * Minimax: a playable version
@@ -380,7 +380,7 @@ This version of Minimax returns the best next move:
 
 Test a couple of simple moves:
 #+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
-  def test_tree_eval():
+  def test_tree_eval1():
       # player 1 should be able to win the game in one move
       # so the score should be the winning score
       b = [1, 0, 0, None, 0, None, 1, None, None]
@@ -404,11 +404,37 @@ Test a couple of simple moves:
 #+end_src
 
 * Minimax with alpha-beta pruning
+=evaluate2= improves the efficiency of =evaluate1= using alpha-beta pruning. 
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
   # given a player, returns a tree evlauation function
   def evaluate2(player: int) -> Callable[[Board], State]:
       """Evaluate tic-tac-toe tree for player i (version 1)"""
       return game.evaluate2(gametree, static_eval_state(player), prune)
+#+end_src
+
+Test a couple of simple moves:
+#+begin_src python :noweb yes :tangle ../src/test_tic_tac_toe.py
+  def test_tree_eval2():
+      # player 1 should be able to win the game in one move
+      # so the score should be the winning score
+      b = [1, 0, 0, None, 0, None, 1, None, None]
+      best_move = evaluate2(player = 1)(b)
+      assert best_move.score == posinf
+
+      # player 1 should block player 0's winning move
+      b = [1, 0, None, None, 0, None, None, None, None]
+      best_move = evaluate2(player = 1)(b)
+      assert best_move.board == [1, 0, None, None, 0, None, None, 1, None]
+
+      # player 0's turn. It wins in 2 moves. 
+      b = [0, 1, None, None, 0, None, None, None, 1]
+      best_move = evaluate2(player = 0)(b)
+      assert best_move.score == posinf
+
+      # player 1's turn. It loses in 2 moves
+      b = [0, 1, None, None, 0, None, 0, None, 1]
+      best_move = evaluate2(player = 1)(b)
+      assert best_move.score == neginf
 #+end_src
 
 * Gameplay
@@ -518,8 +544,8 @@ The main game loop:
 * Imports
 #+begin_src python :tangle no :noweb-ref TIC_TAC_TOE_IMPORTS
   from typing import List, Iterator, Callable, Optional
-  from functools import reduce
   from random import shuffle
+  from functools import reduce
 
   from lazy_utils import Node
   import lazy_utils

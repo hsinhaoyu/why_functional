@@ -1,6 +1,6 @@
 from typing import List, Iterator, Callable, Optional
-from functools import reduce
 from random import shuffle
+from functools import reduce
 
 from lazy_utils import Node
 import lazy_utils

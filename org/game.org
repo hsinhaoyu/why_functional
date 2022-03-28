@@ -104,7 +104,7 @@ The code below is the first version of our tree evaluation function. Note that a
 #+end_src
 
 * Minimax - a more general version
-The Minimax code in Hughes' paper is very minimalist (similar to =evaluate0=). I'll expand it slightly. First, I want the labels in the tree to store game board configurations in addition to the static scores. I decided to define a =State= class. Note that I implemented the rich comparison protocol, so that states can be compared just like numbers.  
+The Minimax code in Hughes' paper is very minimalist (similar to =evaluate0=). It returns a score rather than a move. I'll expand it slightly. First, I want to store game board configurations in the labels in the game tree. It's done with a =State= class. Note that I implemented the rich comparison protocol, so that states can be compared just like numbers.  
 #+begin_src python :noweb yes :tangle ../src/game.py
   @dataclass
   class State:
@@ -123,8 +123,10 @@ The Minimax code in Hughes' paper is very minimalist (similar to =evaluate0=). I
           return self.score <= other.score
 #+end_src
 
-This version of Minimax is very similar to the one in the previous section, except for two changes: first, I decomposed =maximize0= into two functions: =maximized1_= only does and mapping, leaving =maximize1= to do the max. This decomposition will be useful in the next section. 
+This updated version of Minimax is very similar to the one in the previous section, except for two changes: first, I decomposed =maximize0= into two functions: =maximized1_= only does and mapping, leaving =maximize1= to do the max. This decomposition will be useful in the next section. 
 #+begin_src python :noweb yes :tangle ../src/game.py
+  <<MISC_UTILS>>
+
   def maximize1_(node: Node) -> Iterator[State]:
       """The max step of Minimax before max"""
       (state, subtrees) = node
@@ -152,18 +154,7 @@ This version of Minimax is very similar to the one in the previous section, exce
       return min(minimize1_(node))
 #+end_src
 
-Second, I replaced =map= with =map_=, which is very similar to the regular =map=, except that it takes care of the board configurations in the states. The board configurations returned from =func= are boards of the future. We'll replace them with just the moves under consideration.
-#+begin_src python :noweb yes :tangle ../src/game.py
-  def map_(func: Callable[[Node], State], subtrees: Iterator[Node]) -> Iterator[State]:
-      """Replace the board return from map with boards in subtrees"""
-      assert subtrees is not None
-
-      for subtree in subtrees:
-          # a subtree is a node
-          (state0, _) = subtree
-          state1 = func(subtree)
-          yield State(state0.board, state1.score)
-#+end_src
+Second, I replaced =map= with =map_=, which is very similar to the regular =map=, except that it takes care of the board configurations in the states. The board configurations returned from =func= are boards of the future. We'll replace them with just the moves under consideration. The definition is in Appendix 2.
 
 This is the second version of the tree evaluation function:
 #+begin_src python :noweb yes :tangle ../src/game.py
@@ -179,22 +170,11 @@ Minimax visits every node in the game tree. Is there a way to avoid visiting bra
 
 There is a way. Step 1: recall that =maximize1_= calls =minimize1=, which means that =maximize1_= returns an iterator of values (technically, it's an iterator of States. But in each State is a single value, the score). Instead, we'll make it call =minimize1_=. This means that =maximize_= returns an iterator of iterators.
 
-Step 2: there is a way to skip some of the iterators (at least partially). The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in the end of this chapter. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the maximum of the two sublists' minima. The minimum of [1, 2] is 1. When we get to [0, X], we don't know the minimum, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
+Step 2: There is a way to skip some of the iterators (at least partially). The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in Appendix 2. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the maximum of the two sublists' minima. The minimum of [1, 2] is 1. When we get to [0, X], we don't know the minimum, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
 
-This is the third version of the tree evaluation function:
+This is the updated version of Minimax:
 #+begin_src python :noweb no-export :tangle ../src/game.py
   <<ALPHA_BETA_UTILS>>
-
-  def replace_board(board, itr):
-      for state in itr:
-          yield State(board, state.score)
-
-  def map2_(func: Callable[[Node], Iterator[State]], subtrees: Iterator[Node]) -> Iterator[Iterator[State]]:
-      assert subtrees is not None
-
-      for subtree in subtrees:
-          (state0, _) = subtree
-          yield replace_board(state0.board, func(subtree))
 
   def maximize2_(node: Node) -> Iterator[State]:
       """The max step of Minimax before max"""
@@ -224,7 +204,7 @@ This is the third version of the tree evaluation function:
       return min(minimize2_(node))
 #+end_src
 
-The third version of the tree evaluation function:
+And the third version of the tree evaluation function:
 #+begin_src python :noweb yes :tangle ../src/game.py
   def evaluate2(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], State], prune_: Callable[[Node], Node]) -> Callable[[Board], State]:
       """Return a tree evaluation function"""
@@ -233,7 +213,7 @@ The third version of the tree evaluation function:
       return evaluate_
 #+end_src
 
-* Alpha-beta utilities
+* Appendix 1: Alpha-beta utilities
 To implement =mapmin=, we begin with =minleq=. Given an iterator =seq= and a "potential max" =mx=, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
 #+begin_src python :exports both :noweb no-export :results value :dir ../src/
   <<DEMO_IMPORTS>>
@@ -370,10 +350,34 @@ Here's the implementation:
 
 =mapmin=, =omit_max= and =minleq= are for the max step. Similarly, =mapmax=, =omit_min= and =maxgeq= are for the min step. 
 
-* Appendix: Imports
+* Appendix 2: Miscellaneous
+#+begin_src python :tangle no :noweb-ref MISC_UTILS
+  def map_(func: Callable[[Node], State], subtrees: Iterator[Node]) -> Iterator[State]:
+      """Replace boards in an iterator with boards in subtrees"""
+      assert subtrees is not None
+
+      for subtree in subtrees:
+          # a subtree is a node
+          (state0, _) = subtree
+          state1 = func(subtree)
+          yield State(state0.board, state1.score)
+
+  def replace_board(board, itr):
+      for state in itr:
+          yield State(board, state.score)
+
+  def map2_(func: Callable[[Node], Iterator[State]], subtrees: Iterator[Node]) -> Iterator[Iterator[State]]:
+      """Replace boards in an iterator of iterators with boards in subtrees"""
+      assert subtrees is not None
+
+      for subtree in subtrees:
+          (state0, _) = subtree
+          yield replace_board(state0.board, func(subtree))
+#+end_src
+
+* Appendix 3: Imports
 #+begin_src python :tangle no :noweb-ref GAME_IMPORTS
-  from functools import reduce
-  from typing import Callable, List, Iterator, Tuple, Optional, Union
+  from typing import Callable, List, Iterator, Optional, Union
   from dataclasses import dataclass 
   import operator
 
