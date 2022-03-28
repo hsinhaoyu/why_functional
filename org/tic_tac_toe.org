@@ -403,6 +403,14 @@ Test a couple of simple moves:
       assert best_move.score == neginf
 #+end_src
 
+* Minimax with alpha-beta pruning
+#+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
+  # given a player, returns a tree evlauation function
+  def evaluate2(player: int) -> Callable[[Board], State]:
+      """Evaluate tic-tac-toe tree for player i (version 1)"""
+      return game.evaluate2(gametree, static_eval_state(player), prune)
+#+end_src
+
 * Gameplay
 Simple utilities for displaying the game board and for handling human player moves:
 #+begin_src python :noweb yes :tangle ../src/tic_tac_toe.py
@@ -521,8 +529,9 @@ The main game loop:
 
 #+begin_src python :tangle no :noweb-ref TEST_TIC_TAC_TOE_IMPORTS
   from tic_tac_toe import init_board, moves, static_eval, display_board
-  from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate0, evaluate1, won
+  from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, won
   from tic_tac_toe import static_eval_state
+  from tic_tac_toe import evaluate0, evaluate1, evaluate2
   from lazy_utils import tree_size, tree_depth, maptree, tree_labels
   import pytest
 #+end_src

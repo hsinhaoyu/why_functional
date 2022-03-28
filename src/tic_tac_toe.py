@@ -180,6 +180,12 @@ def evaluate1(player: int) -> Callable[[Board], State]:
     return game.evaluate1(gametree, static_eval_state(player), prune)
 
 
+# given a player, returns a tree evlauation function
+def evaluate2(player: int) -> Callable[[Board], State]:
+    """Evaluate tic-tac-toe tree for player i (version 1)"""
+    return game.evaluate2(gametree, static_eval_state(player), prune)
+
+
 def player_token(i: int) -> str:
     assert i in [0, 1]
     if use_player_token:

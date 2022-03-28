@@ -115,7 +115,7 @@ The Minimax code in Hughes' paper is very minimalist (similar to =evaluate0=). I
           return self.score == other.score
       def __gt__(self, other):
           return self.score > other.score
-      def __ge__(self, othre):
+      def __ge__(self, other):
           return self.score >= other.score
       def __lt__(self, other):
           return self.score < other.score
@@ -135,7 +135,7 @@ This version of Minimax is very similar to the one in the previous section, exce
           for s in map_(minimize1, subtrees):
               yield s
 
-  def maximize1(node) -> State:
+  def maximize1(node: Node) -> State:
       return max(maximize1_(node))
 
   def minimize1_(node: Node) -> Iterator[State]:
@@ -148,7 +148,7 @@ This version of Minimax is very similar to the one in the previous section, exce
           for s in map_(maximize1, subtrees):
               yield s
 
-  def minimize1(node) -> State:
+  def minimize1(node: Node) -> State:
       return min(minimize1_(node))
 #+end_src
 
@@ -169,36 +169,100 @@ This is the second version of the tree evaluation function:
 #+begin_src python :noweb yes :tangle ../src/game.py
   def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
       """Return a tree evaluation function"""
-      def evaluate_(board: Board) -> int:
+      def evaluate_(board: Board) -> State:
           return maximize1(maptree(static_eval_, prune_(gametree_(board))))
       return evaluate_
 #+end_src
 
 * Alpha-beta pruning (using iterators of iterators)
-In the previous section, the tree evaluation function uses the lazy tree is efficient: because only a segment of the tree is needed at a time, the entire tree doesn't need to be stored in memory. Once a branch has been evaluated, it can be garbage collected immediately. However, Minimax does need to visit every node in the tree. Is there a way to prevent Minimax from visiting branches that are obviously not promising?
+Minimax visits every node in the game tree. Is there a way to avoid visiting branches that are obviously not promising?
 
-The answer is yes. The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in the end of this chapter. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the max of the min of the two sublists. The min of [1, 2] is 1. When we get to [0, X], we don't know the min, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
+There is a way. Step 1: recall that =maximize1_= calls =minimize1=, which means that =maximize1_= returns an iterator of values (technically, it's an iterator of States. But in each State is a single value, the score). Instead, we'll make it call =minimize1_=. This means that =maximize_= returns an iterator of iterators.
 
+Step 2: there is a way to skip some of the iterators (at least partially). The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in the end of this chapter. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the maximum of the two sublists' minima. The minimum of [1, 2] is 1. When we get to [0, X], we don't know the minimum, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
+
+This is the third version of the tree evaluation function:
 #+begin_src python :noweb no-export :tangle ../src/game.py
   <<ALPHA_BETA_UTILS>>
+
+  def replace_board(board, itr):
+      for state in itr:
+          yield State(board, state.score)
+
+  def map2_(func: Callable[[Node], State], subtrees: Iterator[Node]) -> Iterator[State]:
+      assert subtrees is not None
+
+      for subtree in subtrees:
+          (state0, _) = subtree
+          yield replace_board(state0.board, func(subtree))
+
+  def mapmin_(itr):
+      return map(min, itr)
+
+  def mapmax_(itr):
+      return map(max, itr)
+
+  def maximize2_(node: Node) -> Iterator[State]:
+      """The max step of Minimax before max"""
+      (state, subtrees) = node
+
+      if subtrees is None:
+          yield state
+      else:
+          #sutrees is an iterator of nodes
+          for s in mapmin_(map2_(minimize2_, subtrees)):
+              yield s
+
+  def maximize2(node: Node) -> State:
+      return max(maximize2_(node))
+
+  def minimize2_(node: Node) -> Iterator[State]:
+      """The min step of Minimax before min"""
+      (state, subtrees) = node
+
+      if subtrees is None:
+          yield state
+      else:
+          for s in mapmax_(map2_(maximize2_, subtrees)):
+              yield s
+
+  def minimize2(node: Node) -> State:
+      return min(minimize2_(node))
+#+end_src
+
+The third version of the tree evaluation function:
+#+begin_src python :noweb yes :tangle ../src/game.py
+  def evaluate2(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
+      """Return a tree evaluation function"""
+      def evaluate_(board: Board) -> State:
+          return maximize2(maptree(static_eval_, prune_(gametree_(board))))
+      return evaluate_
 #+end_src
 
 * Alpha-beta utilities
 To implement =mapmin=, we begin with =minleq=. Given an iterator =seq= and a "potential max" =mx=, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
-#+begin_src python
-  minleq(iter([3, 2, 5, 30, 1, 6]), 20)
+#+begin_src python :exports both :noweb no-export :results value :dir ../src/
+  <<DEMO_IMPORTS>>
+  return minleq(iter([3, 2, 5, 30, 1, 6]), 20)
 #+end_src
+
+#+RESULTS:
+: True
 
 =minleq(itr, 20)= is looking for a value greater than 20. The first value of =itr= is 3, which means that the minimum of =itr= is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The returned value =True= indicates that this sequence is to be omitted. In the context of games, this is not a move that needs to be considered further, because the first counter-move we consider is already pretty bad (3), It's true that the 4th counter-move can be very good for us (30), but we can't count on the opponent making a blunder, can we?
 
 The following statement, however, returns 1.
-#+begin_src python
-  minleq(iter([3, 2, 5, 30, 1, 6]), 0)
+#+begin_src python :exports both :noweb no-export :results value :dir ../src/
+  <<DEMO_IMPORTS>>
+  return minleq(iter([3, 2, 5, 30, 1, 6]), 0)
 #+end_src
+
+#+RESULTS:
+: 1
 
 This sequence cannot be omitted because all numbers are larger than the potential max. In that case, the minimum (1) is return. In the context of games, this move is stronger than what had been considered before, because no matter what the counter-move is, we always end up in a better position.
 
-Here's the code. See [[org/tests.org][test.org]] for more examples.
+Here's the code. See [[org/tests.org][test.org]] for more test cases.
 #+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
   def mk_ab_seq(comp: Callable, op: Callable) -> Callable:
       """Given a comparison function comp and an operator op, return a function."""
@@ -239,11 +303,15 @@ Here's the code. See [[org/tests.org][test.org]] for more examples.
   Else return True"""
 #+end_src
 
-With =minleq=, we can write =mapmin=. It takes a iterators of sub-iterators, and return the minima of the sub-iterators, omitting the sub-iterators that don't matter. For example, the following code returns [1, 3]. Note that it is an increasing sequence.
-#+begin_src python :noweb yes :tangle filename
+With =minleq=, we can write =mapmin=. It takes a iterators of sub-iterators, and returns the minima of the sub-iterators, omitting the sub-iterators that don't matter. For example, the following code returns [1, 3]. Note that it is an increasing sequence.
+#+begin_src python :exports both :noweb no-export :results value raw :dir ../src/
+  <<DEMO_IMPORTS>>
   seqs = iter([iter([1, 2]), iter([0, 10]), iter([3, 20]), iter([1, 100])])
-  list(mapmin(seqs))
+  return list(mapmin(seqs))
 #+end_src
+
+#+RESULTS:
+[1, 3]
 
 Here's the implementation:
 #+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
@@ -318,7 +386,6 @@ Here's the implementation:
   from lazy_utils import reptree, maptree, Node
 #+end_src
 
-#+begin_src python :tangle no :noweb-ref RUNTIME_IMPORTS
-  from typing import Callable, Optional, Iterator, Union
-  import operator
+#+begin_src python :tangle no :noweb-ref DEMO_IMPORTS
+  from game import minleq, mapmin
 #+end_src

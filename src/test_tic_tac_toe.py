@@ -1,6 +1,7 @@
 from tic_tac_toe import init_board, moves, static_eval, display_board
-from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, evaluate0, evaluate1, won
+from tic_tac_toe import who_plays, posinf, neginf, gametree, prune, won
 from tic_tac_toe import static_eval_state
+from tic_tac_toe import evaluate0, evaluate1, evaluate2
 from lazy_utils import tree_size, tree_depth, maptree, tree_labels
 import pytest
 

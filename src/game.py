@@ -68,7 +68,7 @@ class State:
     def __gt__(self, other):
         return self.score > other.score
 
-    def __ge__(self, othre):
+    def __ge__(self, other):
         return self.score >= other.score
 
     def __lt__(self, other):
@@ -89,7 +89,7 @@ def maximize1_(node: Node) -> Iterator[State]:
             yield s
 
 
-def maximize1(node) -> State:
+def maximize1(node: Node) -> State:
     return max(maximize1_(node))
 
 
@@ -104,7 +104,7 @@ def minimize1_(node: Node) -> Iterator[State]:
             yield s
 
 
-def minimize1(node) -> State:
+def minimize1(node: Node) -> State:
     return min(minimize1_(node))
 
 
@@ -124,7 +124,7 @@ def evaluate1(gametree_: Callable[[Board],
                                   Node], static_eval_: Callable[[Board], int],
               prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
     """Return a tree evaluation function"""
-    def evaluate_(board: Board) -> int:
+    def evaluate_(board: Board) -> State:
         return maximize1(maptree(static_eval_, prune_(gametree_(board))))
 
     return evaluate_
@@ -233,3 +233,71 @@ omit_max.__doc__ = """
 Given an initial potental min, return the max of subsequences.
 Skip those that don't matter. Sequence decreases.
 """
+
+
+def help(board, itr):
+    for state in itr:
+        yield State(board, state.score)
+
+
+def map2_(func: Callable[[Node], State],
+          subtrees: Iterator[Node]) -> Iterator[State]:
+    """Replace the board return from map with boards in subtrees"""
+    assert subtrees is not None
+
+    for subtree in subtrees:
+        # a subtree is a node
+        (state0, _) = subtree
+        board = state0.board
+        itr = func(subtree)
+        yield help(board, itr)
+        #yield State(state0.board, state1.score)
+
+
+def mapmin_(itr):
+    return map(min, itr)
+
+
+def mapmax_(itr):
+    return map(max, itr)
+
+
+def maximize2_(node: Node) -> Iterator[State]:
+    """The max step of Minimax before max"""
+    (state, subtrees) = node
+
+    if subtrees is None:
+        yield state
+    else:
+        #sutrees is an iterator of nodes
+        for s in mapmin_(map2_(minimize2_, subtrees)):
+            yield s
+
+
+def maximize2(node: Node) -> State:
+    return max(maximize2_(node))
+
+
+def minimize2_(node: Node) -> Iterator[State]:
+    """The min step of Minimax before min"""
+    (state, subtrees) = node
+
+    if subtrees is None:
+        yield state
+    else:
+        for s in mapmax_(map2_(maximize2_, subtrees)):
+            yield s
+
+
+def minimize2(node: Node) -> State:
+    return min(minimize2_(node))
+
+
+def evaluate2(gametree_: Callable[[Board],
+                                  Node], static_eval_: Callable[[Board], int],
+              prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
+    """Return a tree evaluation function"""
+    def evaluate_(board: Board) -> State:
+        return maximize2(maptree(static_eval_, prune_(gametree_(board))))
+
+    return evaluate_
