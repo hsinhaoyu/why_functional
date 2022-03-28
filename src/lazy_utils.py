@@ -60,6 +60,7 @@ def sumtree(t: Node) -> int:
 
 
 def tree_labels(t: Node) -> Iterator:
+
     def f(label: Any, folded_subtrees: Iterator) -> Iterator:
         yield label
         for item in folded_subtrees:
@@ -75,6 +76,7 @@ def tree_labels(t: Node) -> Iterator:
 
 
 def maptree(func: Callable, t: Node) -> Node:
+
     def f(label: Any, folded_subtrees: Optional[Iterator]):
         return Node(func(label), folded_subtrees)
 
@@ -88,6 +90,7 @@ def maptree(func: Callable, t: Node) -> Node:
 
 
 def tree_size(t: Node) -> int:
+
     def f(label, folded_subtrees):
         return 1 + folded_subtrees
 
@@ -95,6 +98,7 @@ def tree_size(t: Node) -> int:
 
 
 def tree_depth(t: Node) -> int:
+
     def f(label: Any, folded_subtrees: int):
         return 1 + folded_subtrees
 
@@ -108,6 +112,7 @@ def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -> Node:
     """Appy a function f to a label repeatedly to create a tree.
     f(label) is a list of labels
     """
+
     def make_children(lst):
         if lst is None:
             # f produces nothing

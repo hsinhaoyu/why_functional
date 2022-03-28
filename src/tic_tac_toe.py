@@ -196,14 +196,15 @@ def player_token(i: int) -> str:
 
 def display_board(board: Board, coordinates=False) -> None:
     """Display a board"""
+
     def row(lst):
         return reduce(lambda a, b: a + " " + b, lst, "")
 
     d = {None: '.', 1: player_token(1), 0: player_token(0)}
 
     zz = list(map(lambda i: d[i], board))
-    zz = [zz[i:i + 3] for i in range(0, 9, 3)]
-    zz = list(map(row, zz))
+    zz = [zz[i:i + 3] for i in range(0, 9, 3)]  # type:ignore
+    zz = list(map(row, zz))  # type:ignore
 
     if coordinates:
 
@@ -285,7 +286,7 @@ def play(
 
     finished = False
     while not finished:
-        b = player_next_move(b, player_settings, eval_func)
+        b = player_next_move(b, player_settings, eval_func)  # type:ignore
         player = (who_plays(b) + 1) % 2
         print()
         print(f"{player_token(player)} played:")

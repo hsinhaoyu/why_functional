@@ -167,7 +167,7 @@ Second, I replaced =map= with =map_=, which is very similar to the regular =map=
 
 This is the second version of the tree evaluation function:
 #+begin_src python :noweb yes :tangle ../src/game.py
-  def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
+  def evaluate1(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], State], prune_: Callable[[Node], Node]) -> Callable[[Board], State]:
       """Return a tree evaluation function"""
       def evaluate_(board: Board) -> State:
           return maximize1(maptree(static_eval_, prune_(gametree_(board))))
@@ -189,7 +189,7 @@ This is the third version of the tree evaluation function:
       for state in itr:
           yield State(board, state.score)
 
-  def map2_(func: Callable[[Node], State], subtrees: Iterator[Node]) -> Iterator[State]:
+  def map2_(func: Callable[[Node], Iterator[State]], subtrees: Iterator[Node]) -> Iterator[Iterator[State]]:
       assert subtrees is not None
 
       for subtree in subtrees:
@@ -226,7 +226,7 @@ This is the third version of the tree evaluation function:
 
 The third version of the tree evaluation function:
 #+begin_src python :noweb yes :tangle ../src/game.py
-  def evaluate2(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], int], prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
+  def evaluate2(gametree_: Callable[[Board], Node], static_eval_: Callable[[Board], State], prune_: Callable[[Node], Node]) -> Callable[[Board], State]:
       """Return a tree evaluation function"""
       def evaluate_(board: Board) -> State:
           return maximize2(maptree(static_eval_, prune_(gametree_(board))))
@@ -339,7 +339,7 @@ Here's the implementation:
 
   def mk_omit(skip_func: Callable) -> Callable:
       """The skip function is either minleq or maxgeq"""
-      def omit_(pot: int, seqs: Optional[Iterator[Iterator[int]]]) -> Iterator[Optional[int]]:
+      def omit_(pot: int, seqs: Iterator[Iterator[int]]) -> Iterator[Optional[int]]:
           """Given an iterator of iterators, call skip_func.
           If the returned value is true, skip it. Otherwise, yield the value
           """

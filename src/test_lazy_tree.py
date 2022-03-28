@@ -48,6 +48,7 @@ def test_tree_labels():
 
 
 def test_maptree():
+
     def f(n):
         return -1 * n
 

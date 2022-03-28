@@ -16,6 +16,7 @@ def gametree(
     """Return a func that builds a gametree from an initial board.
     moves is a function that returns all legal moves given a board.
     """
+
     def gametree_(board: Board) -> Node:
         return reptree(moves, board)
 
@@ -51,6 +52,7 @@ def evaluate0(gametree_: Callable[[Board],
                                   Node], static_eval_: Callable[[Board], int],
               prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
     """Return a tree evaluation function"""
+
     def evaluate_(board: Board) -> int:
         return maximize0(maptree(static_eval_, prune_(gametree_(board))))
 
@@ -120,10 +122,11 @@ def map_(func: Callable[[Node], State],
         yield State(state0.board, state1.score)
 
 
-def evaluate1(gametree_: Callable[[Board],
-                                  Node], static_eval_: Callable[[Board], int],
-              prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
+def evaluate1(gametree_: Callable[[Board], Node],
+              static_eval_: Callable[[Board], State],
+              prune_: Callable[[Node], Node]) -> Callable[[Board], State]:
     """Return a tree evaluation function"""
+
     def evaluate_(board: Board) -> State:
         return maximize1(maptree(static_eval_, prune_(gametree_(board))))
 
@@ -132,9 +135,11 @@ def evaluate1(gametree_: Callable[[Board],
 
 def mk_ab_seq(comp: Callable, op: Callable) -> Callable:
     """Given a comparison function comp and an operator op, return a function."""
+
     def ab_seq(seq: Optional[Iterator],
                pot: int) -> Optional[Union[int, bool]]:
         """Efficient min/max of an iterator, given potential max/min"""
+
         def ab_seq_(seq, current_val):
             try:
                 i = next(seq)
@@ -203,16 +208,15 @@ def mapmax(seqs: Iterator[Iterator]) -> Iterator:
 
 def mk_omit(skip_func: Callable) -> Callable:
     """The skip function is either minleq or maxgeq"""
-    def omit_(
-            pot: int, seqs: Optional[Iterator[Iterator[int]]]
-    ) -> Iterator[Optional[int]]:
+
+    def omit_(pot: int,
+              seqs: Iterator[Iterator[int]]) -> Iterator[Optional[int]]:
         """Given an iterator of iterators, call skip_func.
         If the returned value is true, skip it. Otherwise, yield the value
         """
         for seq in seqs:
             m = skip_func(seq, pot)
             if m is True:
-                print("skipped")
                 for i in omit_(pot, seqs):
                     yield i
             else:
@@ -241,21 +245,13 @@ def replace_board(board, itr):
         yield State(board, state.score)
 
 
-def map2_(func: Callable[[Node], State],
-          subtrees: Iterator[Node]) -> Iterator[State]:
+def map2_(func: Callable[[Node], Iterator[State]],
+          subtrees: Iterator[Node]) -> Iterator[Iterator[State]]:
     assert subtrees is not None
 
     for subtree in subtrees:
         (state0, _) = subtree
         yield replace_board(state0.board, func(subtree))
-
-
-def mapmin_(itr):
-    return map(min, itr)
-
-
-def mapmax_(itr):
-    return map(max, itr)
 
 
 def maximize2_(node: Node) -> Iterator[State]:
@@ -289,10 +285,11 @@ def minimize2(node: Node) -> State:
     return min(minimize2_(node))
 
 
-def evaluate2(gametree_: Callable[[Board],
-                                  Node], static_eval_: Callable[[Board], int],
-              prune_: Callable[[Node], Node]) -> Callable[[Board], int]:
+def evaluate2(gametree_: Callable[[Board], Node],
+              static_eval_: Callable[[Board], State],
+              prune_: Callable[[Node], Node]) -> Callable[[Board], State]:
     """Return a tree evaluation function"""
+
     def evaluate_(board: Board) -> State:
         return maximize2(maptree(static_eval_, prune_(gametree_(board))))
 
