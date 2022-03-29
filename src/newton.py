@@ -20,3 +20,9 @@ def newton_sqrt(n: float, a: float) -> float:
     """Approximate sqrt(n) starting from a, using the Newton-Raphson method."""
     r = within(0.00001, repeat_f(next_sqrt_approx(n), a))
     return next(r)
+
+
+def newton_sqrt_relative(n: float, a: float) -> float:
+    """Approximate sqrt(n) starting from a, using the Newton-Raphson method."""
+    r = relative(0.00001, repeat_f(next_sqrt_approx(n), a))
+    return next(r)

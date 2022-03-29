@@ -71,7 +71,9 @@ Again, approximating sqrt(10.0) from 2.0:
 [2.0, 3.5, 3.178571428571429, 3.162319422150883, 3.1622776604441363]
 
 This can be used as a test case:
-#+begin_src python :noweb yes :tangle ../src/test_newton.py
+#+begin_src python :noweb no-export :tangle ../src/test_newton.py
+  <<TEST_NEWTON_IMPORTS>>
+
   def test_newton_sqrt_():
       r = newton_sqrt_(10.0, 2.0)
       v1, v2, v3 = next(r), next(r), next(r)
@@ -81,15 +83,17 @@ This can be used as a test case:
 #+end_src
 
 * Add a stopping condition
-We add a =within= function to stop the iteration when the difference between two successive iterations is smaller than =esp=.
+We add a =within= function to stop the iteration when the difference between two successive iterations is smaller than =esp=. Note that it doesn't catch =StopIteration= because it's written for infinite iterators.
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def within(esp: float, itr: Iterator[float]) -> Iterator[float]:
       """Stop if the next two iterations have a small delta."""
+      a = next(itr)
       while True:
-          a = next(itr)
           b = next(itr)
           if abs(a - b) <= esp:
-              yield b              
+              yield b
+          else:
+              a = b
 #+end_src
 
 Now we can solve our numerical problem:
@@ -116,22 +120,31 @@ A simple test:
 #+end_src
 
 * Try a different stopping condition
+The advantage of writing programs as a chain of functions is that it's highly modular, so it's easy to swap some of the functions out. Let's say we want to try a different stopping condition:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def relative(esp: float, itr: Iterator[float]) -> Iterator[float]:
       """Stop if the next two iterations have a small delta."""
+      a = next(itr)
       while True:
-          a = next(itr)
           b = next(itr)
-          if abs(a/b - 1) < esp:
-              yield b              
+          if abs(a/b - 1) <= esp:
+              yield b
+          else:
+              a = b
 #+end_src
 
-Now we can solve our numerical problem:
+We only need to replace the last function:
 #+begin_src python :noweb yes :tangle ../src/newton.py
-  def newton_sqrt(n: float, a: float) -> float:
+  def newton_sqrt_relative(n: float, a: float) -> float:
       """Approximate sqrt(n) starting from a, using the Newton-Raphson method."""
-      r = within(0.00001, repeat_f(next_sqrt_approx(n), a))
+      r = relative(0.00001, repeat_f(next_sqrt_approx(n), a))
       return next(r)
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/test_newton.py
+  def test_newton_sqrt_relative():
+      res = newton_sqrt_relative(10.0, 2.0)
+      assert res == pytest.approx(math.sqrt(10.0))
 #+end_src
 
 * Appendix: Imports

@@ -14,11 +14,24 @@ def repeat_f(f: Callable[[float], float], a: float) -> Iterator[float]:
 
 def within(esp: float, itr: Iterator[float]) -> Iterator[float]:
     """Stop if the next two iterations have a small delta."""
+    a = next(itr)
     while True:
-        a = next(itr)
         b = next(itr)
-        if abs(a - b) < esp:
+        if abs(a - b) <= esp:
             yield b
+        else:
+            a = b
+
+
+def relative(esp: float, itr: Iterator[float]) -> Iterator[float]:
+    """Stop if the next two iterations have a small delta."""
+    a = next(itr)
+    while True:
+        b = next(itr)
+        if abs(a / b - 1) <= esp:
+            yield b
+        else:
+            a = b
 
 
 def repeat_itr(f: Callable[[Iterator], Iterator], i: Iterator) -> Iterator:
