@@ -169,7 +169,7 @@ Since this article is about programming rather than games, we'll go through the 
 
 To make the search more efficient, step 1: recall that =maximize1_= calls =minimize1=, which means that =maximize1_= returns an iterator of values (technically, it's an iterator of States. But in each State is a single value, the score). Instead, we'll make it call =minimize1_=. This means that =maximize_= returns an iterator of iterators.
 
-Step 2: There is a way to skip some of the iterators (at least partially). The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in Appendix 1. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the maximum of the two sublists' minima. The minimum of [1, 2] is 1. When we get to [0, X], we don't know the minimum, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
+Step 2: There is a way to skip some of the iterators (at least partially). The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in Appendix 1. =mapmin= is just like =map(min, ...)=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the maximum of the two sublists' minima. The minimum of [1, 2] is 1. When we get to [0, X], we don't know the minimum, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
 
 This is the updated version of Minimax:
 #+begin_src python :noweb no-export :tangle ../src/game.py
@@ -214,7 +214,7 @@ And the third version of the tree evaluation function:
 #+end_src
 
 * Appendix 1: Alpha-beta utilities
-To implement =mapmin=, we begin with =minleq=. Given an iterator =seq= and a "potential max" =mx=, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
+The heart of alpha-beta pruning is =mapmin=. It's just a more efficient version of =map(min, ...)= in the context of Minimax. To implement =mapmin=, we begin with =minleq=. Given an iterator =seq= and a "potential max" =mx= in a max step, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
 #+begin_src python :exports both :noweb no-export :results value :dir ../src/
   <<DEMO_IMPORTS>>
   return minleq(iter([3, 2, 5, 30, 1, 6]), 20)
@@ -223,7 +223,7 @@ To implement =mapmin=, we begin with =minleq=. Given an iterator =seq= and a "po
 #+RESULTS:
 : True
 
-=minleq(itr, 20)= is looking for a value greater than 20. The first value of =itr= is 3, which means that the minimum of =itr= is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The returned value =True= indicates that this sequence is to be omitted. In the context of games, this is not a move that needs to be considered further, because the first counter-move we consider is already pretty bad (3), It's true that the 4th counter-move can be very good for us (30), but we can't count on the opponent making a blunder, can we?
+=minleq(itr, 20)= is looking for a value greater than 20. The first value of =itr= is 3, which means that the minimum of =itr= is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The returned value =True= indicates that this sequence is to be omitted. In the context of games, this means that the max step is considering a move that doesn't need to be considered further, because the first potential counter-move that the opponent can make is already pretty bad for us (score=3). It's true that the 4th potential counter-move can be very good for us (score=30), but we can't count on the opponent making a blunder, can we?
 
 The following statement, however, returns 1.
 #+begin_src python :exports both :noweb no-export :results value :dir ../src/
@@ -234,7 +234,7 @@ The following statement, however, returns 1.
 #+RESULTS:
 : 1
 
-This sequence cannot be omitted because all numbers are larger than the potential max. In that case, the minimum (1) is return. In the context of games, this move is stronger than what had been considered before, because no matter what the counter-move is, we always end up in a better position.
+This sequence cannot be omitted because all numbers are larger than the potential max. In that case, the minimum (score=1) is returned. In the context of games, the max step is considering a move that is stronger than what had been considered before, because no matter what the counter-move is, we always end up in a better position.
 
 Here's the code. See [[tests.org][here]] for more test cases.
 #+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
