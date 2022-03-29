@@ -1,13 +1,3 @@
-import math
-import pytest
-from newton import *
-
-
-def test_next_sqrt_approx():
-    f = next_sqrt_approx(10.0)
-    assert f(2.0) == pytest.approx(3.5)
-
-
 def test_newton_sqrt_():
     r = newton_sqrt_(10.0, 2.0)
     v1, v2, v3 = next(r), next(r), next(r)

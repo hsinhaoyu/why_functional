@@ -88,7 +88,7 @@ We add a =within= function to stop the iteration when the difference between two
       while True:
           a = next(itr)
           b = next(itr)
-          if abs(a - b) < esp:
+          if abs(a - b) <= esp:
               yield b              
 #+end_src
 
@@ -113,6 +113,25 @@ A simple test:
   def test_newton_sqrt():
       res = newton_sqrt(10.0, 2.0)
       assert res == pytest.approx(math.sqrt(10.0))
+#+end_src
+
+* Try a different stopping condition
+#+begin_src python :noweb yes :tangle ../src/lazy_utils.py
+  def relative(esp: float, itr: Iterator[float]) -> Iterator[float]:
+      """Stop if the next two iterations have a small delta."""
+      while True:
+          a = next(itr)
+          b = next(itr)
+          if abs(a/b - 1) < esp:
+              yield b              
+#+end_src
+
+Now we can solve our numerical problem:
+#+begin_src python :noweb yes :tangle ../src/newton.py
+  def newton_sqrt(n: float, a: float) -> float:
+      """Approximate sqrt(n) starting from a, using the Newton-Raphson method."""
+      r = within(0.00001, repeat_f(next_sqrt_approx(n), a))
+      return next(r)
 #+end_src
 
 * Appendix: Imports

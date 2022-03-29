@@ -49,7 +49,7 @@ A simple test: differentiate sin(x) at 1.0, starting with a very large gap (=h0=
 #+end_src
 
 * Improve convergence with sequence transformation
-A problem with =differentiate= above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called [[https://en.wikipedia.org/wiki/Richardson_extrapolation][Richardson extrapolation]]. It's a sequence transformation technique that can be use on a wide range of approximating sequences. We'll use it again in the [[org/integration.org][next chapter]].
+A problem with =differentiate= above is that the sequence converges slowly. This sections uses a numerical trick to improve the convergence. We'll focus on the code structure, not the math, but the technique is called [[https://en.wikipedia.org/wiki/Richardson_extrapolation][Richardson extrapolation]]. It's a sequence transformation technique that can be use on a wide range of problems in numerical approximation. We'll use it again in the [[org/integration.org][next chapter]].
 
 With an appropriately-chosen integer =n=, the convergence of a sequence (represented as a generator) can improved by the =elimerror= function defined below. What it does is that it slides a length 2 window over the original sequence, and applies a correction based on the two values(=c= below). 
 #+begin_src python :noweb yes :tangle ../src/diff.py
@@ -65,20 +65,24 @@ With an appropriately-chosen integer =n=, the convergence of a sequence (represe
 #+end_src
 
 We don't know how to set =n= yet, but let's try the code with an arbitrary number (=n=2=). 
-#+begin_src python :noweb yes :tangle ../src/test_diff.py :results output
-  def test_elimerror():
-      print("\n## test_elimerror:")
+#+begin_src python :exports both :noweb no-export :results output :dir ../src/
+  <<DEMO_IMPORTS>>
+  def f(x: float) -> float:
+      return sin(x)
 
-      h0, x, n = 5.0, 1.0, 2
+  h0, x, n = 5.0, 1.0, 2
 
-      seq1 = differentiate(h0, f, x)
-      print("seq1:", list(islice(seq1, 20)))
-
-      seq1 = differentiate(h0, f, x)     
-      seq2 = elimerror(n, seq1)
-
-      print("seq2:", list(islice(seq2, 20)))
+  seq1 = differentiate(h0, f, x)
+  print("seq1:", list(islice(seq1, 20)))
+  seq1 = differentiate(h0, f, x)     
+  seq2 = elimerror(n, seq1)
+  print("\nseq2:", list(islice(seq2, 20)))
 #+end_src
+
+#+RESULTS:
+: seq1: [-0.22417729660136448, -0.47690168499900654, -0.05071823033598015, 0.25129656917109616, 0.4011378300425079, 0.47250021103430556, 0.5068996044292959, 0.5237320199065607, 0.5320507261654939, 0.5361850056454841, 0.5382457904623834, 0.5392745833756181, 0.5397885786160259, 0.5400454757644184, 0.5401738991997262, 0.5402381046296796, 0.5402702057734132, 0.5402862559509231, 0.5402942809392698, 0.5402982934145257]
+: 
+: seq2: [-0.5611431477982206, 0.09134292121836197, 0.35196816900678823, 0.45108491699964515, 0.49628767136490476, 0.5183660688942927, 0.529342825065649, 0.534823628251805, 0.5375630988054808, 0.5389327187346832, 0.5396175143466962, 0.5399599103628285, 0.5401311081472159, 0.5402167070114955, 0.540259506439664, 0.5402809061546577, 0.540291606010093, 0.5402969559353853, 0.5402996309062776, 0.5403009683902685]
 
 The appropriate =n= can be estimated by =order=, using the first three values in the sequence. Taking a slow converging iterator as input, =improve= returns a new iterator that converges faster. It does it by estimating the order and calling =elimerror=.
 #+begin_src python :noweb yes :tangle ../src/diff.py
@@ -94,21 +98,25 @@ The appropriate =n= can be estimated by =order=, using the first three values in
       return elimerror(n, itr2)
 #+end_src
 
-You can compare the two sequences by running =make test=:
-#+begin_src python :noweb yes :tangle ../src/test_diff.py
-  def test_improve():
-      print("\n## test_improve")
+Compare the two sequences:
+#+begin_src python :exports both :noweb no-export :results output :dir ../src/
+  <<DEMO_IMPORTS>>
+  def f(x: float) -> float:
+      return sin(x)
 
-      h0, x = 2.0, 0.3
-      
-      seq1 = differentiate(h0, f, x)
-      print("seq1:", list(islice(seq1, 20)))
+  h0, x = 2.0, 1.0
+  seq1 = differentiate(h0, f, x)
+  print("seq1:", list(islice(seq1, 10)))
 
-      seq1 = differentiate(h0, f, x)
-      seq2 = improve(seq1)
-
-      print("seq2:", list(islice(seq2, 20)))
+  seq1 = differentiate(h0, f, x)
+  seq2 = improve(seq1)
+  print("\nseq2:", list(islice(seq2, 10)))
 #+end_src
+
+#+RESULTS:
+: seq1: [-0.35017548837401463, 0.0678264420177852, 0.3120480035923159, 0.4300545381907588, 0.4863728743295894, 0.5136632057467931, 0.5270674561467814, 0.5337064628577082, 0.5370098303297226, 0.5386574358819871]
+: 
+: seq2: [0.48582837240958504, 0.5562695651668466, 0.5480610727892017, 0.5426912104684201, 0.5409535371639969, 0.5404717065467697, 0.5403454695686349, 0.540313197801737, 0.5403050414342516, 0.5403029913297814]
 
 This is second version of the numerical differentiation function. The logic is very easy to understand, because the code is written as a chain of simple functions: generate a series of rough calculations, improve them, and stop when the convergence criterion is met (=esp= is a small number defined in the Appendix). 
 #+begin_src python :noweb yes :tangle ../src/diff.py
@@ -146,14 +154,12 @@ The paper expresses this idea with a beautiful one-liner. Unfortunately, Python'
 Let's see if the 5th item in the yielded iterator is the same as applying =improve= 4 times:
 #+begin_src python :noweb yes :tangle ../src/test_diff.py
   def test_repeat_improve():
-      print("\n## test_repeat_improve():")
       def f(x):
           return sin(x)
 
       d = differentiate(1.0, f, 0.3)
       d4 = improve(improve(improve(improve(d))))
       seq1 = list(islice(d4, 5))
-      print("seq1:", seq1)
 
       d = differentiate(1.0, f, 0.3)
       dx = repeat_itr(improve, d)
@@ -162,7 +168,6 @@ Let's see if the 5th item in the yielded iterator is the same as applying =impro
       next(dx)
       next(dx)
       seq2 = list(islice(next(dx), 5))
-      print("seq2:", seq2)
 
       assert seq1 == seq2
 #+end_src
@@ -209,4 +214,10 @@ Does it work?
 
   from lazy_utils import *
   from diff import *
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref DEMO_IMPORTS
+  from diff import differentiate, improve, elimerror
+  from math import sin
+  from itertools import islice
 #+end_src
