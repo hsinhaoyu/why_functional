@@ -79,7 +79,7 @@ As before, a variety of lazy tree operations can be implemented with =foldtree=,
 #+end_src
 
 * Flattening lazy trees
-=foldtree= doesn't do any yielding because it doesn't necessarily return a lazy structure. If we want it to return a lazy structure, =f= and =g= need to yield. Here's a function that visits labels in a tree one by one, and returns them as an iterator:
+=foldtree= doesn't do any yielding because it doesn't necessarily return a lazy structure. If we want it to return a lazy structure, =f= and =g= need to yield. Here's a function that visits labels in a tree one by one, and returns them in an iterator:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_labels(t: Node) -> Iterator:
       def f(label: Any, folded_subtrees: Optional[Iterator]) -> Iterator:
