@@ -81,10 +81,7 @@ Recall that =maptree= was defined in the [[lazy_tree.org][lazy tree chapter]].
       return s
 
   def minimize0(node: Node) -> int:
-      """The min step of Minimax.
-      A node in gametree is ((board, score), subtrees)
-      Returns (board, score) with the minimal score
-      """    
+      """The min step of Minimax"""    
       (score, subtrees) = node
 
       if subtrees is None:
@@ -170,7 +167,7 @@ Minimax visits every node in the game tree. Is there a way to avoid visiting bra
 
 There is a way. Step 1: recall that =maximize1_= calls =minimize1=, which means that =maximize1_= returns an iterator of values (technically, it's an iterator of States. But in each State is a single value, the score). Instead, we'll make it call =minimize1_=. This means that =maximize_= returns an iterator of iterators.
 
-Step 2: There is a way to skip some of the iterators (at least partially). The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in Appendix 2. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the maximum of the two sublists' minima. The minimum of [1, 2] is 1. When we get to [0, X], we don't know the minimum, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
+Step 2: There is a way to skip some of the iterators (at least partially). The trick is a pair of functions called =mapmin= and =mapmax=. I'll only describe what they do. The code is in Appendix 1. =mapmin= is just like =map(min(...))=, except that it skips some unnecessary computation. How is it possible to skip any computation? Take this example: [[1, 2], [0, X]]. Following the logic of Minimax, we need the maximum of the two sublists' minima. The minimum of [1, 2] is 1. When we get to [0, X], we don't know the minimum, because X is unknown. However, we know that min([0, X])<=0. That means no matter what X is, min([0, X]) cannot be larger than the current max (which is 1). X therefore doesn't matter in the calculation of the max. If evaluation X is computationally demanding, this saves time.
 
 This is the updated version of Minimax:
 #+begin_src python :noweb no-export :tangle ../src/game.py
