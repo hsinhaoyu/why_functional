@@ -7,36 +7,41 @@ Hughes' paper begins with higher-order constructions such as folding (=functools
 Higher-order functions are typically used to implement operations on lists. Hughes took this idea further, and showed that they can also be used to work on more complex structures such as trees. We'll return to this topic in a later [[org/lazy_tree.org][chapter]].
 
 * Representing trees
-I'll represent a tree this way: =(label, [subtree...])=. With this representation, a node in a tree is tuple with a label and a list of subtrees. A node can have many subtrees, so the tree is not restricted to be binary.
+I'll represent a tree as a named tuple. With this representation, a node in a tree has a label and a list of subtrees. A node can have many subtrees, so the tree is not restricted to be binary.
+#+begin_src python :noweb no-export :tangle ../src/foldtree.py
+  <<FOLDTREE_IMPORTS>>
+  
+  Node = NamedTuple('Node', [('label', Any), ('subtrees', List)])
+#+end_src
+
+Here's an example tree:
 #+begin_src python :noweb no-export :tangle ../src/test_foldtree.py
   <<TEST_FOLDTREE_IMPORTS>>
 
-  my_tree = (1, [
-                 (2, []),
-                 (3, [
-                      (4, [])
-                     ]
-                  )
-                 ])
+  my_tree = Node(1, [
+                     Node(2, []),
+                     Node(3, [
+                              Node(4, [])
+                             ]
+                     )
+                    ])
 #+end_src
 
 * Extending =reduce= for trees
 =reduce= uses a reduction function of two arguments to fold a list. For example, using =operator.add= as the reduction function, =reduce(operator.add, [1, 2, 3, 4], 0)= sums the numbers in [1, 2, 3, 4].
 
-To generalize =reduce= to trees, we need two reduction functions: =f= and =g=. Both are functions of two arguments. Given a node, =g= reduces the subtrees to a value which can be further combined with the label using =f=. As in =reduce=, an initializing constant =a= is also needed. It is used in leaf nodes.
+To generalize =reduce= to trees, we need two reduction functions: =f= and =g=. Both are functions of two arguments. Given a node, =g= reduces the subtrees to a value which can be further combined with the label using =f=. Since =g= is basically =reduce=, an initializing constant =a= is also needed.
 #+begin_src python :noweb no-export :tangle ../src/foldtree.py
-  <<FOLDTREE_IMPORTS>>
-
-  def foldtree(f: Callable, g: Callable, a: Any, t: Union[Tuple, List]):
+  def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, List]) -> Any:
       """Apply two functions (f and g) of two arguments to transform a tree.
-      f: combine the label of a node to its subtrees
-      g: combine the subtrees of a node
+      f: fold a node's label to the folded subtrees
+      g: fold a list of subtrees
       a: an initial constant
       t: a tree, a list of subtrees, or []
       """
       if t == []:
           return a
-      elif isinstance(t, tuple):
+      elif isinstance(t, Node):
           (label, subtrees) = t
           return f(label, foldtree(f, g, a, subtrees))  
       else:
@@ -48,10 +53,20 @@ To generalize =reduce= to trees, we need two reduction functions: =f= and =g=. B
                    foldtree(f, g, a, rest))
 #+end_src
 
+#+RESULTS:
+
+** Notes about type hints
+The type hints should be:
+- =f= : =Callable[[Any, T1], T2]=.
+- =g= : =Callable[[T2, T1], T1]=
+= =a= : =T1=
+
+I don't use type variables in the code, because in the next section, different uses of =foldtree= will require different types. However, remember that =f= has complete freedom in types. Its two inputs and one output can all have different types. =g=, on the other hand, are constrained in type. 
+
 * Summing all labels in a tree
 Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to sum the labels in a tree:
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
-  def sumtree(t: Tuple) -> int:
+  def sumtree(t: Node) -> int:
       """Sum all labels in a tree."""
       f = operator.add
       g = operator.add
@@ -60,6 +75,7 @@ Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to 
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_sumtree():
+      assert sumtree(Node(1,[])) == 1
       assert sumtree(my_tree) == 10
       assert sumtree(my_tree2) == sum(range(1, 12))
 #+end_src
@@ -67,7 +83,7 @@ Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to 
 * Flattening trees
 =tree_labels= collects all labels of a tree into a list.
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
-  def tree_labels(t):
+  def tree_labels(t: Node):
       """Collect all labels of a tree into a list."""
       def f(label: Any, folded_subtrees: List) -> List:
           return [label] + folded_subtrees
@@ -80,6 +96,7 @@ Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to 
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_tree_labels():
+      assert tree_labels(Node(1, [])) == [1]
       assert tree_labels(my_tree) == [1, 2, 3, 4]
       assert tree_labels(my_tree2) == list(range(1, 12))
 #+end_src
@@ -87,14 +104,14 @@ Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to 
 * Mapping functions to trees
 Map a function =f= to all labels in a tree, creating another tree:
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
-  def maptree(func: Callable, t: Tuple) -> Tuple:
+  def maptree(func: Callable, t: Node) -> Node:
       """Map a function to all labels in a tree.
       Return a new tree.
       """
-      def f(label: Any, folded_subtrees: List) -> Tuple:
-          return (func(label), folded_subtrees)
+      def f(label: Any, folded_subtrees: List) -> Node:
+          return Node(func(label), folded_subtrees)
 
-      def g(folded_first: Any, folded_rest: List) -> List:
+      def g(folded_first: Node, folded_rest: List) -> List:
           return [folded_first] + folded_rest
 
       return foldtree(f, g, [], t)
@@ -102,6 +119,9 @@ Map a function =f= to all labels in a tree, creating another tree:
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_maptree():
+      res = maptree(lambda x: -1 * x, Node(1, []))
+      assert res == Node(-1, [])
+
       res = maptree(lambda x: -1 * x, my_tree)
       res = tree_labels(res)
       assert res == [-1, -2, -3, -4]
@@ -114,9 +134,9 @@ Map a function =f= to all labels in a tree, creating another tree:
 * Size of trees
 How many node are there in the tree?
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
-  def tree_size(t: Tuple) -> int:
+  def tree_size(t: Node) -> int:
       """Return the number of nodes in a tree"""
-      def f(label, folded_subtrees: int):
+      def f(label: int, folded_subtrees: int) -> int:
           return 1 + folded_subtrees
 
       def g(folded_first: int, folded_rest: int) -> int:
@@ -128,14 +148,14 @@ How many node are there in the tree?
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_tree_size():
       assert tree_size(my_tree) == 4
-      assert tree_size((1, [])) == 1
+      assert tree_size(Node(1, [])) == 1
       assert tree_size(my_tree2) == 11
 #+end_src
 
 * Depth of trees
 What is the longest branch in the tree?
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
-  def tree_depth(t: Tuple) -> int:
+  def tree_depth(t: Node) -> int:
       """Returns the maximal depth of nodes in the tree"""
       def f(label: Any, folded_subtrees: int):
           return 1 + folded_subtrees
@@ -148,10 +168,10 @@ What is the longest branch in the tree?
 
 #+begin_src python :noweb yes :tangle ../src/test_foldtree.py
   def test_tree_depth():
-      t = (1, [])
+      t = Node(1, [])
       assert tree_depth(t) == 1
 
-      t = (1, [(2, [])])
+      t = Node(1, [Node(2, [])])
       assert tree_depth(t) == 2
 
       assert tree_depth(my_tree) == 3
@@ -161,21 +181,21 @@ What is the longest branch in the tree?
 
 * Appendix: imports
 #+begin_src python :tangle no :noweb-ref FOLDTREE_IMPORTS
-  from typing import Tuple, Callable, Any, List, Union
+  from typing import Tuple, Callable, Any, List, Union, NamedTuple
   import operator
 #+end_src
 
 #+begin_src python :tangle no :noweb-ref TEST_FOLDTREE_IMPORTS
   from foldtree import *
 
-  my_tree2 = (1, [
-                  (2, [
-                       (3, []),
-                       (4, [
-                            (5, []),
-                            (6, [(7, [])])
-                           ]),
-                       (8, [(9, [])])
-                      ]),
-                   (10, [(11, [])])])
+  my_tree2 = Node(1, [
+                      Node(2, [
+                               Node(3, []),
+                               Node(4, [
+                                        Node(5, []),
+                                        Node(6, [Node(7, [])])
+                                       ]),
+                               Node(8, [Node(9, [])])
+                              ]),
+                      Node(10, [Node(11, [])])])
 #+end_src
