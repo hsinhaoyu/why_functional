@@ -214,7 +214,7 @@ And the third version of the tree evaluation function:
 #+end_src
 
 * Appendix 1: Alpha-beta utilities
-The heart of alpha-beta pruning is =mapmin=. It's just a more efficient version of =map(min, ...)= in the context of Minimax. To implement =mapmin=, we begin with =minleq=. Given an iterator =seq= and a "potential max" =mx= in a max step, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
+The heart of alpha-beta pruning is =mapmin=. It's just a more efficient version of =map(min, ...)= for Minimax. To implement =mapmin=, we begin with =minleq=. Given an iterator =seq= and a "potential max" =mx= in a max step, =minleq(seq, mx)= returns if the iterator can be "omitted". For example, the following statement returns True.
 #+begin_src python :exports both :noweb no-export :results value :dir ../src/
   <<DEMO_IMPORTS>>
   return minleq(iter([3, 2, 5, 30, 1, 6]), 20)
@@ -223,9 +223,11 @@ The heart of alpha-beta pruning is =mapmin=. It's just a more efficient version 
 #+RESULTS:
 : True
 
-=minleq(itr, 20)= is looking for a value greater than 20. The first value of =itr= is 3, which means that the minimum of =itr= is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The returned value =True= indicates that this sequence is to be omitted. In the context of games, this means that the max step is considering a move that doesn't need to be considered further, because the first potential counter-move that the opponent can make is already pretty bad for us (score=3). It's true that the 4th potential counter-move can be very good for us (score=30), but we can't count on the opponent making a blunder, can we?
+=minleq(itr, 20)= is looking for a value greater than 20. The first value of =itr= is 3, which means that the minimum of =itr= is not big enough to replace 20 as the potential maximum. The rest of the iterator therefore does not need to be evaluated further. The iteration is aborted immediately with the returned value =True=, indicating that it should be omitted.
 
-The following statement, however, returns 1.
+In the context of games, we are in a situation where the max step has already found a pretty good move (score=20), and it's looking for a even better one. The min step returns the minima for the potential counter-moves [3, 2, 5, 30, 1, 6]. Because the first potential counter-move is already pretty bad for us (score=3), it's clear that the move we are considering doesn't need to be evaluated further. (It's true that the 4th potential counter-move can be very good for us (score=30), but we can't count on the opponent making a blunder, can we?)
+
+In the following, however, =minleq= evaluates the entire sequence and returns 1, just like =min(...)=.
 #+begin_src python :exports both :noweb no-export :results value :dir ../src/
   <<DEMO_IMPORTS>>
   return minleq(iter([3, 2, 5, 30, 1, 6]), 0)
@@ -234,7 +236,7 @@ The following statement, however, returns 1.
 #+RESULTS:
 : 1
 
-This sequence cannot be omitted because all numbers are larger than the potential max. In that case, the minimum (score=1) is returned. In the context of games, the max step is considering a move that is stronger than what had been considered before, because no matter what the counter-move is, we always end up in a better position.
+In the context of games, this means that the max step has already examined moves that are not very good (score=0). Finding a better move in this situation is computationally more expensive, because we have to evaluate every possible counter-move. =minleq= returns the best move that the opponent can make to make our life difficult, which has the score of 1.
 
 Here's the code. See [[tests.org][here]] for more test cases.
 #+begin_src python :tangle no :noweb-ref ALPHA_BETA_UTILS
