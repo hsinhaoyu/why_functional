@@ -42,7 +42,7 @@ A example call: one single iteration in the approximation of sqrt(10.0) from 2.0
 #+end_src
 
 A simple test: an iterator that yields 0, 1, 2, 3...
-#+begin_src python :exports both :noweb no-export :results value raw :dir ../src/
+#+begin_src python :exports both :noweb no-export :results value org :dir ../src/
   <<DEMO_IMPORTS>>
   r = repeat_f(lambda n: n + 1, 0)
   v1, v2, v3 = next(r), next(r), next(r)
@@ -50,7 +50,9 @@ A simple test: an iterator that yields 0, 1, 2, 3...
 #+end_src
 
 #+RESULTS:
+#+begin_src org
 (0, 1, 2)
+#+end_src
 
 * Define a lazy iterator that approximates =sqrt(n)=
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain =next_sqrt_approx= and =repeat_f= together:
