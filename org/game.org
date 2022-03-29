@@ -42,7 +42,7 @@ For playing games, we represent the rules of the game in a function called =move
 The code above defines a =gametree= as "factory function", which receives =moves= and returns a closure that only needs the initial board configuration as its input. This way, it's easier to customized it for a specific game.
 
 * Prune the game tree
-To find the best next move, searching the entire game tree is typically impractical. We can reduce the size of the search space by limiting the game AI to looks ahead for only a fixed number of moves. The =prune= function does this by removing nodes after a certain depth (=n=). 
+To find the best next move, searching the entire game tree is typically impractical. We can reduce the size of the search space by limiting the game AI to look ahead only for a fixed number of moves. The =prune= function does this by removing nodes after a certain depth (=n=). 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def prune(n: int, tree: Node) -> Node:
       """Remove nodes n levels below in the tree"""
@@ -59,12 +59,12 @@ To find the best next move, searching the entire game tree is typically impracti
 * Static evaluation 
 To play games, we need a static evaluation function to score each board configuration with a value, in order to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point.
 
-The [[tic_tac_toe.org][next chapter]] customizes the code above to play Tic-tac-toe: =init_board= creates an empty game board, =gametree= creates a game tree, =prune= prunes a tree, and =static_eval(0)= scores a board configuration with a static evaluation function for player 0. The statement below replaces the labels in the game tree with the static scores. There is another function that keeps the board configuration and the score.
+The [[tic_tac_toe.org][next chapter]] customizes the code above to play Tic-tac-toe: =init_board= creates an empty game board, =gametree= creates a game tree, =prune= prunes a tree, and =static_eval(0)= scores a board configuration with a static evaluation function for player 0. The statement below replaces the labels in the game tree with the static scores. 
 #+begin_src python
   maptree(static_eval(0), prune(gametree(init_board())))
 #+end_src
 
-Recall that =maptree= was defined in a the [[lazy_tree.org][lazy tree chapter]].
+Recall that =maptree= was defined in the [[lazy_tree.org][lazy tree chapter]].
 
 * Minimax - the minimalist version
 [[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do to the computer in a follow-up move (this is the "min" step). Then take the move that is associated with the best outcome for the computer (the "max" step). But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: It's the human's best move against the computer future moves. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:
