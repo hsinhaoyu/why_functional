@@ -120,7 +120,7 @@ The Minimax code in Hughes' paper is very minimalist (similar to =evaluate0=). I
           return self.score <= other.score
 #+end_src
 
-This updated version of Minimax is very similar to the one in the previous section, except for two changes: first, I decomposed =maximize0= into two functions: =maximized1_= only does and mapping, leaving =maximize1= to do the max. This decomposition will be useful in the next section. 
+This updated version of Minimax is very similar to the one in the previous section, except for two changes: first, I decomposed =maximize0= into two functions: =maximized1_= only does the mapping, leaving =maximize1= to do the max. This decomposition will be useful in the next section. 
 #+begin_src python :noweb yes :tangle ../src/game.py
   <<MISC_UTILS>>
 
