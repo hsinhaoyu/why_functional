@@ -30,7 +30,7 @@ Here's an example tree:
 * Extending =reduce= for trees
 =reduce= uses a reduction function of two arguments to fold a list. For example, using =operator.add= as the reduction function, =reduce(operator.add, [1, 2, 3, 4], 0)= sums the numbers in [1, 2, 3, 4].
 
-To generalize =reduce= to trees, we need two reduction functions: =f= and =g=. Both are functions of two arguments. Given a node, =g= reduces the subtrees to a value which can be further combined with the label using =f=. Since =g= is basically =reduce=, an initializing constant =a= is also needed.
+To generalize =reduce= to trees, we need two reduction functions: =f= and =g=. Both are functions of two arguments. Given a node, =g= reduces the subtrees to a value which can be further reduced with the label using =f=. Since =g= is basically =reduce=, an initializing constant =a= is also needed.
 #+begin_src python :noweb no-export :tangle ../src/foldtree.py
   def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, List]) -> Any:
       """Apply two functions (f and g) of two arguments to transform a tree.
@@ -55,7 +55,9 @@ To generalize =reduce= to trees, we need two reduction functions: =f= and =g=. B
 
 #+RESULTS:
 
-Some notes about type hints: the types of =foldtree= should be:
+Some notes about types:
+
+The types of =foldtree= should be
 - =f= : =Callable[[Any, T1], T2]=.
 - =g= : =Callable[[T2, T1], T1]=
 - =a= : =T1=
