@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/newton.html
 #+OPTIONS: broken-links:t
 #+TITLE: Calculating square roots with generators
-This chapter shows how to decompose a complex loop into re-usable components, by chaining functions together. This pattern is most powerful when the functions evaluate lazily. In Python, it means that they are generators. 
+This chapter shows how to decompose a complex loop into re-usable components, by chaining functions together. This pattern is most powerful when the functions evaluate lazily. In Python, it means that they should be written as generators.
 
 * The math bit
 To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) / 2.0 repeatedly.
@@ -17,14 +17,15 @@ To approximate sqrt(n), we start with an initial value =x=, and apply (x + n/x) 
       return next_approx_  
 #+end_src
 
-A example call: approximating sqrt(10.0) from 2.0, in just one iteration:
-#+begin_src python :noweb no-export :tangle ../src/test_newton.py
-  <<TEST_NEWTON_IMPORTS>>
-
-  def test_next_sqrt_approx():
-      f = next_sqrt_approx(10.0)
-      assert f(2.0) == pytest.approx(3.5)
+A example call: one single iteration in the approximation of sqrt(10.0) from 2.0.
+#+begin_src python :exports both :noweb no-export :results value :dir ../src/
+  <<DEMO_IMPORTS>>
+  f = next_sqrt_approx(10.0)
+  return f(2.0)
 #+end_src
+
+#+RESULTS:
+: 3.5
 
 * Define a nesting iterator
 =repeat_f(f, a)= applies the function =f= repeatedly to =a=. 
@@ -41,20 +42,18 @@ A example call: approximating sqrt(10.0) from 2.0, in just one iteration:
 #+end_src
 
 A simple test: an iterator that yields 0, 1, 2, 3...
-#+begin_src python :noweb no-export :tangle ../src/test_lazy_utils.py
-  <<TEST_LAZY_UTILS_IMPORTS>>
-
-  def test_repeat_f():
-      r = repeat_f(lambda n: n + 1, 0)
-      v1, v2, v3 = next(r), next(r), next(r)
-      assert v1 == 0
-      assert v2 == 1
-      assert v3 == 2
+#+begin_src python :exports both :noweb no-export :results value raw :dir ../src/
+  <<DEMO_IMPORTS>>
+  r = repeat_f(lambda n: n + 1, 0)
+  v1, v2, v3 = next(r), next(r), next(r)
+  return (v1, v2, v3)
 #+end_src
+
+#+RESULTS:
+(0, 1, 2)
 
 * Define a lazy iterator that approximates =sqrt(n)=
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain =next_sqrt_approx= and =repeat_f= together:
-
 #+begin_src python :noweb yes :tangle ../src/newton.py
   def newton_sqrt_(n: float, a: float) -> Iterator[float]:
       """An infinite iterator approximating sqrt(n) starting from a"""
@@ -62,6 +61,16 @@ At this stage, we can create an iterator that takes us closer and closer to sqrt
 #+end_src
 
 Again, approximating sqrt(10.0) from 2.0:
+#+begin_src python :exports both :noweb no-export :results value raw :dir ../src/
+  <<DEMO_IMPORTS>>
+  r = newton_sqrt_(10.0, 2.0)
+  return list(islice(r, 5))
+#+end_src
+
+#+RESULTS:
+[2.0, 3.5, 3.178571428571429, 3.162319422150883, 3.1622776604441363]
+
+This can be used as a test case:
 #+begin_src python :noweb yes :tangle ../src/test_newton.py
   def test_newton_sqrt_():
       r = newton_sqrt_(10.0, 2.0)
@@ -73,7 +82,6 @@ Again, approximating sqrt(10.0) from 2.0:
 
 * Add a stopping condition
 We add a =within= function to stop the iteration when the difference between two successive iterations is smaller than =esp=.
-
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def within(esp: float, itr: Iterator[float]) -> Iterator[float]:
       """Stop if the next two iterations have a small delta."""
@@ -93,6 +101,14 @@ Now we can solve our numerical problem:
 #+end_src
 
 A simple test:
+#+begin_src python :exports both :noweb no-export :results value raw :dir ../src/
+  <<DEMO_IMPORTS>>
+  return newton_sqrt(10.0, 2.0)
+#+end_src
+
+#+RESULTS:
+3.162277660168379
+
 #+begin_src python :noweb yes :tangle ../src/test_newton.py
   def test_newton_sqrt():
       res = newton_sqrt(10.0, 2.0)
@@ -119,4 +135,9 @@ A simple test:
 
 #+begin_src python :tangle no :noweb-ref TEST_LAZY_UTILS_IMPORTS
   from lazy_utils import *
+#+end_src
+
+#+begin_src python :tangle no :noweb-ref DEMO_IMPORTS
+  from newton import next_sqrt_approx, repeat_f, newton_sqrt_, newton_sqrt
+  from itertools import islice
 #+end_src

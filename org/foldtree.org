@@ -59,9 +59,9 @@ To generalize =reduce= to trees, we need two reduction functions: =f= and =g=. B
 The type hints should be:
 - =f= : =Callable[[Any, T1], T2]=.
 - =g= : =Callable[[T2, T1], T1]=
-= =a= : =T1=
+- =a= : =T1=
 
-I don't use type variables in the code, because in the next section, different uses of =foldtree= will require different types. However, remember that =f= has complete freedom in types. Its two inputs and one output can all have different types. =g=, on the other hand, are constrained in type. 
+I don't use type variables in the code, because in the next section, different uses of =foldtree= will require different types. However, remember that =f= has complete freedom in types. Its two inputs and one output can all have different types. =g=, on the other hand, are constrained.
 
 * Summing all labels in a tree
 Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to sum the labels in a tree:
