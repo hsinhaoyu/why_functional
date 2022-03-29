@@ -1,4 +1,5 @@
 from lazy_utils import *
+import pytest
 
 
 def mk_test_tree2():
@@ -30,6 +31,9 @@ def mk_test_tree():
 
 
 def test_sumtree():
+    t = mk_tree_(1, None)
+    assert sumtree(t) == 1
+
     t = mk_test_tree()
     assert sumtree(t) == 10
 
@@ -38,6 +42,17 @@ def test_sumtree():
 
 
 def test_tree_labels():
+    t = mk_tree_(10, None)
+    assert list(tree_labels(t)) == [10]
+
+    t = mk_tree_(10, [mk_tree_(20, None)])
+    assert list(tree_labels(t)) == [10, 20]
+
+    t = mk_tree_(10, [mk_tree_(20, None), mk_tree_(30, None)])
+    assert list(tree_labels(t)) == [10, 20, 30]
+
+
+def test_tree_labels2():
     t = mk_test_tree()
     i = tree_labels(t)
     assert list(i) == [1, 2, 3, 4]
@@ -61,6 +76,21 @@ def test_maptree():
     res = maptree(lambda x: -1 * x, t)
     res = tree_labels(res)
     assert list(res) == [-1 * i for i in range(1, 12)]
+
+
+def test_maptree2():
+
+    def f(n):
+        return -1 * n
+
+    t = maptree(f, mk_tree_(10, None))
+    assert list(tree_labels(t)) == [-10]
+
+    t = maptree(f, mk_tree_(10, [mk_tree_(20, None)]))
+    assert list(tree_labels(t)) == [-10, -20]
+
+    t = mk_tree_(10, [mk_tree_(20, None), mk_tree_(30, None)])
+    assert list(tree_labels(maptree(f, t))) == [-10, -20, -30]
 
 
 def test_tree_size():

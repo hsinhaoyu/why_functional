@@ -36,14 +36,14 @@ This is almost identical to the eager version defined in a [[org/foldtree.org][p
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, Iterator, None]):
       """Apply two functions (f and g) of two arguments to transform a lazy tree.
-      f: combine the label of a node to its subtrees
-      g: combine the subtrees of a node
+      f: fold a node's label to the folded subtrees
+      g: fold a list of subtrees
       a: an initial constant
-      t: a tree, a list of subtrees, or []
+      t: a tree, an iterator of subtrees, or None
       """    
       if t is None:
           return a
-      elif isinstance(t, tuple):
+      elif isinstance(t, Node):
           (label, subtrees) = t
           return f(label, foldtree(f, g, a, subtrees))
       else:
@@ -52,8 +52,11 @@ This is almost identical to the eager version defined in a [[org/foldtree.org][p
               return g(foldtree(f, g, a, subtree),
                        foldtree(f, g, a, t))
           except StopIteration:
+              # as if the last item of an interator is None
               return a
 #+end_src
+
+Note: This code is inelegant, because I decided to represent a node with no subtrees as =Node(val, None)=. Because the type of subtrees is not consistent (it can be None or an iterator), all code that deals with the subtrees needs additional checking. I started this code with =Node(val, iter([]))=, but it was also inelegant in other places.
 
 * Summing all labels in a lazy tree
 As before, a variety of lazy tree operations can be implemented with =foldtree=, by using appropriate =f= and =g=.  
@@ -65,6 +68,9 @@ As before, a variety of lazy tree operations can be implemented with =foldtree=,
 
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
   def test_sumtree():
+      t = mk_tree_(1, None)
+      assert sumtree(t) == 1
+
       t = mk_test_tree()
       assert sumtree(t) == 10
 
@@ -76,23 +82,40 @@ As before, a variety of lazy tree operations can be implemented with =foldtree=,
 This version of =tree_labels= returns an iterator, which visits every label in the tree one by one:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_labels(t: Node) -> Iterator:
-      def f(label: Any, folded_subtrees: Iterator) -> Iterator:
+      def f(label: Any, folded_subtrees: Optional[Iterator]) -> Iterator:
           yield label
-          for item in folded_subtrees:
-              yield item
+          if folded_subtrees is not None:
+              for item in folded_subtrees:
+                  yield item
 
-      def g(folded_first: Iterator, folded_rest: Iterator) -> Iterator:
+      def g(folded_first: Iterator, folded_rest: Optional[Iterator]) -> Optional[Iterator]:
           for item in folded_first:
               yield item
-          for item in folded_rest:
-              yield item
 
-      return foldtree(f, g, [], t)
+          if folded_rest is not None:
+              for item in folded_rest:
+                  yield item
+
+      return foldtree(f, g, None, t)
 #+end_src
 
 Let's try it. I use =list(t)= to convert the returned iterator to a regular list.
 #+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
   def test_tree_labels():
+      t = mk_tree_(10, None)
+      assert list(tree_labels(t)) == [10]
+
+      t = mk_tree_(10, [mk_tree_(20, None)])
+      assert list(tree_labels(t)) == [10, 20]
+
+      t = mk_tree_(10, [
+                        mk_tree_(20, None),
+                        mk_tree_(30, None)])
+      assert list(tree_labels(t)) == [10, 20, 30]
+#+end_src
+
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  def test_tree_labels2():
       t = mk_test_tree()
       i = tree_labels(t)
       assert list(i) == [1, 2, 3, 4]
@@ -106,10 +129,10 @@ Let's try it. I use =list(t)= to convert the returned iterator to a regular list
 This version of =maptree= maps a function =f= to all labels in a lazy tree, and returns another lazy tree. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def maptree(func: Callable, t: Node) -> Node:
-      def f(label: Any, folded_subtrees: Optional[Iterator]):
+      def f(label: Any, folded_subtrees: Optional[Iterator]) -> Node:
           return Node(func(label), folded_subtrees)
 
-      def g(folded_first: Node, folded_rest: Optional[Iterator]) -> Iterator:
+      def g(folded_first: Node, folded_rest: Optional[Iterator]) -> Optional[Iterator]:
           yield folded_first
           if folded_rest is not None:
               for item in folded_rest:
@@ -135,11 +158,29 @@ Let's try it. I use the =tree_labels= function to collect all the labels in the 
       assert list(res) == [-1 * i for i in range(1, 12)]
 #+end_src
 
+Some additional tests:
+#+begin_src python :noweb yes :tangle ../src/test_lazy_tree.py
+  def test_maptree2():
+      def f(n):
+          return -1 * n    
+
+      t = maptree(f, mk_tree_(10, None))
+      assert list(tree_labels(t)) == [-10]
+
+      t = maptree(f, mk_tree_(10, [mk_tree_(20, None)]))
+      assert list(tree_labels(t)) == [-10, -20]
+
+      t = mk_tree_(10, [
+                        mk_tree_(20, None),
+                        mk_tree_(30, None)])
+      assert list(tree_labels(maptree(f,t))) == [-10, -20, -30]
+#+end_src
+
 * Size of lazy trees
 Here's one more function that we'll use in the [[tic_tac_toe.org][next chapter]]:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_size(t: Node) -> int:
-      def f(label, folded_subtrees):
+      def f(label: Any, folded_subtrees: int) -> int:
           return 1 + folded_subtrees
       return foldtree(f, operator.add, 0, t)
 #+end_src
@@ -160,7 +201,7 @@ Here's one more function that we'll use in the [[tic_tac_toe.org][next chapter]]
 Another utility function:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def tree_depth(t: Node) -> int:
-      def f(label: Any, folded_subtrees: int):
+      def f(label: Any, folded_subtrees: int) -> int:
           return 1 + folded_subtrees
       
       def g(folded_first: int, folded_rest: int) -> int:
@@ -176,7 +217,7 @@ Another utility function:
 
       t = mk_tree_(1, [mk_tree_(2, None)])
       assert tree_depth(t) == 2
-    
+
       t = mk_test_tree()
       assert tree_depth(t) == 3
 
@@ -187,6 +228,7 @@ Another utility function:
 * Appendix: imports
 #+begin_src python :tangle no :noweb-ref TEST_LAZY_TREE_IMPORTS
   from lazy_utils import *
+  import pytest
 
   def mk_test_tree2():
       my_tree = mk_tree_(1, [

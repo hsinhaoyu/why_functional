@@ -124,7 +124,7 @@ A simple test:
 #+end_src
 
 * Try a different stopping condition
-The advantage of writing programs as a chain of functions is that it's highly modular, so it's easy to swap some of the functions out. Let's say we want to try a different stopping condition:
+The advantage of writing programs as chains of functions is that they are highly modular, so it's easy to swap some of the functions out. Let's say we want to try a different stopping criterion:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def relative(esp: float, itr: Iterator[float]) -> Iterator[float]:
       """Stop if the next two iterations have a small delta."""
