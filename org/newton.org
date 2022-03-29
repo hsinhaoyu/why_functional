@@ -127,7 +127,7 @@ A simple test:
 The advantage of writing programs as chains of functions is that they are highly modular, so it's easy to swap some of the functions out. Let's say we want to try a different stopping criterion:
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def relative(esp: float, itr: Iterator[float]) -> Iterator[float]:
-      """Stop if the next two iterations have a small delta."""
+      """Stop if the next two iterations have a small relative delta."""
       a = next(itr)
       while True:
           b = next(itr)
