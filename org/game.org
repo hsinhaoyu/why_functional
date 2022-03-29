@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/game.html
 #+OPTIONS: broken-links:t
 #+TITLE: Play games using lazy trees
-In this chapter, we will apply the ideas developed so far to a more complicated problem: playing a two-player game. We'll develop the game AI code here, and then we'll use them to play Tic-tac-toe in the [[org/tic_tac_toe.org][next chapter]].
+In this chapter, we will apply the ideas developed so far to a more complicated problem: playing a two-player game. We'll develop the game AI code here, and then we'll use them to play Tic-tac-toe in the [[tic_tac_toe.org][next chapter]].
 
 * Build a (lazy) game tree
 Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a function to an initial value to generate a list. We'll extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree= to grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
@@ -22,7 +22,7 @@ Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a funct
       return Node(label, make_children(f(label)))
 #+end_src
 
-For playing games, we represent the rules of the game in a function called =moves=. This function takes a initial state of the game board, and returns an iterator of board configurations corresponding to all legal moves (see [[org/tic_tac_toe.org][next chapter]] for a concrete example). By applying =moves= repeatedly to an initial board configuration, we get a tree of all possible future configurations of the game! Remember that =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
+For playing games, we represent the rules of the game in a function called =moves=. This function takes a initial state of the game board, and returns an iterator of board configurations corresponding to all legal moves (see [[tic_tac_toe.org][next chapter]] for a concrete example). By applying =moves= repeatedly to an initial board configuration, we get a tree of all possible future configurations of the game! Remember that =reptree= is lazy, so this large tree has not been created yet at this point. The future configurations will only be computed when they are needed.
 #+begin_src python :noweb no-export :tangle ../src/game.py
   <<GAME_IMPORTS>>
 
@@ -59,12 +59,12 @@ To find the best next move, searching the entire game tree is typically impracti
 * Static evaluation 
 To play games, we need a static evaluation function to score each board configuration with a value, in order to guide the selection of the next move. This function does not take future moves into account, so it's not good enough for making the next move. But it's a good starting point.
 
-The [[org/tic_tac_toe.org][next chapter]] customizes the code above to play Tic-tac-toe: =init_board= creates an empty game board, =gametree= creates a game tree, =prune= prunes a tree, and =static_eval(0)= scores a board configuration with a static evaluation function for player 0. The statement below replaces the labels in the game tree with the static scores. There is another function that keeps the board configuration and the score.
+The [[tic_tac_toe.org][next chapter]] customizes the code above to play Tic-tac-toe: =init_board= creates an empty game board, =gametree= creates a game tree, =prune= prunes a tree, and =static_eval(0)= scores a board configuration with a static evaluation function for player 0. The statement below replaces the labels in the game tree with the static scores. There is another function that keeps the board configuration and the score.
 #+begin_src python
   maptree(static_eval(0), prune(gametree(init_board())))
 #+end_src
 
-Recall that =maptree= was defined in a the [[org/lazy_tree.org][lazy tree chapter]].
+Recall that =maptree= was defined in a the [[lazy_tree.org][lazy tree chapter]].
 
 * Minimax - the minimalist version
 [[https://en.wikipedia.org/wiki/Minimax][Minimax]] is an algorithm for playing zero-sum two-player games. If a computer plays against a human opponent, Minimax selects the computer's best move in two steps: For every legal move that the computer can make, find the worst that the human can do to the computer in a follow-up move (this is the "min" step). Then take the move that is associated with the best outcome for the computer (the "max" step). But how does the computer know what's the worst that the human can do to it? It's the other side of the coin: It's the human's best move against the computer future moves. It's not hard to see that Minimax is naturally expressed as a pair of mutually recursive functions:

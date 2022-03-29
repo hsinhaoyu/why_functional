@@ -2,7 +2,7 @@
 #+EXPORT_FILE_NAME: ../html/tic-tac-toe.html
 #+OPTIONS: broken-links:t
 #+TITLE: Let's play Tic-tac-toe
-This chapter uses the game AI code developed in the [[org/game.org][previous chapter]] to play Tic-tac-toe. To play the game, run =tic_tac_toe.play()=. This part is not in Hughes' paper.
+This chapter uses the game AI code developed in the [[game.org][previous chapter]] to play Tic-tac-toe. To play the game, run =tic_tac_toe.play()=. This part is not in Hughes' paper.
 
 * The game board
 These functions define the Tic-tac-toe game world:

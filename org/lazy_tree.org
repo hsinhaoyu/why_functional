@@ -32,7 +32,7 @@ Let's build the same tree in [[foldtree.org][foldtree.org]], replacing lists wit
 #+end_src
 
 * The higher-order function =foldtree= for lazy trees
-This is almost identical to the eager version defined in a [[org/foldtree.org][previous chapter]]. Unfortunately, some modifications are needed, because lists and iterators are manipulated differently in Python. Interestingly, =foldtree= doesn't do any yielding. This is because =foldtree= does not necessarily returns a lazy structure. It can return just a number. In situations where =foldtree= returns a lazy structure, =f= and =g= need to do the yielding.
+This is almost identical to the eager version defined in a [[foldtree.org][previous chapter]]. Unfortunately, some modifications are needed, because lists and iterators are manipulated differently in Python. Interestingly, =foldtree= doesn't do any yielding. This is because =foldtree= does not necessarily returns a lazy structure. It can return just a number. In situations where =foldtree= returns a lazy structure, =f= and =g= need to do the yielding.
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, Iterator, None]):
       """Apply two functions (f and g) of two arguments to transform a lazy tree.
