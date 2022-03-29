@@ -63,14 +63,16 @@ At this stage, we can create an iterator that takes us closer and closer to sqrt
 #+end_src
 
 Again, approximating sqrt(10.0) from 2.0:
-#+begin_src python :exports both :noweb no-export :results value raw :dir ../src/
+#+begin_src python :exports both :noweb no-export :results value org :dir ../src/
   <<DEMO_IMPORTS>>
   r = newton_sqrt_(10.0, 2.0)
   return list(islice(r, 5))
 #+end_src
 
 #+RESULTS:
+#+begin_src org
 [2.0, 3.5, 3.178571428571429, 3.162319422150883, 3.1622776604441363]
+#+end_src
 
 This can be used as a test case:
 #+begin_src python :noweb no-export :tangle ../src/test_newton.py
@@ -107,13 +109,13 @@ Now we can solve our numerical problem:
 #+end_src
 
 A simple test:
-#+begin_src python :exports both :noweb no-export :results value raw :dir ../src/
+#+begin_src python :exports both :noweb no-export :results value :dir ../src/
   <<DEMO_IMPORTS>>
   return newton_sqrt(10.0, 2.0)
 #+end_src
 
 #+RESULTS:
-3.162277660168379
+: 3.162277660168379
 
 #+begin_src python :noweb yes :tangle ../src/test_newton.py
   def test_newton_sqrt():
