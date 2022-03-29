@@ -5,7 +5,7 @@
 In this chapter, we will apply the ideas developed so far to a more complicated problem: playing a two-player game. We'll develop the game AI code here, and then we'll use them to play Tic-tac-toe in the [[tic_tac_toe.org][next chapter]].
 
 * Build a (lazy) game tree
-Remember that =repeat_f= (defined [[diff.org][here]]) repeatedly applies a function to an initial value to generate a list. We'll extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree= to grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
+Remember that =repeat_f= (defined [[newton.org][here]]) repeatedly applies a function to an initial value to generate a list. We'll extend the idea to trees. Let =f= be a function that takes a value, and returns a list of values. We define =reptree= to grows a tree out of an initial value by applying =f= repeatedly. Recall that tree is represented by =Node= defined in the [[lazy_tree.org][previous section]]. 
 #+begin_src python :noweb yes :tangle ../src/lazy_utils.py
   def reptree(f: Callable[[Any], Optional[Iterator[Any]]], label: Any) -> Node:
       """Appy a function f to a label repeatedly to create a tree.
