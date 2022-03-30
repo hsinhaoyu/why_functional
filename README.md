@@ -10,12 +10,12 @@ It should be noted that Python's generator really is a poor-person's version of 
 
 I embedded the Python code in a series of "articles" that should be read in the following order:
 
-- [Working with trees using higer-order functions](org/foldtree.org)
+- [Work with trees using higer-order functions](org/foldtree.org)
 - [Numerical approximation using lazy evaluation](org/newton.org)
 - [Numerican differentiation using iterators of iterators](org/diff.org)
 - [Numerical integration using lazy recursion](org/integration.org)
 - [Lazy tree operations using higher-order functions for iterators](org/lazy_tree.org)
-- [Playing games using lazy trees](org/game.org)
-- [Playing Tic-tac-toe](org/tic_tac_toe.org)
+- [Play games using lazy trees](org/game.org)
+- [Play Tic-tac-toe](org/tic_tac_toe.org)
 
 The code was written in [orgmode](https://orgmode.org) - a markup language with a lightweight literate programming system. It's popular with Emacs users. `orgmode` documents (`*.org`) can be viewed directly on Github. The code blocks in the documents can be extracted and assembled (or "tangled" in the jargon of literate programming) into regular Python source code under `src/` with the `M-x org-babel-tangle` command in Emacs. `make tangle` defined in the `Makefile` also does the trick. The source code assembled by `orgmode` doesn't quite follow Python's PEP 8 style guideline, so I use `yapf` to reformat them.
