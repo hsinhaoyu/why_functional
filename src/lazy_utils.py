@@ -24,7 +24,7 @@ def within(esp: float, itr: Iterator[float]) -> Iterator[float]:
 
 
 def relative(esp: float, itr: Iterator[float]) -> Iterator[float]:
-    """Stop if the next two iterations have a small delta."""
+    """Stop if the next two iterations have a small relative delta."""
     a = next(itr)
     while True:
         b = next(itr)
@@ -69,11 +69,13 @@ def foldtree(f: Callable, g: Callable, a: Any, t: Union[Node, Iterator, None]):
 
 
 def sumtree(t: Node) -> int:
+    """Sum all the labels in a tree"""
     add = operator.add
     return foldtree(add, add, 0, t)
 
 
 def tree_labels(t: Node) -> Iterator:
+    """Visit all labels in a tree, return them in an iterator"""
 
     def f(label: Any, folded_subtrees: Optional[Iterator]) -> Iterator:
         yield label
@@ -94,6 +96,7 @@ def tree_labels(t: Node) -> Iterator:
 
 
 def maptree(func: Callable, t: Node) -> Node:
+    """Maps func to all labels in a tree. Returns another lazy tree"""
 
     def f(label: Any, folded_subtrees: Optional[Iterator]) -> Node:
         return Node(func(label), folded_subtrees)
@@ -109,6 +112,7 @@ def maptree(func: Callable, t: Node) -> Node:
 
 
 def tree_size(t: Node) -> int:
+    """Return the number of labels in a lazy tree"""
 
     def f(label: Any, folded_subtrees: int) -> int:
         return 1 + folded_subtrees
@@ -117,6 +121,7 @@ def tree_size(t: Node) -> int:
 
 
 def tree_depth(t: Node) -> int:
+    """Return the length of the longist branch in the tree"""
 
     def f(label: Any, folded_subtrees: int) -> int:
         return 1 + folded_subtrees

@@ -27,7 +27,7 @@ A example call: one single iteration in the approximation of sqrt(10.0) from 2.0
 #+RESULTS:
 : 3.5
 
-* Define a nesting iterator
+* Create an iterator by nesting function calls
 =repeat_f(f, a)= applies the function =f= repeatedly to =a=. 
 #+begin_src python :noweb no-export :tangle ../src/lazy_utils.py
   <<LAZY_UTILS_IMPORTS>>
@@ -54,7 +54,7 @@ A simple test: an iterator that yields 0, 1, 2, 3...
 (0, 1, 2)
 #+end_src
 
-* Define a lazy iterator that approximates =sqrt(n)=
+* A lazy iterator that approximates =sqrt(n)=
 At this stage, we can create an iterator that takes us closer and closer to sqrt(n) with each iteration. All we have to do is to chain =next_sqrt_approx= and =repeat_f= together:
 #+begin_src python :noweb yes :tangle ../src/newton.py
   def newton_sqrt_(n: float, a: float) -> Iterator[float]:

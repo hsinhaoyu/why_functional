@@ -6,7 +6,7 @@ Hughes' paper begins with higher-order constructions such as folding (=functools
 
 Higher-order functions are typically used to implement operations on lists. Hughes took this idea further, and showed that they can also be used to work on more complex structures such as trees. We'll return to this topic in a later [[lazy_tree.org][chapter]].
 
-* Representing trees
+* Tree representation
 I'll represent a tree as a named tuple. With this representation, a node in a tree has a label and a list of subtrees. A node can have many subtrees, so the tree is not restricted to be binary.
 #+begin_src python :noweb no-export :tangle ../src/foldtree.py
   <<FOLDTREE_IMPORTS>>
@@ -27,7 +27,7 @@ Here's an example tree:
                     ])
 #+end_src
 
-* Extending =reduce= for trees
+* Extend =reduce= for trees
 =reduce= uses a reduction function of two arguments to fold a list. For example, using =operator.add= as the reduction function, =reduce(operator.add, [1, 2, 3, 4], 0)= sums the numbers in [1, 2, 3, 4].
 
 To generalize =reduce= to trees, we need two reduction functions: =f= and =g=. Both are functions of two arguments. Given a node, =g= reduces the subtrees to a value which can be further reduced with the label using =f=. Since =g= is basically =reduce=, an initializing constant =a= is also needed.
@@ -64,7 +64,7 @@ The types of =foldtree= should be
 
 I don't specify them in the code, because in the next section, different uses of =foldtree= will require different types. However, remember that =f= has complete freedom in types. Its two inputs and one output can all have different types. On the other hand, =g= doesn't have any freedom in the types of its inputs and output.
 
-* Summing all labels in a tree
+* Sum all labels in a tree
 Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to sum the labels in a tree:
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
   def sumtree(t: Node) -> int:
@@ -81,7 +81,7 @@ Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to 
       assert sumtree(my_tree2) == sum(range(1, 12))
 #+end_src
 
-* Flattening trees
+* Flatten trees
 =tree_labels= collects all labels of a tree into a list.
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
   def tree_labels(t: Node):
@@ -102,7 +102,7 @@ Just like using =reduce= to sum the numbers in a list, we can use =foldtree= to 
       assert tree_labels(my_tree2) == list(range(1, 12))
 #+end_src
 
-* Mapping functions to trees
+* Map a function to trees
 Map a function =f= to all labels in a tree, creating another tree:
 #+begin_src python :noweb yes :tangle ../src/foldtree.py
   def maptree(func: Callable, t: Node) -> Node:

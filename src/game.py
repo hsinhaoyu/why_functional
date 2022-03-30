@@ -34,10 +34,7 @@ def maximize0(node: Node) -> int:
 
 
 def minimize0(node: Node) -> int:
-    """The min step of Minimax.
-    A node in gametree is ((board, score), subtrees)
-    Returns (board, score) with the minimal score
-    """
+    """The min step of Minimax"""
     (score, subtrees) = node
 
     if subtrees is None:
@@ -85,13 +82,12 @@ def map_(func: Callable[[Node], State],
     assert subtrees is not None
 
     for subtree in subtrees:
-        # a subtree is a node
         (state0, _) = subtree
         state1 = func(subtree)
         yield State(state0.board, state1.score)
 
 
-def replace_board(board, itr):
+def replace_board(board: Board, itr: Iterator[State]):
     for state in itr:
         yield State(board, state.score)
 

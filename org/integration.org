@@ -53,7 +53,7 @@ A simple test:
       assert d == pytest.approx(2.0)
 #+end_src
 
-* Avoiding redundant evaluation
+* Avoid redundant evaluation
 A problem with the code in the previous section is that every time =easyintegrate= is called, the value of =f= is re-evaluated. The duplicated evaluation can be reduced with a small tweak of the code:
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   def integ(f: Callable[[float], float], a: float, b: float, fa: float, fb: float) -> Iterator[float]:
@@ -78,7 +78,7 @@ Let's test the second version of our numerical integration function:
       assert d == pytest.approx(2.0)
 #+end_src
 
-* Accelerating the convergence
+* Accelerate the convergence
 Remember that in the [[diff.org][previous chapter]], we used the =improve= function to accelerate the convergence of a sequence? We can use it here too:
 #+begin_src python :noweb yes :tangle ../src/integrate.py
   def integrate3(f: Callable[[float], float], a: float, b: float) -> float:
